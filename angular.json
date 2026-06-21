@@ -64,10 +64,7 @@
             "security": {
               "allowedHosts": []
             },
-            "prerender": true,
-            "ssr": {
-              "entry": "src/server.ts"
-            }
+            "outputMode": "static"
           },
           "configurations": {
             "production": {
