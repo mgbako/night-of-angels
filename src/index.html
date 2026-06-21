@@ -2,15 +2,157 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>A Night of Angels — An All-White Luxury Dinner Experience · Lagos</title>
+
+  <!--
+    ============================================================
+    SEO NOTE: Replace all occurrences of https://nightofangels.com
+    with your real production domain before launch.
+    Then add a 1200x630px share image at: /public/og-image.jpg
+    Keep the JSON-LD (Event / FAQ) below in sync with the app
+    content in src/app/event.config.ts and faq.component.ts.
+    ============================================================
+  -->
+
+  <title>A Night of Angels | All-White Luxury Dinner Experience · Lagos</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A Night of Angels — an exclusive all-white luxury dinner in Lagos, Nigeria. Reserve your seat or become a partner.">
+  <meta name="description" content="A Night of Angels — an exclusive all-white luxury dinner experience in Lagos, Nigeria. Reserve your seat, book a table, or become a partner for an unforgettable evening.">
+  <meta name="keywords" content="all-white party Lagos, luxury dinner Lagos, exclusive event Lagos Nigeria, A Night of Angels, white themed gala, VIP dinner experience">
+  <meta name="theme-color" content="#0b0b0f">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="author" content="A Night of Angels">
+
+  <link rel="canonical" href="https://nightofangels.com/">
+
+  <!-- Open Graph (Facebook, WhatsApp, LinkedIn, Instagram) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="A Night of Angels">
+  <meta property="og:title" content="A Night of Angels | All-White Luxury Dinner Experience · Lagos">
+  <meta property="og:description" content="An exclusive all-white luxury dinner experience in Lagos, Nigeria. Reserve your seat, book a table, or become a partner.">
+  <meta property="og:url" content="https://nightofangels.com/">
+  <meta property="og:image" content="https://nightofangels.com/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="A Night of Angels — an all-white luxury dinner experience in Lagos">
+  <meta property="og:locale" content="en_NG">
+
+  <!-- Twitter / X Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="A Night of Angels | All-White Luxury Dinner Experience · Lagos">
+  <meta name="twitter:description" content="An exclusive all-white luxury dinner experience in Lagos, Nigeria. Reserve your seat, book a table, or become a partner.">
+  <meta name="twitter:image" content="https://nightofangels.com/og-image.jpg">
+  <meta name="twitter:image:alt" content="A Night of Angels — an all-white luxury dinner experience in Lagos">
+
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Structured data: Event (drives Google rich results) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    "name": "A Night of Angels",
+    "description": "An exclusive all-white luxury dinner experience in Lagos, Nigeria.",
+    "startDate": "2026-09-19T19:00:00+01:00",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "image": "https://nightofangels.com/og-image.jpg",
+    "url": "https://nightofangels.com/",
+    "location": {
+      "@type": "Place",
+      "name": "Private Venue, Lagos",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Lagos",
+        "addressCountry": "NG"
+      }
+    },
+    "organizer": {
+      "@type": "Organization",
+      "name": "A Night of Angels",
+      "url": "https://nightofangels.com/"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": "https://nightofangels.com/#tickets",
+      "availability": "https://schema.org/InStock",
+      "priceCurrency": "NGN"
+    }
+  }
+  </script>
+
+  <!-- Structured data: Organization + WebSite -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "name": "A Night of Angels",
+        "url": "https://nightofangels.com/",
+        "sameAs": ["https://instagram.com/nightofangels"]
+      },
+      {
+        "@type": "WebSite",
+        "name": "A Night of Angels",
+        "url": "https://nightofangels.com/"
+      }
+    ]
+  }
+  </script>
+
+  <!-- Structured data: FAQPage (eligible for FAQ rich snippets) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Where is the venue?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The venue is a private address in Lagos, revealed to confirmed guests ahead of the evening. This keeps the gathering intimate and secure for everyone in the room."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is the dress code strictly enforced?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. All-white attire is essential — it is the heart of the experience. Guests who are not in white may be asked to adjust before entry."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can a company book a full table?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Absolutely. A Table seats ten and is popular with companies hosting clients or teams. Tables can also be bundled into a wider sponsorship package — reach out and we will tailor it."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is there an age requirement?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes — A Night of Angels is strictly for guests aged 18 and over."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the refund policy?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Refund and transfer terms are confirmed at the point of booking, so you will have the full details before any payment is completed."
+        }
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
   <app-root></app-root>

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" width="900" height="900" role="img">
+  
+  <defs>
+    <radialGradient id="bg-banquet" cx="50%" cy="38%" r="85%">
+      <stop offset="0%" stop-color="#161310"/>
+      <stop offset="60%" stop-color="#0b0b0a"/>
+      <stop offset="100%" stop-color="#050504"/>
+    </radialGradient>
+    <radialGradient id="glow-banquet" cx="50%" cy="42%" r="40%">
+      <stop offset="0%" stop-color="#c9a227" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#c9a227" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="grain-banquet">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.06"/></feComponentTransfer>
+      <feComposite operator="over" in2="SourceGraphic"/>
+    </filter>
+  </defs>
+  <rect width="900" height="900" fill="url(#bg-banquet)"/>
+  <rect width="900" height="900" fill="url(#glow-banquet)"/>
+  <g fill="none" stroke="#c9a227" stroke-width="2" opacity="0.95">
+    <rect x="180" y="300" width="540" height="300" rx="20" opacity="0.6"/>
+    <circle cx="280" cy="450" r="46"/><line x1="220" y1="450" x2="210" y2="450"/><line x1="340" y1="450" x2="350" y2="450"/><circle cx="450" cy="450" r="46"/><line x1="390" y1="450" x2="380" y2="450"/><line x1="510" y1="450" x2="520" y2="450"/><circle cx="620" cy="450" r="46"/><line x1="560" y1="450" x2="550" y2="450"/><line x1="680" y1="450" x2="690" y2="450"/>
+    
+  <g transform="translate(450 360) scale(1.1)">
+    <ellipse cx="0" cy="0" rx="14" ry="5" fill="#c9a227" opacity="0.18" stroke="none"/>
+    <rect x="-9" y="-70" width="18" height="70" rx="3"/>
+    <line x1="0" y1="-70" x2="0" y2="-84"/>
+    <path d="M0 -84 q12 -16 0 -34 q-12 18 0 34 z" fill="#c9a227" opacity="0.35"/>
+    <path d="M0 -88 q7 -10 0 -22 q-7 12 0 22 z" fill="#e3c77b" opacity="0.7" stroke="none"/>
+  </g>
+  </g>
+  <rect width="900" height="900" filter="url(#grain-banquet)" opacity="0.5"/>
+  <g stroke="#e3c77b" stroke-width="2" opacity="0.55">
+    <path d="M28 28 h34 M28 28 v34"/>
+    <path d="M872 28 h-34 M872 28 v34"/>
+    <path d="M28 872 h34 M28 872 v-34"/>
+    <path d="M872 872 h-34 M872 872 v-34"/>
+  </g>
+</svg>

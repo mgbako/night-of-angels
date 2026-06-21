@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" width="900" height="900" role="img">
+  
+  <defs>
+    <radialGradient id="bg-florals" cx="50%" cy="38%" r="85%">
+      <stop offset="0%" stop-color="#161310"/>
+      <stop offset="60%" stop-color="#0b0b0a"/>
+      <stop offset="100%" stop-color="#050504"/>
+    </radialGradient>
+    <radialGradient id="glow-florals" cx="50%" cy="42%" r="40%">
+      <stop offset="0%" stop-color="#c9a227" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#c9a227" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="grain-florals">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.06"/></feComponentTransfer>
+      <feComposite operator="over" in2="SourceGraphic"/>
+    </filter>
+  </defs>
+  <rect width="900" height="900" fill="url(#bg-florals)"/>
+  <rect width="900" height="900" fill="url(#glow-florals)"/>
+  <g fill="none" stroke="#c9a227" stroke-width="2" opacity="0.95">
+    <g transform="translate(450 470)">
+      <circle cx="120" cy="0" r="46"/><line x1="0" y1="0" x2="120" y2="0" opacity="0.5"/><circle cx="85" cy="85" r="46"/><line x1="0" y1="0" x2="85" y2="85" opacity="0.5"/><circle cx="0" cy="120" r="46"/><line x1="0" y1="0" x2="0" y2="120" opacity="0.5"/><circle cx="-85" cy="85" r="46"/><line x1="0" y1="0" x2="-85" y2="85" opacity="0.5"/><circle cx="-120" cy="0" r="46"/><line x1="0" y1="0" x2="-120" y2="0" opacity="0.5"/><circle cx="-85" cy="-85" r="46"/><line x1="0" y1="0" x2="-85" y2="-85" opacity="0.5"/><circle cx="-0" cy="-120" r="46"/><line x1="0" y1="0" x2="-0" y2="-120" opacity="0.5"/><circle cx="85" cy="-85" r="46"/><line x1="0" y1="0" x2="85" y2="-85" opacity="0.5"/>
+      <circle cx="0" cy="0" r="40" fill="#c9a227" opacity="0.25"/>
+    </g>
+    <path d="M360 540 q90 120 180 0 l-20 150 h-140 z"/>
+  </g>
+  <rect width="900" height="900" filter="url(#grain-florals)" opacity="0.5"/>
+  <g stroke="#e3c77b" stroke-width="2" opacity="0.55">
+    <path d="M28 28 h34 M28 28 v34"/>
+    <path d="M872 28 h-34 M872 28 v34"/>
+    <path d="M28 872 h34 M28 872 v-34"/>
+    <path d="M872 872 h-34 M872 872 v-34"/>
+  </g>
+</svg>

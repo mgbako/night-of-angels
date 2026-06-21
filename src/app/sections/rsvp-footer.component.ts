@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { CrestComponent } from '../shared/crest.component';
 import {
   INSTAGRAM_HANDLE,
@@ -12,7 +13,7 @@ import {
 @Component({
   selector: 'app-rsvp-footer',
   standalone: true,
-  imports: [CrestComponent],
+  imports: [CrestComponent, RouterLink],
   template: `
     <section class="section section--panel rsvp" id="rsvp">
       <div class="wrap">
@@ -42,12 +43,13 @@ import {
           <div>
             <h4>Explore</h4>
             <ul>
-              <li><a href="#evening">The Evening</a></li>
-              <li><a href="#dress">Dress Code</a></li>
-              <li><a href="#tickets">Tickets</a></li>
-              <li><a href="#programme">Programme</a></li>
-              <li><a href="#partners">Partners</a></li>
-              <li><a href="#faq">FAQ</a></li>
+              <li><a [routerLink]="'/'" fragment="evening">The Evening</a></li>
+              <li><a routerLink="/gallery">Gallery</a></li>
+              <li><a [routerLink]="'/'" fragment="dress">Dress Code</a></li>
+              <li><a [routerLink]="'/'" fragment="tickets">Tickets</a></li>
+              <li><a [routerLink]="'/'" fragment="programme">Programme</a></li>
+              <li><a [routerLink]="'/'" fragment="partners">Partners</a></li>
+              <li><a [routerLink]="'/'" fragment="faq">FAQ</a></li>
             </ul>
           </div>
 

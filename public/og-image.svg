@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#1a1a22"/>
+      <stop offset="100%" stop-color="#0b0b0f"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="1200" fill="url(#glow)"/>
+  <!-- frame sits inside the centre 1200x630 crop band (y: 285 -> 915) -->
+  <rect x="60" y="325" width="1080" height="550" fill="none" stroke="#c9b27a" stroke-width="1.5" opacity="0.8"/>
+  <g stroke="#c9b27a" stroke-width="2" fill="none" opacity="0.9">
+    <path d="M60 375 L60 325 L110 325"/>
+    <path d="M1090 325 L1140 325 L1140 375"/>
+    <path d="M60 825 L60 875 L110 875"/>
+    <path d="M1090 875 L1140 875 L1140 825"/>
+  </g>
+  <text x="600" y="470" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="36" letter-spacing="13" fill="#c9b27a">AN ALL-WHITE LUXURY DINNER</text>
+  <text x="600" y="600" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-weight="700" font-size="104" fill="#ffffff">A Night of Angels</text>
+  <line x1="500" y1="660" x2="700" y2="660" stroke="#c9b27a" stroke-width="1" opacity="0.7"/>
+  <text x="600" y="730" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="30" letter-spacing="10" fill="#e8e8ea">LAGOS &#183; NIGERIA</text>
+</svg>

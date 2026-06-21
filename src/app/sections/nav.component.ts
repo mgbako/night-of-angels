@@ -3,34 +3,46 @@ import {
   HostListener,
   signal,
 } from '@angular/core';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CrestComponent } from '../shared/crest.component';
 
 interface NavLink {
-  href: string;
   label: string;
+  /** In-page section on the home route. */
+  fragment?: string;
+  /** A standalone route (e.g. the gallery page). */
+  route?: string;
 }
 
 @Component({
   selector: 'app-nav',
   standalone: true,
-  imports: [CrestComponent],
+  imports: [CrestComponent, RouterLink, RouterLinkActive],
   template: `
     <header class="nav" [class.scrolled]="scrolled()" [class.nav-open]="menuOpen()">
       <div class="nav__inner">
-        <a class="brand" href="#top" aria-label="Night of Angels — home">
+        <a class="brand" routerLink="/" aria-label="Night of Angels — home">
           <app-crest [size]="46" />
           <span class="wordmark">Night of Angels</span>
         </a>
 
         <nav aria-label="Primary">
           <ul class="nav__links">
-            @for (link of links; track link.href) {
-              <li><a [href]="link.href">{{ link.label }}</a></li>
+            @for (link of links; track link.label) {
+              <li>
+                @if (link.route) {
+                  <a [routerLink]="link.route" routerLinkActive="active">{{ link.label }}</a>
+                } @else {
+                  <a [routerLink]="'/'" [fragment]="link.fragment">{{ link.label }}</a>
+                }
+              </li>
             }
           </ul>
         </nav>
 
-        <a href="#tickets" class="btn btn--solid btn--sm nav__cta">Reserve</a>
+        <a [routerLink]="'/'" fragment="tickets" class="btn btn--solid btn--sm nav__cta"
+          >Reserve</a
+        >
 
         <button
           class="hamburger"
@@ -45,10 +57,18 @@ interface NavLink {
     </header>
 
     <div class="overlay" [class.open]="menuOpen()" id="overlay">
-      @for (link of links; track link.href) {
-        <a [href]="link.href" (click)="closeMenu()">{{ link.label }}</a>
+      @for (link of links; track link.label) {
+        @if (link.route) {
+          <a [routerLink]="link.route" (click)="closeMenu()">{{ link.label }}</a>
+        } @else {
+          <a [routerLink]="'/'" [fragment]="link.fragment" (click)="closeMenu()">{{
+            link.label
+          }}</a>
+        }
       }
-      <a href="#tickets" class="btn btn--solid" (click)="closeMenu()">Reserve Your Seat</a>
+      <a [routerLink]="'/'" fragment="tickets" class="btn btn--solid" (click)="closeMenu()"
+        >Reserve Your Seat</a
+      >
     </div>
   `,
   styleUrl: './nav.component.scss',
@@ -58,11 +78,12 @@ export class NavComponent {
   menuOpen = signal(false);
 
   links: NavLink[] = [
-    { href: '#evening', label: 'The Evening' },
-    { href: '#dress', label: 'Dress Code' },
-    { href: '#tickets', label: 'Tickets' },
-    { href: '#partners', label: 'Partners' },
-    { href: '#faq', label: 'FAQ' },
+    { label: 'The Evening', fragment: 'evening' },
+    { label: 'Gallery', route: '/gallery' },
+    { label: 'Dress Code', fragment: 'dress' },
+    { label: 'Tickets', fragment: 'tickets' },
+    { label: 'Partners', fragment: 'partners' },
+    { label: 'FAQ', fragment: 'faq' },
   ];
 
   @HostListener('window:scroll')

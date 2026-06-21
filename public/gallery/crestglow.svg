@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" width="900" height="900" role="img">
+  
+  <defs>
+    <radialGradient id="bg-crestglow" cx="50%" cy="38%" r="85%">
+      <stop offset="0%" stop-color="#161310"/>
+      <stop offset="60%" stop-color="#0b0b0a"/>
+      <stop offset="100%" stop-color="#050504"/>
+    </radialGradient>
+    <radialGradient id="glow-crestglow" cx="50%" cy="42%" r="40%">
+      <stop offset="0%" stop-color="#c9a227" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#c9a227" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="grain-crestglow">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.06"/></feComponentTransfer>
+      <feComposite operator="over" in2="SourceGraphic"/>
+    </filter>
+  </defs>
+  <rect width="900" height="900" fill="url(#bg-crestglow)"/>
+  <rect width="900" height="900" fill="url(#glow-crestglow)"/>
+  <g fill="none" stroke="#c9a227" stroke-width="2" opacity="0.95">
+    <g transform="translate(450 450)">
+      <line x1="170" y1="0" x2="240" y2="0" opacity="0.5"/><line x1="157" y1="65" x2="222" y2="92" opacity="0.5"/><line x1="120" y1="120" x2="170" y2="170" opacity="0.5"/><line x1="65" y1="157" x2="92" y2="222" opacity="0.5"/><line x1="0" y1="170" x2="0" y2="240" opacity="0.5"/><line x1="-65" y1="157" x2="-92" y2="222" opacity="0.5"/><line x1="-120" y1="120" x2="-170" y2="170" opacity="0.5"/><line x1="-157" y1="65" x2="-222" y2="92" opacity="0.5"/><line x1="-170" y1="0" x2="-240" y2="0" opacity="0.5"/><line x1="-157" y1="-65" x2="-222" y2="-92" opacity="0.5"/><line x1="-120" y1="-120" x2="-170" y2="-170" opacity="0.5"/><line x1="-65" y1="-157" x2="-92" y2="-222" opacity="0.5"/><line x1="-0" y1="-170" x2="-0" y2="-240" opacity="0.5"/><line x1="65" y1="-157" x2="92" y2="-222" opacity="0.5"/><line x1="120" y1="-120" x2="170" y2="-170" opacity="0.5"/><line x1="157" y1="-65" x2="222" y2="-92" opacity="0.5"/>
+      <circle cx="0" cy="0" r="120"/>
+      <circle cx="0" cy="0" r="100"/>
+      <text x="0" y="14" text-anchor="middle" font-family="Georgia, serif" font-size="56" font-weight="600" fill="#c9a227" stroke="none">N·O·A</text>
+    </g>
+  </g>
+  <rect width="900" height="900" filter="url(#grain-crestglow)" opacity="0.5"/>
+  <g stroke="#e3c77b" stroke-width="2" opacity="0.55">
+    <path d="M28 28 h34 M28 28 v34"/>
+    <path d="M872 28 h-34 M872 28 v34"/>
+    <path d="M28 872 h34 M28 872 v-34"/>
+    <path d="M872 872 h-34 M872 872 v-34"/>
+  </g>
+</svg>

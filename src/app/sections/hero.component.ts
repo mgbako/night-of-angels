@@ -1,8 +1,8 @@
 import {
-  AfterViewInit,
   Component,
   OnDestroy,
   OnInit,
+  afterNextRender,
   signal,
 } from '@angular/core';
 import { CrestComponent } from '../shared/crest.component';
@@ -69,20 +69,24 @@ interface CountdownView {
   `,
   styleUrl: './hero.component.scss',
 })
-export class HeroComponent implements OnInit, AfterViewInit, OnDestroy {
+export class HeroComponent implements OnInit, OnDestroy {
   loaded = signal(false);
   cd = signal<CountdownView>({ days: '00', hours: '00', mins: '00', secs: '00' });
 
   private timer?: ReturnType<typeof setInterval>;
 
-  ngOnInit(): void {
-    this.tick();
-    this.timer = setInterval(() => this.tick(), 1000);
+  constructor() {
+    // Browser-only: the live countdown tick and the entrance animation.
+    // Skipped during server prerender (no setInterval drift, no requestAnimationFrame).
+    afterNextRender(() => {
+      this.timer = setInterval(() => this.tick(), 1000);
+      requestAnimationFrame(() => this.loaded.set(true));
+    });
   }
 
-  ngAfterViewInit(): void {
-    // trigger the corner-bracket entrance after first paint
-    requestAnimationFrame(() => this.loaded.set(true));
+  ngOnInit(): void {
+    // Initial value so the countdown is present in the prerendered HTML.
+    this.tick();
   }
 
   ngOnDestroy(): void {

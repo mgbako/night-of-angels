@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" width="900" height="900" role="img">
+  
+  <defs>
+    <radialGradient id="bg-dancefloor" cx="50%" cy="38%" r="85%">
+      <stop offset="0%" stop-color="#161310"/>
+      <stop offset="60%" stop-color="#0b0b0a"/>
+      <stop offset="100%" stop-color="#050504"/>
+    </radialGradient>
+    <radialGradient id="glow-dancefloor" cx="50%" cy="42%" r="40%">
+      <stop offset="0%" stop-color="#c9a227" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#c9a227" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="grain-dancefloor">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.06"/></feComponentTransfer>
+      <feComposite operator="over" in2="SourceGraphic"/>
+    </filter>
+  </defs>
+  <rect width="900" height="900" fill="url(#bg-dancefloor)"/>
+  <rect width="900" height="900" fill="url(#glow-dancefloor)"/>
+  <g fill="none" stroke="#c9a227" stroke-width="2" opacity="0.95">
+    
+  <g transform="translate(380 600) scale(1.3)">
+    <circle cx="0" cy="-86" r="16"/>
+    <path d="M-26 0 q0 -64 26 -64 q26 0 26 64 z"/>
+  </g>
+    
+  <g transform="translate(540 600) scale(1.3)">
+    <circle cx="0" cy="-86" r="16"/>
+    <path d="M-26 0 q0 -64 26 -64 q26 0 26 64 z"/>
+  </g>
+    <circle cx="750" cy="298" r="5.1" fill="#e3c77b" stroke="none" opacity="0.8"/><circle cx="240" cy="291" r="2.3" fill="#e3c77b" stroke="none" opacity="0.8"/><circle cx="625" cy="428" r="5.0" fill="#e3c77b" stroke="none" opacity="0.8"/><circle cx="326" cy="454" r="4.9" fill="#e3c77b" stroke="none" opacity="0.8"/><circle cx="363" cy="430" r="2.8" fill="#e3c77b" stroke="none" opacity="0.8"/><circle cx="426" cy="168" r="3.0" fill="#e3c77b" stroke="none" opacity="0.8"/><circle cx="435" cy="127" r="2.5" fill="#e3c77b" stroke="none" opacity="0.8"/><circle cx="758" cy="248" r="4.7" fill="#e3c77b" stroke="none" opacity="0.8"/><circle cx="132" cy="220" r="4.0" fill="#e3c77b" stroke="none" opacity="0.8"/><circle cx="313" cy="418" r="4.6" fill="#e3c77b" stroke="none" opacity="0.8"/><circle cx="509" cy="172" r="2.8" fill="#e3c77b" stroke="none" opacity="0.8"/><circle cx="232" cy="266" r="2.4" fill="#e3c77b" stroke="none" opacity="0.8"/><circle cx="242" cy="193" r="2.3" fill="#e3c77b" stroke="none" opacity="0.8"/><circle cx="367" cy="372" r="3.1" fill="#e3c77b" stroke="none" opacity="0.8"/>
+  </g>
+  <rect width="900" height="900" filter="url(#grain-dancefloor)" opacity="0.5"/>
+  <g stroke="#e3c77b" stroke-width="2" opacity="0.55">
+    <path d="M28 28 h34 M28 28 v34"/>
+    <path d="M872 28 h-34 M872 28 v34"/>
+    <path d="M28 872 h34 M28 872 v-34"/>
+    <path d="M872 872 h-34 M872 872 v-34"/>
+  </g>
+</svg>
