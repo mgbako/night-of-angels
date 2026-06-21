@@ -1,0 +1,60 @@
+:host {
+  display: block;
+}
+
+.dress__big {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(5rem, 20vw, 12rem);
+  line-height: 0.85;
+  letter-spacing: 0.02em;
+  color: var(--text-on-ink);
+  position: relative;
+}
+.dress__big::after {
+  content: '';
+  display: block;
+  width: 84px;
+  height: 2px;
+  background: var(--gold);
+  margin-top: 1.5rem;
+}
+
+.etiquette {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.etiquette li {
+  display: flex;
+  gap: 1.1rem;
+  align-items: flex-start;
+  padding: 1.2rem 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.etiquette li:last-child {
+  border-bottom: 0;
+}
+.etiquette .dia {
+  color: var(--gold);
+  font-size: 0.7rem;
+  margin-top: 0.45rem;
+  flex: 0 0 auto;
+}
+.etiquette b {
+  font-weight: 400;
+  font-family: var(--display);
+  font-size: 1.3rem;
+  color: var(--text-on-ink);
+  display: block;
+}
+.etiquette .d {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+}
+
+@media (max-width: 900px) {
+  .dress__big {
+    font-size: clamp(5rem, 28vw, 9rem);
+  }
+}

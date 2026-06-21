@@ -1,0 +1,92 @@
+:host {
+  display: block;
+}
+
+.section-head {
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto clamp(3rem, 6vw, 4.5rem);
+}
+.section-head .section-title {
+  color: var(--text-on-ink);
+}
+
+.faq {
+  max-width: 760px;
+  margin: 0 auto;
+}
+.faq-item {
+  border-bottom: 1px solid var(--hairline);
+}
+.faq-q {
+  width: 100%;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.6rem 0;
+  text-align: left;
+  color: var(--text-on-ink);
+  font-family: var(--display);
+  font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+  font-weight: 500;
+}
+.faq-q:hover {
+  color: var(--gold-soft);
+}
+.faq-icon {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  position: relative;
+}
+.faq-icon::before,
+.faq-icon::after {
+  content: '';
+  position: absolute;
+  background: var(--gold);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: transform 0.35s var(--ease), opacity 0.35s var(--ease);
+}
+.faq-icon::before {
+  width: 14px;
+  height: 1.5px;
+}
+.faq-icon::after {
+  width: 1.5px;
+  height: 14px;
+}
+.faq-item.open .faq-icon::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+  opacity: 0;
+}
+
+/* height transition via grid-template-rows */
+.faq-a {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.4s var(--ease);
+}
+.faq-item.open .faq-a {
+  grid-template-rows: 1fr;
+}
+.faq-a__inner {
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-size: 0.98rem;
+  max-width: 60ch;
+}
+.faq-item.open .faq-a__inner {
+  padding-bottom: 1.6rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .faq-a {
+    transition: none;
+  }
+}

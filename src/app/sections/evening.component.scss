@@ -1,0 +1,45 @@
+:host {
+  display: block;
+}
+
+.section--ivory .eyebrow {
+  color: #9a7d18;
+}
+.section--ivory .section-title {
+  color: #1a1813;
+}
+
+.evening__copy p {
+  font-size: 1.06rem;
+  color: #3a352c;
+  max-width: 48ch;
+  margin: 0 0 1.1em;
+}
+.evening__copy .lead {
+  color: #1a1813;
+}
+.evening__art {
+  display: flex;
+  justify-content: center;
+}
+.evening__art svg {
+  width: min(300px, 80%);
+  height: auto;
+}
+.la-stroke {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.crest-spacer {
+  padding-top: 48px;
+  padding-bottom: 0;
+}
+.crest-transition {
+  margin-top: -10px;
+}
+:host ::ng-deep .crest-transition .crest {
+  opacity: 0.85;
+}
