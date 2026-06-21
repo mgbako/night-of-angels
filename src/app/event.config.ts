@@ -14,3 +14,11 @@ export const PHONE_DISPLAY = '+234 000 000 0000';
 export const PHONE_TEL = '+2340000000000';
 export const INSTAGRAM_HANDLE = '@nightofangels';
 export const INSTAGRAM_URL = 'https://instagram.com/';
+
+// PLACEHOLDER WhatsApp number for the floating chat widget.
+// Digits only, country code first, NO "+", spaces or dashes (wa.me format).
+// e.g. Nigeria: '2348012345678'
+export const WHATSAPP_NUMBER = '2340000000000';
+// Default greeting pre-filled into the chat when a guest taps the button.
+export const WHATSAPP_GREETING =
+  "Hello! I'd love to learn more about A Night of Angels.";

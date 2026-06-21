@@ -1,0 +1,246 @@
+:host {
+  --wa-green: #25d366;
+  --wa-green-deep: #128c7e;
+}
+
+.wa-glyph {
+  display: inline-flex;
+  width: 1em;
+  height: 1em;
+}
+
+/* ---------- Floating launcher ---------- */
+.wa-fab {
+  position: fixed;
+  right: clamp(16px, 4vw, 28px);
+  bottom: clamp(16px, 4vw, 28px);
+  z-index: 90;
+  width: 60px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  font-size: 32px;
+  color: #fff;
+  background: var(--wa-green);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 10px 30px -8px rgba(18, 140, 126, 0.7),
+    0 0 0 4px rgba(255, 255, 255, 0.06);
+  transition: transform 0.3s var(--ease), opacity 0.25s var(--ease),
+    box-shadow 0.3s var(--ease);
+}
+
+.wa-fab:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 14px 36px -8px rgba(18, 140, 126, 0.85);
+}
+
+.wa-fab.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.6);
+}
+
+.wa-fab__pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--wa-green);
+  opacity: 0.55;
+  animation: wa-pulse 2.4s var(--ease) infinite;
+  z-index: -1;
+}
+
+@keyframes wa-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  70% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---------- Chat card ---------- */
+.wa-card {
+  position: fixed;
+  right: clamp(16px, 4vw, 28px);
+  bottom: clamp(16px, 4vw, 28px);
+  z-index: 91;
+  width: min(340px, calc(100vw - 32px));
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.8);
+  opacity: 0;
+  transform: translateY(16px) scale(0.96);
+  transform-origin: bottom right;
+  pointer-events: none;
+  transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+}
+
+.wa-card.open {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.wa-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 1rem 1.1rem;
+  background: linear-gradient(135deg, var(--wa-green-deep), var(--wa-green));
+  color: #fff;
+}
+
+.wa-card__avatar {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.25);
+  flex: 0 0 auto;
+
+  ::ng-deep .crest .stroke {
+    stroke: #fff;
+  }
+  ::ng-deep .crest .mono {
+    fill: #fff;
+  }
+}
+
+.wa-card__id {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  flex: 1 1 auto;
+}
+
+.wa-card__name {
+  font-family: var(--body);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  font-size: 0.95rem;
+}
+
+.wa-card__status {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  opacity: 0.9;
+
+  i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #aef5c4;
+    box-shadow: 0 0 0 0 rgba(174, 245, 196, 0.7);
+    animation: wa-blink 2s ease-in-out infinite;
+  }
+}
+
+@keyframes wa-blink {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.wa-card__close {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.2s var(--ease);
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+/* Subtle chat-paper texture using the ink palette. */
+.wa-card__body {
+  padding: 1.1rem;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(201, 162, 39, 0.06), transparent 60%),
+    var(--ink);
+}
+
+.wa-bubble {
+  position: relative;
+  background: #1f1b15;
+  color: var(--text-on-ink);
+  border: 1px solid var(--hairline);
+  border-radius: 4px 14px 14px 14px;
+  padding: 0.8rem 0.9rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.wa-replies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.wa-reply {
+  font-family: var(--body);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  color: var(--gold-soft);
+  background: transparent;
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+  transition: background 0.25s var(--ease), color 0.25s var(--ease),
+    transform 0.25s var(--ease);
+
+  &:hover {
+    background: var(--gold);
+    color: var(--ink);
+    transform: translateY(-1px);
+  }
+}
+
+.wa-card__cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.95rem;
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 0.86rem;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: var(--wa-green);
+  transition: background 0.25s var(--ease);
+
+  .wa-glyph {
+    font-size: 1.25rem;
+  }
+
+  &:hover {
+    background: var(--wa-green-deep);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wa-fab__pulse,
+  .wa-card__status i {
+    animation: none;
+  }
+}
