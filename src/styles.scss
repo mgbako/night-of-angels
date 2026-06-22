@@ -245,3 +245,20 @@ button:focus-visible,
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------- Print (Save-as-PDF prospectus) ---------- */
+@media print {
+  app-nav,
+  app-rsvp-footer,
+  app-whatsapp-chat {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

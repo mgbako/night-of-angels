@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
-import { PARTNERSHIPS_EMAIL } from '../event.config';
+import { RouterLink } from '@angular/router';
+import { CURRENT_PARTNERS } from '../sponsor.config';
 
 interface Tier {
   mark: string;
@@ -15,6 +16,7 @@ interface CategoryPill {
 @Component({
   selector: 'app-partners',
   standalone: true,
+  imports: [RouterLink],
   template: `
     <section class="section section--ivory" id="partners">
       <div class="wrap">
@@ -45,9 +47,18 @@ interface CategoryPill {
           }
         </div>
 
+        <div class="partners__current">
+          <span class="partners__current-label">In good company</span>
+          <div class="partners__logos">
+            @for (p of partners; track p.name) {
+              <img [src]="p.logo" [alt]="p.name" loading="lazy" />
+            }
+          </div>
+        </div>
+
         <div class="partners__cta">
-          <a [href]="proposalMailto" class="btn btn--ink"
-            >Request the Partnership Proposal</a
+          <a routerLink="/sponsor" class="btn btn--ink"
+            >View Sponsorship Packages</a
           >
         </div>
       </div>
@@ -56,9 +67,7 @@ interface CategoryPill {
   styleUrl: './partners.component.scss',
 })
 export class PartnersComponent {
-  proposalMailto =
-    `mailto:${PARTNERSHIPS_EMAIL}` +
-    '?subject=Partnership%20Proposal%20Request%20%E2%80%94%20A%20Night%20of%20Angels';
+  partners = CURRENT_PARTNERS;
 
   tiers: Tier[] = [
     {

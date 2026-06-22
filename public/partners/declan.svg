@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 130" width="260" height="130" role="img" aria-label="DECLAN de España">
+  <g fill="none" stroke="#23201a" stroke-width="2">
+    <!-- interlocked D / monogram seal -->
+    <circle cx="130" cy="30" r="20"/>
+    <path d="M122 20 v20 h6 a10 10 0 0 0 0 -20 z"/>
+    <path d="M132 20 v20 h6 a10 10 0 0 0 0 -20 z"/>
+  </g>
+  <text x="130" y="86" text-anchor="middle" font-family="Georgia, 'Cormorant Garamond', serif" font-weight="600" font-size="34" letter-spacing="3" fill="#23201a">DECLAN</text>
+  <text x="130" y="108" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="16" letter-spacing="1" fill="#9a7d1f">de España</text>
+</svg>

@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { HeroComponent } from '../sections/hero.component';
 import { EveningComponent } from '../sections/evening.component';
 import { GalleryPreviewComponent } from '../sections/gallery-preview.component';
+import { ImpactComponent } from '../sections/impact.component';
 import { DressCodeComponent } from '../sections/dress-code.component';
 import { TicketsComponent } from '../sections/tickets.component';
 import { ProgrammeComponent } from '../sections/programme.component';
@@ -16,6 +17,7 @@ import { RevealDirective } from '../shared/reveal.directive';
     HeroComponent,
     EveningComponent,
     GalleryPreviewComponent,
+    ImpactComponent,
     DressCodeComponent,
     TicketsComponent,
     ProgrammeComponent,
@@ -28,6 +30,7 @@ import { RevealDirective } from '../shared/reveal.directive';
       <app-hero />
       <app-evening appReveal />
       <app-gallery-preview appReveal />
+      <app-impact appReveal />
       <app-dress-code appReveal />
       <app-tickets appReveal />
       <app-programme appReveal />

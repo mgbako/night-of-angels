@@ -14,5 +14,11 @@ export const routes: Routes = [
       import('./pages/gallery-page.component').then((m) => m.GalleryPageComponent),
     title: 'Gallery — A Night of Angels | Moments From Past Editions',
   },
+  {
+    path: 'sponsor',
+    loadComponent: () =>
+      import('./pages/sponsor-page.component').then((m) => m.SponsorPageComponent),
+    title: 'Partner With Us — A Night of Angels | Sponsorship',
+  },
   { path: '**', redirectTo: '' },
 ];

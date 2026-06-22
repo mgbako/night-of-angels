@@ -112,8 +112,11 @@ export class WhatsappChatComponent {
     },
   ];
 
+  // wa.me requires digits only — strip "+", spaces, dashes, brackets.
+  private readonly number = WHATSAPP_NUMBER.replace(/\D/g, '');
+
   link(message: string): string {
-    return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    return `https://wa.me/${this.number}?text=${encodeURIComponent(message)}`;
   }
 
   toggle(): void {

@@ -81,6 +81,38 @@
   vertical-align: middle;
 }
 
+.partners__current {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+.partners__current-label {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #9a7d18;
+  margin-bottom: 1.2rem;
+}
+.partners__logos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2.2rem;
+
+  img {
+    height: 56px;
+    width: auto;
+    object-fit: contain;
+    opacity: 0.9;
+    transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+  }
+  img:hover {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
 .partners__cta {
   text-align: center;
 }

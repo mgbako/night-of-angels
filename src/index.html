@@ -155,6 +155,22 @@
   </script>
 </head>
 <body>
+  <!--
+    Static form for Netlify Forms detection (scanned at build time).
+    The visible, interactive form lives in the Angular /sponsor page and
+    submits to this same form name via fetch. Keep field names in sync.
+  -->
+  <form name="sponsor" data-netlify="true" netlify-honeypot="bot-field" hidden>
+    <input type="text" name="name" />
+    <input type="email" name="email" />
+    <input type="text" name="company" />
+    <input type="tel" name="phone" />
+    <input type="text" name="tier" />
+    <input type="text" name="budget" />
+    <textarea name="message"></textarea>
+    <input type="text" name="bot-field" />
+  </form>
+
   <app-root></app-root>
 </body>
 </html>

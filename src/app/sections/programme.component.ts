@@ -30,10 +30,10 @@ interface ProgrammeItem {
 })
 export class ProgrammeComponent {
   items: ProgrammeItem[] = [
-    { time: '7:00 PM', title: 'Arrival & Champagne Reception' },
-    { time: '8:00 PM', title: 'Seated Dinner' },
-    { time: '9:00 PM', title: 'Live Entertainment' },
-    { time: '9:45 PM', title: 'Toast & Recognition' },
-    { time: '10:30 PM', title: 'Dancing & Late Night' },
+    { time: '6:00 PM', title: 'Arrival & Champagne Reception' },
+    { time: '7:00 PM', title: 'Seated Dinner' },
+    { time: '8:00 PM', title: 'Live Entertainment' },
+    { time: '8:45 PM', title: 'Toast & Recognition' },
+    { time: '9:30 PM', title: 'Dancing & Late Night' },
   ];
 }

@@ -48,7 +48,7 @@ import {
               <li><a [routerLink]="'/'" fragment="dress">Dress Code</a></li>
               <li><a [routerLink]="'/'" fragment="tickets">Tickets</a></li>
               <li><a [routerLink]="'/'" fragment="programme">Programme</a></li>
-              <li><a [routerLink]="'/'" fragment="partners">Partners</a></li>
+              <li><a routerLink="/sponsor">Become a Partner</a></li>
               <li><a [routerLink]="'/'" fragment="faq">FAQ</a></li>
             </ul>
           </div>

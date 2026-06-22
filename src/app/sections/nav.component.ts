@@ -80,9 +80,8 @@ export class NavComponent {
   links: NavLink[] = [
     { label: 'The Evening', fragment: 'evening' },
     { label: 'Gallery', route: '/gallery' },
-    { label: 'Dress Code', fragment: 'dress' },
     { label: 'Tickets', fragment: 'tickets' },
-    { label: 'Partners', fragment: 'partners' },
+    { label: 'Sponsor', route: '/sponsor' },
     { label: 'FAQ', fragment: 'faq' },
   ];
 

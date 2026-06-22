@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 130" width="300" height="130" role="img" aria-label="Nigerian Breweries">
+  <!-- NB monogram mark -->
+  <g>
+    <rect x="20" y="28" width="78" height="74" rx="6" fill="#1357a8"/>
+    <path d="M30 100 q24 -70 70 -64 q14 60 -8 64" fill="none" stroke="#c9a227" stroke-width="6" opacity="0.85"/>
+    <text x="59" y="80" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="40" fill="#ffffff">NB</text>
+  </g>
+  <text x="120" y="60" font-family="Georgia, serif" font-size="30" fill="#143c7a">Nigerian</text>
+  <text x="120" y="96" font-family="Georgia, serif" font-size="30" fill="#143c7a">Breweries</text>
+</svg>
