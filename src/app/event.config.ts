@@ -10,7 +10,7 @@ export const EVENT_DATE = new Date('2026-09-19T19:00:00');
 // PLACEHOLDER contact details
 export const RSVP_EMAIL = 'rsvp@nightofangels.example';
 export const PARTNERSHIPS_EMAIL = 'partnerships@nightofangels.example';
-export const PHONE_DISPLAY = '+234 000 000 0000';
+export const PHONE_DISPLAY = '+234 4803 786 6963';
 export const PHONE_TEL = '+2348037866963';
 export const INSTAGRAM_HANDLE = '@nightofangels';
 export const INSTAGRAM_URL = 'https://instagram.com/';

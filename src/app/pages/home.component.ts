@@ -28,13 +28,13 @@ import { RevealDirective } from '../shared/reveal.directive';
   template: `
     <main id="top">
       <app-hero />
+      <app-partners appReveal />
+      <app-impact appReveal />
       <app-evening appReveal />
       <app-gallery-preview appReveal />
-      <app-impact appReveal />
       <app-dress-code appReveal />
       <app-tickets appReveal />
       <app-programme appReveal />
-      <app-partners appReveal />
       <app-faq appReveal />
     </main>
   `,
