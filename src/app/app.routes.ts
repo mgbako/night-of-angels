@@ -20,5 +20,14 @@ export const routes: Routes = [
       import('./pages/sponsor/sponsor-page.component').then((m) => m.SponsorPageComponent),
     title: 'Partner With Us — A Night of Angels | Sponsorship',
   },
+  {
+    path: 'tickets',
+    loadChildren: () =>
+      import('./features/ticketing/ticketing.routes').then((m) => m.TICKETING_ROUTES),
+  },
+  {
+    path: 'admin',
+    loadChildren: () => import('./admin/admin.routes').then((m) => m.ADMIN_ROUTES),
+  },
   { path: '**', redirectTo: '' },
 ];

@@ -2,7 +2,20 @@
   command = "npm run build"
   publish = "dist/night-of-angels/browser"
 
-# Single-page app: let Angular handle routing, fall back to index.html
+# Client-rendered areas (admin + per-code ticket pages): serve the bare
+# CSR shell so there's no flash of prerendered home content.
+[[redirects]]
+  from = "/admin/*"
+  to = "/index.csr.html"
+  status = 200
+
+[[redirects]]
+  from = "/tickets/*"
+  to = "/index.csr.html"
+  status = 200
+
+# Prerendered marketing pages are served as static files; anything else
+# falls back to the home shell so Angular can route it.
 [[redirects]]
   from = "/*"
   to = "/index.html"

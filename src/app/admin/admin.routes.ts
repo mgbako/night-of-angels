@@ -1,0 +1,39 @@
+import { Routes } from '@angular/router';
+import { adminGuard } from './admin.guard';
+import { LoginComponent } from './login/login.component';
+import { AdminLayoutComponent } from './admin-layout/admin-layout.component';
+
+export const ADMIN_ROUTES: Routes = [
+  { path: 'login', component: LoginComponent, title: 'Sign in — Back Office' },
+  {
+    path: '',
+    component: AdminLayoutComponent,
+    canActivate: [adminGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+        title: 'Dashboard — Back Office',
+      },
+      {
+        path: 'attendees',
+        loadComponent: () =>
+          import('./pages/attendees/attendees.component').then((m) => m.AttendeesComponent),
+        title: 'Attendees — Back Office',
+      },
+      {
+        path: 'register',
+        loadComponent: () =>
+          import('./pages/register/register.component').then((m) => m.RegisterComponent),
+        title: 'Register — Back Office',
+      },
+      {
+        path: 'tickets',
+        loadComponent: () =>
+          import('./pages/tickets/tickets.component').then((m) => m.TicketsComponent),
+        title: 'Ticketing — Back Office',
+      },
+    ],
+  },
+];

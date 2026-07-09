@@ -1,0 +1,188 @@
+import {
+  Component,
+  Inject,
+  PLATFORM_ID,
+  ViewEncapsulation,
+  afterNextRender,
+  signal,
+} from '@angular/core';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
+import {
+  NavigationEnd,
+  Router,
+  RouterLink,
+  RouterLinkActive,
+  RouterOutlet,
+} from '@angular/router';
+import { filter } from 'rxjs';
+import { CrestComponent } from '../../shared/crest/crest.component';
+import { AdminIconComponent, IconName } from '../shared/admin-icon.component';
+import { AdminAuthService } from '../services/admin-auth.service';
+
+interface AdminNavLink {
+  path: string;
+  label: string;
+  icon: IconName;
+  exact: boolean;
+}
+
+@Component({
+  selector: 'app-admin-layout',
+  standalone: true,
+  encapsulation: ViewEncapsulation.None,
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    CrestComponent,
+    AdminIconComponent,
+  ],
+  template: `
+    <div class="adm-shell" [class.adm-open]="isOpen()">
+      <!-- Backdrop (mobile) -->
+      <div
+        class="adm-overlay"
+        role="button"
+        aria-label="Close menu"
+        (click)="close()"
+      ></div>
+
+      <!-- Sidebar -->
+      <aside class="adm-sidebar">
+        <a class="adm-brand" routerLink="/admin" aria-label="Admin home">
+          <app-crest [size]="34" [full]="false" />
+          <span>
+            <strong>Night of Angels</strong>
+            <em>Back Office</em>
+          </span>
+        </a>
+
+        <nav class="adm-nav" aria-label="Admin">
+          @for (link of links; track link.path) {
+            <a
+              class="adm-nav__link"
+              [routerLink]="link.path"
+              routerLinkActive="is-active"
+              [routerLinkActiveOptions]="{ exact: link.exact }"
+              (click)="close()"
+            >
+              <adm-icon [name]="link.icon" [size]="19" />
+              <span>{{ link.label }}</span>
+            </a>
+          }
+        </nav>
+
+        <div class="adm-user">
+          <div class="adm-user__avatar"><app-crest [size]="26" [full]="false" /></div>
+          <div class="adm-user__meta">
+            <span class="adm-user__name">Organizer</span>
+            <span class="adm-user__role">Administrator</span>
+          </div>
+          <button class="adm-user__logout" (click)="logout()" aria-label="Sign out">
+            <adm-icon name="logout" [size]="18" />
+          </button>
+        </div>
+      </aside>
+
+      <!-- Main -->
+      <div class="adm-main">
+        <header class="adm-topbar">
+          <a class="adm-topbar__brand" routerLink="/admin">
+            <app-crest [size]="30" [full]="false" />
+            <span>Back Office</span>
+          </a>
+
+          <h1 class="adm-topbar__title">{{ heading() }}</h1>
+
+          <div class="adm-topbar__spacer"></div>
+
+          <a class="adm-topbar__view" routerLink="/" title="View public site" target="_blank">
+            <adm-icon name="external" [size]="18" />
+            <span>View site</span>
+          </a>
+
+          <button
+            class="adm-hamburger"
+            [attr.aria-expanded]="isOpen()"
+            aria-label="Toggle menu"
+            (click)="toggle()"
+          >
+            <adm-icon [name]="isOpen() ? 'close' : 'menu'" [size]="22" />
+          </button>
+        </header>
+
+        <main class="adm-content">
+          <router-outlet />
+        </main>
+      </div>
+    </div>
+  `,
+  styleUrl: './admin-layout.component.scss',
+})
+export class AdminLayoutComponent {
+  private isBrowser: boolean;
+
+  isOpen = signal(true);
+  heading = signal('Dashboard');
+
+  links: AdminNavLink[] = [
+    { path: '/admin', label: 'Dashboard', icon: 'dashboard', exact: true },
+    { path: '/admin/attendees', label: 'Attendees', icon: 'attendees', exact: false },
+    { path: '/admin/register', label: 'Register', icon: 'register', exact: false },
+    { path: '/admin/tickets', label: 'Tickets', icon: 'ticket', exact: false },
+  ];
+
+  private headings: Record<string, string> = {
+    '/admin': 'Dashboard',
+    '/admin/attendees': 'Attendees',
+    '/admin/register': 'Register Attendee',
+    '/admin/tickets': 'Ticketing',
+  };
+
+  constructor(
+    private router: Router,
+    private auth: AdminAuthService,
+    @Inject(DOCUMENT) private doc: Document,
+    @Inject(PLATFORM_ID) platformId: object,
+  ) {
+    this.isBrowser = isPlatformBrowser(platformId);
+
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe((e) => {
+        this.heading.set(this.headings[e.urlAfterRedirects.split('?')[0]] ?? 'Back Office');
+        if (this.isMobile()) this.setOpen(false);
+      });
+
+    afterNextRender(() => {
+      // Start collapsed on mobile, open on desktop.
+      this.setOpen(!this.isMobile());
+      this.heading.set(this.headings[this.router.url.split('?')[0]] ?? 'Back Office');
+    });
+  }
+
+  private isMobile(): boolean {
+    return this.isBrowser && window.matchMedia('(max-width: 1024px)').matches;
+  }
+
+  private setOpen(open: boolean): void {
+    this.isOpen.set(open);
+    if (this.isBrowser && this.isMobile()) {
+      this.doc.body.style.overflow = open ? 'hidden' : '';
+    }
+  }
+
+  toggle(): void {
+    this.setOpen(!this.isOpen());
+  }
+
+  close(): void {
+    if (this.isMobile()) this.setOpen(false);
+  }
+
+  logout(): void {
+    this.auth.logout();
+    this.doc.body.style.overflow = '';
+    this.router.navigate(['/admin/login']);
+  }
+}

@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /tickets/
 
 Sitemap: https://nightofangels.com/sitemap.xml
