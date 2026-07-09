@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, afterNextRender, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AdminIconComponent } from '../../shared/admin-icon.component';
 import { AttendeeApiService } from '../../../features/ticketing/services/attendee-api.service';
@@ -139,6 +139,10 @@ export class DashboardComponent {
   meta = ticketTypeMeta;
 
   private list = this.api.attendees;
+
+  constructor() {
+    afterNextRender(() => this.api.refresh().catch(() => {}));
+  }
 
   registrations = computed(() => this.list().length);
 

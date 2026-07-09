@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, afterNextRender, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AdminIconComponent } from '../../shared/admin-icon.component';
 import { AttendeeApiService } from '../../../features/ticketing/services/attendee-api.service';
@@ -112,6 +112,10 @@ import { TICKET_TYPES } from '../../../features/ticketing/models/attendee.model'
 export class TicketsComponent {
   private api = inject(AttendeeApiService);
   private list = this.api.attendees;
+
+  constructor() {
+    afterNextRender(() => this.api.refresh().catch(() => {}));
+  }
 
   rows = computed(() =>
     TICKET_TYPES.map((t) => {

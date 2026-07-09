@@ -2,6 +2,10 @@
   command = "npm run build"
   publish = "dist/night-of-angels/browser"
 
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 # Client-rendered areas (admin + per-code ticket pages): serve the bare
 # CSR shell so there's no flash of prerendered home content.
 [[redirects]]

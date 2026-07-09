@@ -1,4 +1,11 @@
-import { Component, PLATFORM_ID, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  PLATFORM_ID,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -113,10 +120,20 @@ import {
           } @empty {
             <tr>
               <td colspan="6">
-                <div class="adm-empty">
-                  <adm-icon name="attendees" [size]="28" />
-                  <p style="margin-top:.5rem">No attendees match your filters.</p>
-                </div>
+                @if (loading() && !all().length) {
+                  <div class="adm-loading"><div class="adm-spinner"></div><p>Loading attendees…</p></div>
+                } @else if (loadError()) {
+                  <div class="adm-empty">
+                    <adm-icon name="alert" [size]="28" />
+                    <p style="margin:.5rem 0">Couldn’t load attendees.</p>
+                    <button class="adm-btn adm-btn--sm" (click)="reload()">Retry</button>
+                  </div>
+                } @else {
+                  <div class="adm-empty">
+                    <adm-icon name="attendees" [size]="28" />
+                    <p style="margin-top:.5rem">No attendees yet.</p>
+                  </div>
+                }
               </td>
             </tr>
           }
@@ -163,6 +180,12 @@ export class AttendeesComponent {
   readonly pageSize = 8;
 
   all = this.api.attendees;
+  loading = this.api.loading;
+  loadError = this.api.loadError;
+
+  constructor() {
+    afterNextRender(() => this.api.refresh().catch(() => {}));
+  }
 
   filtered = computed<Attendee[]>(() => {
     const q = this.search().trim().toLowerCase();
@@ -184,13 +207,17 @@ export class AttendeesComponent {
     return this.filtered().slice(start, start + this.pageSize);
   });
 
+  reload(): void {
+    this.api.refresh().catch(() => {});
+  }
+
   async toggle(a: Attendee): Promise<void> {
-    await this.api.setCheckIn(a.id, !a.checkedIn);
+    await this.api.setCheckIn(a.ticketCode, !a.checkedIn);
   }
 
   async remove(a: Attendee): Promise<void> {
     if (this.isBrowser && !confirm(`Delete ${a.name}? This cannot be undone.`)) return;
-    await this.api.remove(a.id);
+    await this.api.remove(a.ticketCode);
     if (this.page() > this.totalPages()) this.page.set(this.totalPages());
   }
 
