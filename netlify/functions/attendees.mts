@@ -37,7 +37,9 @@ const STORE = 'ticketing';
 const KEY = 'attendees';
 
 function store() {
-  return getStore(STORE);
+  // Strong consistency so read-after-write is immediate (duplicate checks,
+  // check-in, and the ticket page all rely on seeing the latest write).
+  return getStore({ name: STORE, consistency: 'strong' });
 }
 
 async function readAll(): Promise<Attendee[]> {
@@ -75,7 +77,7 @@ function genCode(existing: Set<string>): string {
 export default async (req: Request, context: Context): Promise<Response> => {
   if (req.method === 'OPTIONS') return new Response('', { status: 204, headers: CORS });
 
-  const code = (context.params?.code ?? '').trim();
+  const code = (context.params?.['code'] ?? '').trim();
   const isCheckin = new URL(req.url).pathname.endsWith('/check-in');
 
   try {
