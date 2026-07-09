@@ -5,8 +5,8 @@ import {
   afterNextRender,
   signal,
 } from '@angular/core';
-import { CrestComponent } from '../shared/crest.component';
-import { EVENT_DATE } from '../event.config';
+import { CrestComponent } from '../../../../shared/crest/crest.component';
+import { EVENT_DATE } from '../../../../config/event.config';
 
 interface CountdownView {
   days: string;

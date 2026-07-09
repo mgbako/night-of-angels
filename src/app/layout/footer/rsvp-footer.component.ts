@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { CrestComponent } from '../shared/crest.component';
+import { CrestComponent } from '../../shared/crest/crest.component';
 import {
   INSTAGRAM_HANDLE,
   INSTAGRAM_URL,
@@ -8,7 +8,7 @@ import {
   PHONE_DISPLAY,
   PHONE_TEL,
   RSVP_EMAIL,
-} from '../event.config';
+} from '../../config/event.config';
 
 @Component({
   selector: 'app-rsvp-footer',

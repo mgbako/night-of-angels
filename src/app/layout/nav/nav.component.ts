@@ -4,7 +4,7 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { CrestComponent } from '../shared/crest.component';
+import { CrestComponent } from '../../shared/crest/crest.component';
 
 interface NavLink {
   label: string;

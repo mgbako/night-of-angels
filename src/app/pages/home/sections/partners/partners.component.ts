@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { CURRENT_PARTNERS } from '../sponsor.config';
+import { CURRENT_PARTNERS } from '../../../../config/sponsor.config';
 
 interface Tier {
   mark: string;

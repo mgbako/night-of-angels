@@ -5,9 +5,9 @@ import {
   signal,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { CrestComponent } from '../shared/crest.component';
-import { RevealDirective } from '../shared/reveal.directive';
-import { PARTNERSHIPS_EMAIL } from '../event.config';
+import { CrestComponent } from '../../shared/crest/crest.component';
+import { RevealDirective } from '../../shared/reveal.directive';
+import { PARTNERSHIPS_EMAIL } from '../../config/event.config';
 import {
   CURRENT_PARTNERS,
   IMPACT_POINTS,
@@ -15,7 +15,7 @@ import {
   SPONSOR_DEADLINE,
   SPONSOR_STATS,
   SPONSOR_TIERS,
-} from '../sponsor.config';
+} from '../../config/sponsor.config';
 
 type FormStatus = 'idle' | 'sending' | 'sent' | 'error';
 

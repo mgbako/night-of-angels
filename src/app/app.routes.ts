@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { HomeComponent } from './pages/home.component';
+import { HomeComponent } from './pages/home/home.component';
 
 export const routes: Routes = [
   {
@@ -11,13 +11,13 @@ export const routes: Routes = [
     path: 'gallery',
     // Lazily loaded so the heavier gallery view never weighs down the landing page.
     loadComponent: () =>
-      import('./pages/gallery-page.component').then((m) => m.GalleryPageComponent),
+      import('./pages/gallery/gallery-page.component').then((m) => m.GalleryPageComponent),
     title: 'Gallery — A Night of Angels | Moments From Past Editions',
   },
   {
     path: 'sponsor',
     loadComponent: () =>
-      import('./pages/sponsor-page.component').then((m) => m.SponsorPageComponent),
+      import('./pages/sponsor/sponsor-page.component').then((m) => m.SponsorPageComponent),
     title: 'Partner With Us — A Night of Angels | Sponsorship',
   },
   { path: '**', redirectTo: '' },

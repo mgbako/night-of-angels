@@ -8,9 +8,9 @@ import {
 } from '@angular/core';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { CrestComponent } from '../shared/crest.component';
-import { RevealDirective } from '../shared/reveal.directive';
-import { GALLERY_ALBUMS, GalleryImage } from '../gallery.config';
+import { CrestComponent } from '../../shared/crest/crest.component';
+import { RevealDirective } from '../../shared/reveal.directive';
+import { GALLERY_ALBUMS, GalleryImage } from '../../config/gallery.config';
 
 interface FlatImage extends GalleryImage {
   albumId: string;

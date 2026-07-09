@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { IMPACT_POINTS, SPONSOR_STATS } from '../sponsor.config';
+import { IMPACT_POINTS, SPONSOR_STATS } from '../../../../config/sponsor.config';
 
 @Component({
   selector: 'app-impact',

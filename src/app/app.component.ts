@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { NavComponent } from './sections/nav.component';
-import { RsvpFooterComponent } from './sections/rsvp-footer.component';
-import { WhatsappChatComponent } from './shared/whatsapp-chat.component';
+import { NavComponent } from './layout/nav/nav.component';
+import { RsvpFooterComponent } from './layout/footer/rsvp-footer.component';
+import { WhatsappChatComponent } from './layout/whatsapp-chat/whatsapp-chat.component';
 
 @Component({
   selector: 'app-root',

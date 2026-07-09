@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { GALLERY_PREVIEW } from '../gallery.config';
+import { GALLERY_PREVIEW } from '../../../../config/gallery.config';
 
 @Component({
   selector: 'app-gallery-preview',

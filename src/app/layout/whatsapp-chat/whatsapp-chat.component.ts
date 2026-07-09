@@ -1,6 +1,6 @@
 import { Component, HostListener, signal } from '@angular/core';
-import { CrestComponent } from './crest.component';
-import { WHATSAPP_GREETING, WHATSAPP_NUMBER } from '../event.config';
+import { CrestComponent } from '../../shared/crest/crest.component';
+import { WHATSAPP_GREETING, WHATSAPP_NUMBER } from '../../config/event.config';
 
 interface QuickReply {
   label: string;

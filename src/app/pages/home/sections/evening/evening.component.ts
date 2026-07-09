@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { CrestComponent } from '../shared/crest.component';
+import { CrestComponent } from '../../../../shared/crest/crest.component';
 
 @Component({
   selector: 'app-evening',
