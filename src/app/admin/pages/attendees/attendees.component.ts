@@ -66,10 +66,10 @@ import {
         <adm-icon name="search" [size]="17" />
         <input
           type="search"
-          placeholder="Search name or email…"
+          placeholder="Search name, email, phone or code…"
           [ngModel]="search()"
           (ngModelChange)="search.set($event); page.set(1)"
-          aria-label="Search attendees"
+          aria-label="Search attendees by name, email, phone or ticket code"
         />
       </div>
       <select
@@ -313,10 +313,17 @@ export class AttendeesComponent {
 
   filtered = computed<Attendee[]>(() => {
     const q = this.search().trim().toLowerCase();
+    const qDigits = q.replace(/\D/g, '');
     const type = this.typeFilter();
     const check = this.checkFilter();
     return this.all().filter((a) => {
-      if (q && !`${a.name} ${a.email}`.toLowerCase().includes(q)) return false;
+      if (q) {
+        const hay = `${a.name} ${a.email} ${a.phone} ${a.ticketCode}`.toLowerCase();
+        const phoneDigits = a.phone.replace(/\D/g, '');
+        const match =
+          hay.includes(q) || (qDigits.length >= 3 && phoneDigits.includes(qDigits));
+        if (!match) return false;
+      }
       if (type !== 'ALL' && a.ticketType !== type) return false;
       if (check === 'IN' && !a.checkedIn) return false;
       if (check === 'OUT' && a.checkedIn) return false;
