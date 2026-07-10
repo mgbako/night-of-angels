@@ -65,7 +65,7 @@
               "allowedHosts": []
             },
             "outputMode": "static",
-            "allowedCommonJsDependencies": ["qrcode", "dijkstrajs", "pngjs"]
+            "allowedCommonJsDependencies": ["qrcode", "dijkstrajs", "pngjs", "xlsx", "jspdf", "jspdf-autotable"]
           },
           "configurations": {
             "production": {

@@ -29,9 +29,31 @@ import {
         <p>{{ filtered().length }} of {{ all().length }} shown</p>
       </div>
       <div style="display:flex; gap:.6rem; flex-wrap:wrap">
-        <button class="adm-btn" (click)="exportCsv()" [disabled]="!filtered().length">
-          <adm-icon name="download" [size]="17" /> Export CSV
-        </button>
+        <div class="exp">
+          <button
+            class="adm-btn"
+            (click)="exportOpen.set(!exportOpen())"
+            [disabled]="!filtered().length"
+            [attr.aria-expanded]="exportOpen()"
+          >
+            <adm-icon name="download" [size]="17" /> Export
+            <span class="exp__caret" [class.exp__caret--open]="exportOpen()">▾</span>
+          </button>
+          @if (exportOpen()) {
+            <div class="exp__backdrop" (click)="exportOpen.set(false)"></div>
+            <div class="exp__menu" role="menu">
+              <button role="menuitem" (click)="download('csv')" [disabled]="busy()">
+                CSV <span>.csv</span>
+              </button>
+              <button role="menuitem" (click)="download('excel')" [disabled]="busy()">
+                Excel <span>.xlsx</span>
+              </button>
+              <button role="menuitem" (click)="download('pdf')" [disabled]="busy()">
+                PDF <span>.pdf</span>
+              </button>
+            </div>
+          }
+        </div>
         <a routerLink="/admin/register" class="adm-btn adm-btn--primary">
           <adm-icon name="register" [size]="17" /> Register
         </a>
@@ -76,7 +98,8 @@ import {
       <table class="adm-table">
         <thead>
           <tr>
-            <th>Attendee</th>
+            <th>Full Name</th>
+            <th>Email</th>
             <th>Ticket</th>
             <th>Phone</th>
             <th>Code</th>
@@ -88,30 +111,50 @@ import {
           @for (a of paged(); track a.id) {
             <tr>
               <td>
-                <span class="adm-name">{{ a.name }}</span>
-                <span class="adm-sub">{{ a.email }}</span>
+                {{ a.name }}
+              </td>
+              <td>
+                {{ a.email }}
               </td>
               <td>{{ meta(a.ticketType).label }}</td>
               <td>{{ a.phone }}</td>
-              <td><span class="adm-code">{{ a.ticketCode }}</span></td>
+              <td>
+                <span class="adm-code">{{ a.ticketCode }}</span>
+              </td>
               <td>
                 @if (a.checkedIn) {
-                  <span class="adm-badge adm-badge--in"><adm-icon name="check" [size]="13" /> In</span>
+                  <span class="adm-badge adm-badge--in"
+                    ><adm-icon name="check" [size]="13" /> In</span
+                  >
                 } @else {
                   <span class="adm-badge adm-badge--out">Not yet</span>
                 }
               </td>
               <td>
                 <div class="row-actions">
-                  <a [routerLink]="['/tickets', a.ticketCode]" target="_blank"
-                     class="adm-btn adm-btn--sm adm-btn--ghost" title="View ticket">
+                  <a
+                    [routerLink]="['/tickets', a.ticketCode]"
+                    target="_blank"
+                    class="adm-btn adm-btn--sm adm-btn--ghost"
+                    title="View ticket"
+                  >
                     <adm-icon name="external" [size]="15" />
                   </a>
-                  <button class="adm-btn adm-btn--sm" (click)="toggle(a)"
-                    [title]="a.checkedIn ? 'Undo check-in' : 'Check in'">
-                    <adm-icon [name]="a.checkedIn ? 'close' : 'check'" [size]="15" />
+                  <button
+                    class="adm-btn adm-btn--sm"
+                    (click)="toggle(a)"
+                    [title]="a.checkedIn ? 'Undo check-in' : 'Check in'"
+                  >
+                    <adm-icon
+                      [name]="a.checkedIn ? 'close' : 'check'"
+                      [size]="15"
+                    />
                   </button>
-                  <button class="adm-btn adm-btn--sm adm-btn--danger" (click)="remove(a)" title="Delete">
+                  <button
+                    class="adm-btn adm-btn--sm adm-btn--danger"
+                    (click)="remove(a)"
+                    title="Delete"
+                  >
                     <adm-icon name="trash" [size]="15" />
                   </button>
                 </div>
@@ -119,14 +162,19 @@ import {
             </tr>
           } @empty {
             <tr>
-              <td colspan="6">
+              <td colspan="7">
                 @if (loading() && !all().length) {
-                  <div class="adm-loading"><div class="adm-spinner"></div><p>Loading attendees…</p></div>
+                  <div class="adm-loading">
+                    <div class="adm-spinner"></div>
+                    <p>Loading attendees…</p>
+                  </div>
                 } @else if (loadError()) {
                   <div class="adm-empty">
                     <adm-icon name="alert" [size]="28" />
                     <p style="margin:.5rem 0">Couldn’t load attendees.</p>
-                    <button class="adm-btn adm-btn--sm" (click)="reload()">Retry</button>
+                    <button class="adm-btn adm-btn--sm" (click)="reload()">
+                      Retry
+                    </button>
                   </div>
                 } @else {
                   <div class="adm-empty">
@@ -145,10 +193,18 @@ import {
       <div class="adm-pagination">
         <span>Page {{ page() }} of {{ totalPages() }}</span>
         <div class="adm-pagination__controls">
-          <button (click)="page.set(page() - 1)" [disabled]="page() === 1" aria-label="Previous page">
+          <button
+            (click)="page.set(page() - 1)"
+            [disabled]="page() === 1"
+            aria-label="Previous page"
+          >
             <adm-icon name="chevron-left" [size]="16" />
           </button>
-          <button (click)="page.set(page() + 1)" [disabled]="page() === totalPages()" aria-label="Next page">
+          <button
+            (click)="page.set(page() + 1)"
+            [disabled]="page() === totalPages()"
+            aria-label="Next page"
+          >
             <adm-icon name="chevron-right" [size]="16" />
           </button>
         </div>
@@ -161,6 +217,61 @@ import {
         display: flex;
         gap: 0.35rem;
         justify-content: flex-end;
+      }
+      .exp {
+        position: relative;
+      }
+      .exp__caret {
+        margin-left: 0.15rem;
+        font-size: 0.7rem;
+        transition: transform 0.2s ease;
+      }
+      .exp__caret--open {
+        transform: rotate(180deg);
+      }
+      .exp__backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+      }
+      .exp__menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        z-index: 31;
+        min-width: 168px;
+        background: #fff;
+        border: 1px solid #e7e2d5;
+        border-radius: 10px;
+        box-shadow: 0 16px 40px -18px rgba(0, 0, 0, 0.4);
+        padding: 0.3rem;
+        display: flex;
+        flex-direction: column;
+      }
+      .exp__menu button {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.55rem 0.7rem;
+        border: none;
+        background: transparent;
+        border-radius: 7px;
+        font-size: 0.88rem;
+        color: #23201a;
+        cursor: pointer;
+        text-align: left;
+      }
+      .exp__menu button span {
+        font-size: 0.74rem;
+        color: #8a8270;
+      }
+      .exp__menu button:hover:not(:disabled) {
+        background: #f3f1ea;
+      }
+      .exp__menu button:disabled {
+        opacity: 0.5;
+        cursor: progress;
       }
     `,
   ],
@@ -179,6 +290,9 @@ export class AttendeesComponent {
   page = signal(1);
   readonly pageSize = 8;
 
+  exportOpen = signal(false);
+  busy = signal(false);
+
   all = this.api.attendees;
   loading = this.api.loading;
   loadError = this.api.loadError;
@@ -192,7 +306,7 @@ export class AttendeesComponent {
     const type = this.typeFilter();
     const check = this.checkFilter();
     return this.all().filter((a) => {
-      if (q && !(`${a.name} ${a.email}`.toLowerCase().includes(q))) return false;
+      if (q && !`${a.name} ${a.email}`.toLowerCase().includes(q)) return false;
       if (type !== 'ALL' && a.ticketType !== type) return false;
       if (check === 'IN' && !a.checkedIn) return false;
       if (check === 'OUT' && a.checkedIn) return false;
@@ -200,7 +314,9 @@ export class AttendeesComponent {
     });
   });
 
-  totalPages = computed(() => Math.max(1, Math.ceil(this.filtered().length / this.pageSize)));
+  totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.filtered().length / this.pageSize)),
+  );
 
   paged = computed(() => {
     const start = (this.page() - 1) * this.pageSize;
@@ -216,35 +332,107 @@ export class AttendeesComponent {
   }
 
   async remove(a: Attendee): Promise<void> {
-    if (this.isBrowser && !confirm(`Delete ${a.name}? This cannot be undone.`)) return;
+    if (this.isBrowser && !confirm(`Delete ${a.name}? This cannot be undone.`))
+      return;
     await this.api.remove(a.ticketCode);
     if (this.page() > this.totalPages()) this.page.set(this.totalPages());
   }
 
-  exportCsv(): void {
-    if (!this.isBrowser) return;
-    const header = ['Name', 'Email', 'Phone', 'Ticket', 'Code', 'Checked In', 'Checked In At', 'Registered'];
-    const lines = this.filtered().map((a) =>
-      [
-        a.name,
-        a.email,
-        a.phone,
-        ticketTypeMeta(a.ticketType).label,
-        a.ticketCode,
-        a.checkedIn ? 'Yes' : 'No',
-        a.checkedInAt ? new Date(a.checkedInAt).toLocaleString() : '',
-        new Date(a.createdAt).toLocaleString(),
-      ]
-        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-        .join(','),
-    );
-    const csv = [header.join(','), ...lines].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  /** Route an export choice from the dropdown. */
+  async download(format: 'csv' | 'excel' | 'pdf'): Promise<void> {
+    this.exportOpen.set(false);
+    if (!this.isBrowser || !this.filtered().length || this.busy()) return;
+    this.busy.set(true);
+    try {
+      if (format === 'csv') this.exportCsv();
+      else if (format === 'excel') await this.exportExcel();
+      else await this.exportPdf();
+    } catch (e) {
+      console.error('Export failed', e);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  private readonly columns = [
+    'Name',
+    'Email',
+    'Phone',
+    'Ticket',
+    'Code',
+    'Checked In',
+    'Checked In At',
+    'Registered',
+  ];
+
+  /** Rows for every export format (respects the current search/filters). */
+  private exportData(): string[][] {
+    return this.filtered().map((a) => [
+      a.name,
+      a.email,
+      a.phone,
+      ticketTypeMeta(a.ticketType).label,
+      a.ticketCode,
+      a.checkedIn ? 'Yes' : 'No',
+      a.checkedInAt ? new Date(a.checkedInAt).toLocaleString() : '',
+      new Date(a.createdAt).toLocaleString(),
+    ]);
+  }
+
+  private fileName(ext: string): string {
+    return `attendees-${new Date().toISOString().slice(0, 10)}.${ext}`;
+  }
+
+  private saveBlob(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
     const link = this.doc.createElement('a');
     link.href = url;
-    link.download = `attendees-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = filename;
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  private exportCsv(): void {
+    const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const csv = [this.columns, ...this.exportData()]
+      .map((row) => row.map(esc).join(','))
+      .join('\n');
+    this.saveBlob(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }), this.fileName('csv'));
+  }
+
+  private async exportExcel(): Promise<void> {
+    const XLSX = await import('xlsx');
+    const ws = XLSX.utils.aoa_to_sheet([this.columns, ...this.exportData()]);
+    ws['!cols'] = [24, 26, 16, 14, 10, 11, 20, 20].map((w) => ({ wch: w }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Attendees');
+    XLSX.writeFile(wb, this.fileName('xlsx'));
+  }
+
+  private async exportPdf(): Promise<void> {
+    const { jsPDF } = await import('jspdf');
+    const autoTable = (await import('jspdf-autotable')).default;
+    const doc = new jsPDF({ orientation: 'landscape' });
+
+    doc.setFontSize(15);
+    doc.text('A Night of Angels — Attendees', 14, 15);
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    doc.text(
+      `${this.filtered().length} attendee(s) · generated ${new Date().toLocaleString()}`,
+      14,
+      21,
+    );
+
+    autoTable(doc, {
+      head: [this.columns],
+      body: this.exportData(),
+      startY: 26,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [201, 162, 39], textColor: [26, 24, 19] },
+      alternateRowStyles: { fillColor: [248, 246, 242] },
+    });
+
+    doc.save(this.fileName('pdf'));
   }
 }
