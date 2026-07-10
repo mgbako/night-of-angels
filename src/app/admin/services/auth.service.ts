@@ -87,6 +87,40 @@ export class AuthService {
     await this.request(`/api/auth/users/${id}`, { method: 'DELETE' });
   }
 
+  async setUserPassword(id: string, password: string): Promise<void> {
+    await this.request(`/api/auth/users/${id}/password`, {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    });
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    await this.request('/api/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  }
+
+  // ---------- password reset (public, no token) ----------
+  async forgotPassword(email: string): Promise<void> {
+    await fetch('/api/auth/forgot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    // Always resolves — the endpoint never reveals whether the email exists.
+  }
+
+  async resetPassword(token: string, password: string): Promise<void> {
+    const res = await fetch('/api/auth/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((body as { error?: string }).error || 'Reset failed');
+  }
+
   private async request<T>(url: string, init: RequestInit = {}): Promise<T> {
     const res = await fetch(url, {
       ...init,

@@ -149,6 +149,18 @@ export class AttendeeApiService {
     await this.refresh();
   }
 
+  /** Email the guest their ticket link. Returns the address it was sent to. */
+  async emailTicket(ticketCode: string): Promise<string> {
+    const res = await fetch(`${API}/${encodeURIComponent(ticketCode)}/email`, {
+      method: 'POST',
+      headers: this.authHeaders(),
+    });
+    this.guard(res);
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiError(res.status, (body as { error?: string }).error || 'Email failed');
+    return (body as { sentTo?: string }).sentTo ?? ticketCode;
+  }
+
   private async msg(res: Response): Promise<string> {
     try {
       return ((await res.json()) as { error?: string }).error ?? '';

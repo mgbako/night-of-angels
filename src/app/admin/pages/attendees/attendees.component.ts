@@ -61,6 +61,10 @@ import {
       </div>
     </div>
 
+    @if (notice(); as n) {
+      <div class="adm-notice" [class.adm-notice--err]="!n.ok">{{ n.msg }}</div>
+    }
+
     <div class="adm-toolbar">
       <div class="adm-search">
         <adm-icon name="search" [size]="17" />
@@ -142,6 +146,14 @@ import {
                   >
                     <adm-icon name="whatsapp" [size]="16" />
                   </a>
+                  <button
+                    class="adm-btn adm-btn--sm"
+                    (click)="emailTicket(a)"
+                    [disabled]="sendingCode() === a.ticketCode"
+                    title="Email ticket to guest"
+                  >
+                    <adm-icon name="mail" [size]="15" />
+                  </button>
                   <a
                     [routerLink]="['/tickets', a.ticketCode]"
                     target="_blank"
@@ -302,6 +314,8 @@ export class AttendeesComponent {
 
   exportOpen = signal(false);
   busy = signal(false);
+  sendingCode = signal<string | null>(null);
+  notice = signal<{ msg: string; ok: boolean } | null>(null);
 
   all = this.api.attendees;
   loading = this.api.loading;
@@ -351,6 +365,25 @@ export class AttendeesComponent {
       ticketType: ticketTypeMeta(a.ticketType).label,
       url: this.api.ticketUrl(a.ticketCode),
     });
+  }
+
+  async emailTicket(a: Attendee): Promise<void> {
+    if (this.sendingCode()) return;
+    this.sendingCode.set(a.ticketCode);
+    this.notice.set(null);
+    try {
+      const to = await this.api.emailTicket(a.ticketCode);
+      this.flash(`Ticket emailed to ${to}`, true);
+    } catch (e) {
+      this.flash(e instanceof Error ? e.message : 'Could not send email', false);
+    } finally {
+      this.sendingCode.set(null);
+    }
+  }
+
+  private flash(msg: string, ok: boolean): void {
+    this.notice.set({ msg, ok });
+    setTimeout(() => this.notice.set(null), 5000);
   }
 
   async toggle(a: Attendee): Promise<void> {

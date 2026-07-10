@@ -1,6 +1,13 @@
 import type { Context } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { AuthError, requireAuth } from '../shared/auth';
+import { EmailError, sendEmail, ticketEmailHtml } from '../shared/email';
+
+const TICKET_LABELS: Record<TicketType, string> = {
+  SINGLES: 'Singles',
+  COUPLES: 'Couples',
+  TABLE: 'Table of Ten',
+};
 
 /**
  * Ticketing API backed by Netlify Blobs (shared across all devices).
@@ -17,7 +24,12 @@ import { AuthError, requireAuth } from '../shared/auth';
  */
 
 export const config = {
-  path: ['/api/attendees', '/api/attendees/:code', '/api/attendees/:code/check-in'],
+  path: [
+    '/api/attendees',
+    '/api/attendees/:code',
+    '/api/attendees/:code/check-in',
+    '/api/attendees/:code/email',
+  ],
 };
 
 type TicketType = 'SINGLES' | 'COUPLES' | 'TABLE';
@@ -79,9 +91,20 @@ export default async (req: Request, context: Context): Promise<Response> => {
   if (req.method === 'OPTIONS') return new Response('', { status: 204, headers: CORS });
 
   const code = (context.params?.['code'] ?? '').trim();
-  const isCheckin = new URL(req.url).pathname.endsWith('/check-in');
+  const pathname = new URL(req.url).pathname;
+  const isCheckin = pathname.endsWith('/check-in');
+  const isEmail = pathname.endsWith('/email');
 
   try {
+    // Email the guest their ticket (organizer action)
+    if (isEmail) {
+      if (req.method === 'POST') {
+        requireAuth(req);
+        return await emailTicket(code, req);
+      }
+      return json({ error: 'Method not allowed' }, 405);
+    }
+
     // Collection: /api/attendees (organizer-only: contains PII)
     if (!code) {
       if (req.method === 'GET') {
@@ -182,4 +205,25 @@ async function removeOne(code: string): Promise<Response> {
   const next = list.filter((a) => a.ticketCode.toLowerCase() !== code.toLowerCase());
   await writeAll(next);
   return json({ ok: true });
+}
+
+async function emailTicket(code: string, req: Request): Promise<Response> {
+  const attendee = (await readAll()).find(
+    (a) => a.ticketCode.toLowerCase() === code.toLowerCase(),
+  );
+  if (!attendee) return json({ error: 'Ticket not found' }, 404);
+
+  const base = process.env['URL'] || new URL(req.url).origin;
+  const url = `${base}/tickets/${attendee.ticketCode}`;
+  try {
+    await sendEmail({
+      to: attendee.email,
+      subject: 'Your ticket — A Night of Angels',
+      html: ticketEmailHtml(attendee.name, TICKET_LABELS[attendee.ticketType], url),
+    });
+  } catch (e) {
+    if (e instanceof EmailError) return json({ error: e.message }, 502);
+    throw e;
+  }
+  return json({ ok: true, sentTo: attendee.email });
 }

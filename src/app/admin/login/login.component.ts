@@ -1,13 +1,13 @@
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CrestComponent } from '../../shared/crest/crest.component';
 import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-admin-login',
   standalone: true,
-  imports: [FormsModule, CrestComponent],
+  imports: [FormsModule, RouterLink, CrestComponent],
   template: `
     <div class="login">
       <form class="login__card" (ngSubmit)="submit()">
@@ -46,6 +46,8 @@ import { AuthService } from '../services/auth.service';
         <button type="submit" class="login__btn" [disabled]="busy()">
           {{ busy() ? 'Signing in…' : 'Sign in' }}
         </button>
+
+        <p class="login__hint"><a routerLink="/admin/forgot">Forgot password?</a></p>
       </form>
     </div>
   `,

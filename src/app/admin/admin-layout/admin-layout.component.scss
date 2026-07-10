@@ -551,6 +551,22 @@
   background: linear-gradient(90deg, var(--adm-gold), var(--adm-gold-deep));
 }
 
+/* ---------------- Notice banner ---------------- */
+.adm-notice {
+  padding: 0.7rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  background: #e7f6ec;
+  color: #1c7a41;
+  border: 1px solid #bfe6cd;
+}
+.adm-notice--err {
+  background: #fceaea;
+  color: #a83a2c;
+  border-color: #f0c8c2;
+}
+
 /* ---------------- States ---------------- */
 .adm-empty,
 .adm-loading {

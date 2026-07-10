@@ -5,6 +5,7 @@
  * - Users: stored in the Netlify Blobs store `auth`, key `users`
  */
 import {
+  createHash,
   createHmac,
   randomBytes,
   randomUUID,
@@ -177,4 +178,61 @@ export function newUser(input: { name: string; email: string; password: string; 
     passwordHash: hashPassword(input.password),
     createdAt: new Date().toISOString(),
   };
+}
+
+export async function findByEmail(email: string): Promise<User | undefined> {
+  const e = email.trim().toLowerCase();
+  return (await readUsers()).find((u) => u.email === e);
+}
+
+export async function setPassword(userId: string, newPassword: string): Promise<boolean> {
+  const users = await readUsers();
+  const idx = users.findIndex((u) => u.id === userId);
+  if (idx === -1) return false;
+  users[idx] = { ...users[idx], passwordHash: hashPassword(newPassword) };
+  await writeUsers(users);
+  return true;
+}
+
+// ---------- password reset tokens ----------
+interface ResetRecord {
+  tokenHash: string;
+  userId: string;
+  exp: number; // epoch seconds
+}
+
+const RESET_KEY = 'resets';
+const RESET_TTL = 60 * 60; // 1 hour
+
+function sha256(s: string): string {
+  return createHash('sha256').update(s).digest('hex');
+}
+
+async function readResets(): Promise<ResetRecord[]> {
+  const data = await store().get(RESET_KEY, { type: 'json' });
+  const now = Math.floor(Date.now() / 1000);
+  return (Array.isArray(data) ? (data as ResetRecord[]) : []).filter((r) => r.exp > now);
+}
+
+async function writeResets(list: ResetRecord[]): Promise<void> {
+  await store().setJSON(RESET_KEY, list);
+}
+
+/** Create a single-use reset token for a user; returns the raw token to email. */
+export async function createResetToken(userId: string): Promise<string> {
+  const raw = randomBytes(32).toString('hex');
+  const list = (await readResets()).filter((r) => r.userId !== userId);
+  list.push({ tokenHash: sha256(raw), userId, exp: Math.floor(Date.now() / 1000) + RESET_TTL });
+  await writeResets(list);
+  return raw;
+}
+
+/** Validate + consume a reset token, returning the userId (or null). */
+export async function consumeResetToken(token: string): Promise<string | null> {
+  const hash = sha256(token);
+  const list = await readResets();
+  const rec = list.find((r) => r.tokenHash === hash);
+  if (!rec) return null;
+  await writeResets(list.filter((r) => r.tokenHash !== hash));
+  return rec.userId;
 }

@@ -6,6 +6,16 @@ import { AdminLayoutComponent } from './admin-layout/admin-layout.component';
 export const ADMIN_ROUTES: Routes = [
   { path: 'login', component: LoginComponent, title: 'Sign in — Back Office' },
   {
+    path: 'forgot',
+    loadComponent: () => import('./login/forgot.component').then((m) => m.ForgotComponent),
+    title: 'Reset password — Back Office',
+  },
+  {
+    path: 'reset',
+    loadComponent: () => import('./login/reset.component').then((m) => m.ResetComponent),
+    title: 'Reset password — Back Office',
+  },
+  {
     path: '',
     component: AdminLayoutComponent,
     canActivate: [adminGuard],
@@ -39,6 +49,12 @@ export const ADMIN_ROUTES: Routes = [
         loadComponent: () =>
           import('./pages/team/team.component').then((m) => m.TeamComponent),
         title: 'Team — Back Office',
+      },
+      {
+        path: 'account',
+        loadComponent: () =>
+          import('./pages/account/account.component').then((m) => m.AccountComponent),
+        title: 'Account — Back Office',
       },
     ],
   },

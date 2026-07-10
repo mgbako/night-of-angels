@@ -78,6 +78,15 @@ interface AdminNavLink {
             <span class="adm-user__name">{{ auth.user()?.name || 'Account' }}</span>
             <span class="adm-user__role">{{ auth.user()?.email || '' }}</span>
           </div>
+          <a
+            class="adm-user__logout"
+            routerLink="/admin/account"
+            (click)="close()"
+            aria-label="Account settings"
+            title="Account"
+          >
+            <adm-icon name="shield" [size]="17" />
+          </a>
           <button class="adm-user__logout" (click)="logout()" aria-label="Sign out">
             <adm-icon name="logout" [size]="18" />
           </button>

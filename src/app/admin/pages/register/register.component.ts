@@ -52,11 +52,20 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
             <a [href]="waLink(att)" target="_blank" rel="noopener" class="adm-btn wa-share">
               <adm-icon name="whatsapp" [size]="17" /> Send on WhatsApp
             </a>
+            <button class="adm-btn" (click)="emailTicket(att)" [disabled]="emailing()">
+              <adm-icon name="mail" [size]="17" /> {{ emailing() ? 'Sending…' : 'Email ticket' }}
+            </button>
             <a [routerLink]="['/tickets', att.ticketCode]" target="_blank" class="adm-btn adm-btn--primary">
               <adm-icon name="ticket" [size]="17" /> Open ticket
             </a>
             <button class="adm-btn" (click)="reset()">Register another</button>
           </div>
+          @if (emailedTo()) {
+            <p class="reg-note reg-note--ok">✓ Ticket emailed to {{ emailedTo() }}</p>
+          }
+          @if (emailErr()) {
+            <p class="reg-note reg-note--err">{{ emailErr() }}</p>
+          }
         </div>
       } @else {
         <form class="adm-form" [formGroup]="form" (ngSubmit)="submit()" style="max-width:none">
@@ -125,6 +134,9 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
         margin: 0.3rem 0 1.2rem;
       }
       .reg-success__actions { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; }
+      .reg-note { margin: 1rem 0 0; font-size: 0.86rem; }
+      .reg-note--ok { color: #1c7a41; }
+      .reg-note--err { color: #a83a2c; }
     `,
   ],
 })
@@ -137,6 +149,10 @@ export class RegisterComponent {
   submitting = signal(false);
   error = signal<string | null>(null);
   created = signal<Attendee | null>(null);
+
+  emailing = signal(false);
+  emailedTo = signal<string | null>(null);
+  emailErr = signal<string | null>(null);
 
   form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
@@ -176,6 +192,20 @@ export class RegisterComponent {
       ticketType: ticketTypeMeta(a.ticketType).label,
       url: this.api.ticketUrl(a.ticketCode),
     });
+  }
+
+  async emailTicket(a: Attendee): Promise<void> {
+    if (this.emailing()) return;
+    this.emailErr.set(null);
+    this.emailedTo.set(null);
+    this.emailing.set(true);
+    try {
+      this.emailedTo.set(await this.api.emailTicket(a.ticketCode));
+    } catch (e) {
+      this.emailErr.set(e instanceof Error ? e.message : 'Could not send email');
+    } finally {
+      this.emailing.set(false);
+    }
   }
 
   reset(): void {

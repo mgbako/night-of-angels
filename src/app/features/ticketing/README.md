@@ -92,6 +92,11 @@ email + password login, JWT sessions (HS256), scrypt-hashed passwords, users in
 the Blobs `auth` store. The `/api/attendees` list + write endpoints require a
 valid Bearer token; the public ticket lookup and QR check-in stay open.
 
+Password lifecycle: **change password** (`/admin/account`), **forgot/reset**
+(email link, `/admin/forgot` → `/admin/reset?token=`), and **admin resets a
+teammate** (Team page). Guests can be emailed their ticket from the register
+screen and the attendees table.
+
 **Required env vars** (Netlify → Site config → Environment variables):
 
 | Var | Purpose |
@@ -100,6 +105,11 @@ valid Bearer token; the public ticket lookup and QR check-in stay open.
 | `SEED_ADMIN_EMAIL` | First admin's email (seeded when no users exist). |
 | `SEED_ADMIN_PASSWORD` | First admin's password. |
 | `SEED_ADMIN_NAME` | (optional) First admin's display name. |
+| `RESEND_API_KEY` | [Resend](https://resend.com) API key — enables ticket + reset emails. |
+| `MAIL_FROM` | Sender, e.g. `A Night of Angels <tickets@yourdomain>` (must be a Resend-verified domain to email guests; without it, only your own address). |
+
+Email is sent via Resend. Without `RESEND_API_KEY`, ticket-email and
+forgot-password simply do nothing (login/change-password still work).
 
 After the first login, add teammates from **/admin/team** and delete the seed
 account if you like. For local `netlify dev`, set the same vars in a `.env`.

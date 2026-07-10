@@ -97,11 +97,17 @@
 
 .login__hint {
   margin: 0.4rem 0 0;
-  font-size: 0.74rem;
+  font-size: 0.8rem;
   color: var(--ink-soft);
 
   code {
     color: var(--gold-soft);
     font-family: ui-monospace, Menlo, monospace;
+  }
+
+  a {
+    color: var(--gold-soft);
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 }

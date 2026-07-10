@@ -32,14 +32,24 @@ import { AuthService, AuthUser } from '../../services/auth.service';
                   </span>
                   <span class="team-email">{{ u.email }}</span>
                 </div>
-                <button
-                  class="adm-btn adm-btn--sm adm-btn--danger"
-                  (click)="remove(u)"
-                  [disabled]="u.id === meId() || users().length <= 1 || busy()"
-                  title="Remove"
-                >
-                  <adm-icon name="trash" [size]="15" />
-                </button>
+                <div style="display:flex; gap:.35rem">
+                  <button
+                    class="adm-btn adm-btn--sm"
+                    (click)="resetPassword(u)"
+                    [disabled]="busy()"
+                    title="Set a new password"
+                  >
+                    <adm-icon name="shield" [size]="15" />
+                  </button>
+                  <button
+                    class="adm-btn adm-btn--sm adm-btn--danger"
+                    (click)="remove(u)"
+                    [disabled]="u.id === meId() || users().length <= 1 || busy()"
+                    title="Remove"
+                  >
+                    <adm-icon name="trash" [size]="15" />
+                  </button>
+                </div>
               </li>
             } @empty {
               <li class="team-empty">No members yet.</li>
@@ -67,7 +77,7 @@ import { AuthService, AuthUser } from '../../services/auth.service';
           </div>
 
           @if (error()) { <p class="adm-error">{{ error() }}</p> }
-          @if (added()) { <p class="team-ok">✓ {{ added() }} added.</p> }
+          @if (added()) { <p class="team-ok">✓ {{ added() }}</p> }
 
           <div>
             <button type="submit" class="adm-btn adm-btn--primary" [disabled]="busy()">
@@ -171,11 +181,30 @@ export class TeamComponent {
         email: this.email.trim(),
         password: this.password,
       });
-      this.added.set(user.name);
+      this.added.set(`${user.name} added`);
       this.name = this.email = this.password = '';
       await this.load();
     } catch (e) {
       this.error.set(e instanceof Error ? e.message : 'Could not add teammate');
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async resetPassword(u: AuthUser): Promise<void> {
+    const pw = prompt(`Set a new password for ${u.name} (at least 8 characters):`);
+    if (pw === null) return;
+    if (pw.length < 8) {
+      this.error.set('Password must be at least 8 characters.');
+      return;
+    }
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      await this.auth.setUserPassword(u.id, pw);
+      this.added.set(`${u.name}'s password updated`);
+    } catch (e) {
+      this.error.set(e instanceof Error ? e.message : 'Could not reset password');
     } finally {
       this.busy.set(false);
     }
