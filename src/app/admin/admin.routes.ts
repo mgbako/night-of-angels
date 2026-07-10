@@ -34,6 +34,12 @@ export const ADMIN_ROUTES: Routes = [
           import('./pages/tickets/tickets.component').then((m) => m.TicketsComponent),
         title: 'Ticketing — Back Office',
       },
+      {
+        path: 'team',
+        loadComponent: () =>
+          import('./pages/team/team.component').then((m) => m.TeamComponent),
+        title: 'Team — Back Office',
+      },
     ],
   },
 ];

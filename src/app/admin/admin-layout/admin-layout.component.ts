@@ -17,7 +17,7 @@ import {
 import { filter } from 'rxjs';
 import { CrestComponent } from '../../shared/crest/crest.component';
 import { AdminIconComponent, IconName } from '../shared/admin-icon.component';
-import { AdminAuthService } from '../services/admin-auth.service';
+import { AuthService } from '../services/auth.service';
 
 interface AdminNavLink {
   path: string;
@@ -75,8 +75,8 @@ interface AdminNavLink {
         <div class="adm-user">
           <div class="adm-user__avatar"><app-crest [size]="26" [full]="false" /></div>
           <div class="adm-user__meta">
-            <span class="adm-user__name">Organizer</span>
-            <span class="adm-user__role">Administrator</span>
+            <span class="adm-user__name">{{ auth.user()?.name || 'Account' }}</span>
+            <span class="adm-user__role">{{ auth.user()?.email || '' }}</span>
           </div>
           <button class="adm-user__logout" (click)="logout()" aria-label="Sign out">
             <adm-icon name="logout" [size]="18" />
@@ -130,6 +130,7 @@ export class AdminLayoutComponent {
     { path: '/admin/attendees', label: 'Attendees', icon: 'attendees', exact: false },
     { path: '/admin/register', label: 'Register', icon: 'register', exact: false },
     { path: '/admin/tickets', label: 'Tickets', icon: 'ticket', exact: false },
+    { path: '/admin/team', label: 'Team', icon: 'shield', exact: false },
   ];
 
   private headings: Record<string, string> = {
@@ -137,11 +138,12 @@ export class AdminLayoutComponent {
     '/admin/attendees': 'Attendees',
     '/admin/register': 'Register Attendee',
     '/admin/tickets': 'Ticketing',
+    '/admin/team': 'Team',
   };
 
   constructor(
     private router: Router,
-    private auth: AdminAuthService,
+    protected auth: AuthService,
     @Inject(DOCUMENT) private doc: Document,
     @Inject(PLATFORM_ID) platformId: object,
   ) {
@@ -181,8 +183,7 @@ export class AdminLayoutComponent {
   }
 
   logout(): void {
-    this.auth.logout();
     this.doc.body.style.overflow = '';
-    this.router.navigate(['/admin/login']);
+    this.auth.logout(); // clears token + navigates to /admin/login
   }
 }

@@ -40,12 +40,21 @@
 
 .login__field {
   width: 100%;
+  text-align: left;
+  margin-bottom: 0.2rem;
+
+  label {
+    display: block;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 0.35rem;
+  }
 
   input {
     width: 100%;
-    padding: 0.8rem 0.9rem;
-    text-align: center;
-    letter-spacing: 0.1em;
+    padding: 0.75rem 0.9rem;
     background: var(--ink);
     border: 1px solid var(--hairline);
     border-radius: 8px;

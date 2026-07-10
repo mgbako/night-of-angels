@@ -43,3 +43,7 @@ Thumbs.db
 
 # Local Netlify folder
 .netlify
+
+# Local env (secrets for netlify dev)
+.env
+.env.*

@@ -1,5 +1,6 @@
 import type { Context } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
+import { AuthError, requireAuth } from '../shared/auth';
 
 /**
  * Ticketing API backed by Netlify Blobs (shared across all devices).
@@ -81,25 +82,38 @@ export default async (req: Request, context: Context): Promise<Response> => {
   const isCheckin = new URL(req.url).pathname.endsWith('/check-in');
 
   try {
-    // Collection: /api/attendees
+    // Collection: /api/attendees (organizer-only: contains PII)
     if (!code) {
-      if (req.method === 'GET') return json(await readAll());
-      if (req.method === 'POST') return await register(req);
+      if (req.method === 'GET') {
+        requireAuth(req);
+        return json(await readAll());
+      }
+      if (req.method === 'POST') {
+        requireAuth(req);
+        return await register(req);
+      }
       return json({ error: 'Method not allowed' }, 405);
     }
 
-    // Check-in: /api/attendees/:code/check-in
+    // Check-in: /api/attendees/:code/check-in — open (the QR code is the capability)
     if (isCheckin) {
       if (req.method === 'POST') return await checkIn(code);
       return json({ error: 'Method not allowed' }, 405);
     }
 
     // Item: /api/attendees/:code
-    if (req.method === 'GET') return await getOne(code);
-    if (req.method === 'DELETE') return await removeOne(code);
-    if (req.method === 'PATCH') return await patchOne(code, req);
+    if (req.method === 'GET') return await getOne(code); // public: the ticket page
+    if (req.method === 'DELETE') {
+      requireAuth(req);
+      return await removeOne(code);
+    }
+    if (req.method === 'PATCH') {
+      requireAuth(req);
+      return await patchOne(code, req);
+    }
     return json({ error: 'Method not allowed' }, 405);
   } catch (err) {
+    if (err instanceof AuthError) return json({ error: err.message }, err.status);
     console.error('attendees function error', err);
     return json({ error: 'Server error' }, 500);
   }

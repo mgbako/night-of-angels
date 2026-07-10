@@ -85,11 +85,25 @@ PATCH  /api/attendees/:ticketCode           { checkedIn } organizer override
 DELETE /api/attendees/:ticketCode           remove
 ```
 
-## Hardening for production (recommended next steps)
+## Auth
 
-- **Auth:** replace the client-side passcode (`AdminAuthService`) with real
-  auth (Netlify Identity, or a signed token), and require it on the write +
-  list endpoints so attendee PII isn't publicly readable.
-- Consider per-code Blob keys + conditional writes if you expect heavy
-  concurrent check-ins (the current function does read-modify-write on one
-  JSON document, which is fine for a single event).
+Multi-user auth is self-hosted (`netlify/functions/auth.mts` + `netlify/shared/auth.ts`):
+email + password login, JWT sessions (HS256), scrypt-hashed passwords, users in
+the Blobs `auth` store. The `/api/attendees` list + write endpoints require a
+valid Bearer token; the public ticket lookup and QR check-in stay open.
+
+**Required env vars** (Netlify → Site config → Environment variables):
+
+| Var | Purpose |
+|-----|---------|
+| `JWT_SECRET` | Signing secret (≥16 chars, random). |
+| `SEED_ADMIN_EMAIL` | First admin's email (seeded when no users exist). |
+| `SEED_ADMIN_PASSWORD` | First admin's password. |
+| `SEED_ADMIN_NAME` | (optional) First admin's display name. |
+
+After the first login, add teammates from **/admin/team** and delete the seed
+account if you like. For local `netlify dev`, set the same vars in a `.env`.
+
+Further hardening: per-code Blob keys + conditional writes for heavy concurrent
+check-ins (the function currently read-modify-writes one JSON doc — fine for a
+single event); add a password-change + reset flow; add roles (e.g. check-in-only).

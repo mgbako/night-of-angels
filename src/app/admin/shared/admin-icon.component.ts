@@ -18,6 +18,7 @@ export type IconName =
   | 'chevron-right'
   | 'mail'
   | 'phone'
+  | 'shield'
   | 'external';
 
 /**
@@ -110,6 +111,10 @@ export type IconName =
         }
         @case ('phone') {
           <path d="M5 4h4l2 5-3 2a12 12 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" />
+        }
+        @case ('shield') {
+          <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" />
+          <path d="M9 12l2 2 4-4" />
         }
         @case ('external') {
           <path d="M14 4h6v6" />

@@ -1,6 +1,7 @@
 import { Inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../../../../environments/environment';
+import { AuthService } from '../../../admin/services/auth.service';
 import { Attendee, RegisterDto } from '../models/attendee.model';
 
 const API = '/api/attendees';
@@ -34,8 +35,20 @@ export class AttendeeApiService {
   readonly loading = signal(false);
   readonly loadError = signal(false);
 
-  constructor(@Inject(PLATFORM_ID) platformId: object) {
+  constructor(
+    @Inject(PLATFORM_ID) platformId: object,
+    private auth: AuthService,
+  ) {
     this.isBrowser = isPlatformBrowser(platformId);
+  }
+
+  /** Headers for organizer-only endpoints. Returns 401 handling via guard(). */
+  private authHeaders(extra: Record<string, string> = {}): Record<string, string> {
+    return { ...extra, ...this.auth.authHeader() };
+  }
+
+  private guard(res: Response): void {
+    if (res.status === 401) this.auth.handleUnauthorized();
   }
 
   get appBaseUrl(): string {
@@ -61,7 +74,8 @@ export class AttendeeApiService {
     this.loading.set(true);
     this.loadError.set(false);
     try {
-      const res = await fetch(API, { headers: { Accept: 'application/json' } });
+      const res = await fetch(API, { headers: this.authHeaders({ Accept: 'application/json' }) });
+      this.guard(res);
       if (!res.ok) throw new ApiError(res.status, 'Failed to load attendees');
       const list = (await res.json()) as Attendee[];
       this.attendees.set(list);
@@ -84,9 +98,10 @@ export class AttendeeApiService {
   async register(dto: RegisterDto): Promise<Attendee> {
     const res = await fetch(API, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(dto),
     });
+    this.guard(res);
     if (res.status === 409) {
       throw new ApiError(409, (await this.msg(res)) || 'An attendee with this email already exists');
     }
@@ -114,9 +129,10 @@ export class AttendeeApiService {
   async setCheckIn(ticketCode: string, value: boolean): Promise<Attendee> {
     const res = await fetch(`${API}/${encodeURIComponent(ticketCode)}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ checkedIn: value }),
     });
+    this.guard(res);
     if (!res.ok) throw new ApiError(res.status, 'Update failed');
     const attendee = (await res.json()) as Attendee;
     await this.refresh();
@@ -124,7 +140,11 @@ export class AttendeeApiService {
   }
 
   async remove(ticketCode: string): Promise<void> {
-    const res = await fetch(`${API}/${encodeURIComponent(ticketCode)}`, { method: 'DELETE' });
+    const res = await fetch(`${API}/${encodeURIComponent(ticketCode)}`, {
+      method: 'DELETE',
+      headers: this.authHeaders(),
+    });
+    this.guard(res);
     if (!res.ok) throw new ApiError(res.status, 'Delete failed');
     await this.refresh();
   }
