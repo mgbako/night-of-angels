@@ -8,10 +8,7 @@ import {
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CrestComponent } from '../../../../shared/crest/crest.component';
-import {
-  ApiError,
-  AttendeeApiService,
-} from '../../services/attendee-api.service';
+import { AttendeeApiService } from '../../services/attendee-api.service';
 import { Attendee, ticketTypeMeta } from '../../models/attendee.model';
 
 type State = 'loading' | 'ready' | 'notfound';
@@ -100,19 +97,33 @@ export class TicketDetailComponent {
 
   private async loadTicket(): Promise<void> {
     const code = this.route.snapshot.paramMap.get('ticketCode') ?? '';
+
+    // Load the ticket first. Only a real lookup failure means "not found".
+    let attendee;
     try {
-      const a = await this.api.getByCode(code);
-      this.attendee.set(a);
-      this.state.set('ready');
-      await this.makeQr(this.api.checkInUrl(a.ticketCode));
+      attendee = await this.api.getByCode(code);
+    } catch {
+      this.state.set('notfound');
+      return;
+    }
+    this.attendee.set(attendee);
+    this.state.set('ready');
+
+    // QR is best-effort: a failure here must NOT hide the ticket.
+    try {
+      await this.makeQr(this.api.checkInUrl(attendee.ticketCode));
     } catch (e) {
-      this.state.set(e instanceof ApiError && e.status === 404 ? 'notfound' : 'notfound');
+      console.error('QR generation failed', e);
     }
   }
 
   private async makeQr(url: string): Promise<void> {
     if (!this.isBrowser) return;
-    const QRCode = await import('qrcode');
+    // qrcode is CommonJS: under dynamic import its API sits on `.default`.
+    const mod = (await import('qrcode')) as unknown as {
+      default?: typeof import('qrcode');
+    } & typeof import('qrcode');
+    const QRCode = mod.default ?? mod;
     const dataUrl = await QRCode.toDataURL(url, {
       width: 440,
       margin: 1,
