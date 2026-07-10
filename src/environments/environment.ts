@@ -3,5 +3,5 @@
 // Leave empty to fall back to window.location.origin at runtime.
 export const environment = {
   production: true,
-  appBaseUrl: 'https://nightofangels.com',
+  appBaseUrl: 'https://nightofangel2026.netlify.app/',
 };
