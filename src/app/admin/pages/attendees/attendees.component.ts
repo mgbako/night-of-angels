@@ -11,6 +11,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AdminIconComponent } from '../../shared/admin-icon.component';
 import { AttendeeApiService } from '../../../features/ticketing/services/attendee-api.service';
+import { ticketShareUrl } from '../../../features/ticketing/share.util';
 import {
   Attendee,
   TICKET_TYPES,
@@ -132,6 +133,15 @@ import {
               </td>
               <td>
                 <div class="row-actions">
+                  <a
+                    [href]="waLink(a)"
+                    target="_blank"
+                    rel="noopener"
+                    class="adm-btn adm-btn--sm wa-share"
+                    title="Send ticket on WhatsApp"
+                  >
+                    <adm-icon name="whatsapp" [size]="16" />
+                  </a>
                   <a
                     [routerLink]="['/tickets', a.ticketCode]"
                     target="_blank"
@@ -325,6 +335,15 @@ export class AttendeesComponent {
 
   reload(): void {
     this.api.refresh().catch(() => {});
+  }
+
+  waLink(a: Attendee): string {
+    return ticketShareUrl({
+      name: a.name,
+      phone: a.phone,
+      ticketType: ticketTypeMeta(a.ticketType).label,
+      url: this.api.ticketUrl(a.ticketCode),
+    });
   }
 
   async toggle(a: Attendee): Promise<void> {

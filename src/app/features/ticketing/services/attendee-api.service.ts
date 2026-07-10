@@ -52,8 +52,8 @@ export class AttendeeApiService {
   }
 
   get appBaseUrl(): string {
-    if (environment.appBaseUrl) return environment.appBaseUrl;
-    return this.isBrowser ? window.location.origin : '';
+    const base = environment.appBaseUrl || (this.isBrowser ? window.location.origin : '');
+    return base.replace(/\/+$/, ''); // no trailing slash -> avoids //tickets
   }
 
   checkInUrl(ticketCode: string): string {

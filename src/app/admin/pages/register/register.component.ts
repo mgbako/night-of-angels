@@ -12,10 +12,12 @@ import {
   ApiError,
   AttendeeApiService,
 } from '../../../features/ticketing/services/attendee-api.service';
+import { ticketShareUrl } from '../../../features/ticketing/share.util';
 import {
   Attendee,
   TICKET_TYPES,
   TicketType,
+  ticketTypeMeta,
 } from '../../../features/ticketing/models/attendee.model';
 
 // Accepts Nigerian formats: 0803..., +234803..., with spaces/dashes. 10–14 digits.
@@ -47,6 +49,9 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
           <p>Ticket code</p>
           <div class="reg-code">{{ att.ticketCode }}</div>
           <div class="reg-success__actions">
+            <a [href]="waLink(att)" target="_blank" rel="noopener" class="adm-btn wa-share">
+              <adm-icon name="whatsapp" [size]="17" /> Send on WhatsApp
+            </a>
             <a [routerLink]="['/tickets', att.ticketCode]" target="_blank" class="adm-btn adm-btn--primary">
               <adm-icon name="ticket" [size]="17" /> Open ticket
             </a>
@@ -162,6 +167,15 @@ export class RegisterComponent {
     } finally {
       this.submitting.set(false);
     }
+  }
+
+  waLink(a: Attendee): string {
+    return ticketShareUrl({
+      name: a.name,
+      phone: a.phone,
+      ticketType: ticketTypeMeta(a.ticketType).label,
+      url: this.api.ticketUrl(a.ticketCode),
+    });
   }
 
   reset(): void {

@@ -338,6 +338,16 @@
   padding: 0.4rem 0.65rem;
   font-size: 0.78rem;
 }
+/* WhatsApp share button */
+.adm-btn.wa-share {
+  color: #128c7e;
+  border-color: #a9e0d3;
+}
+.adm-btn.wa-share:hover {
+  background: #25d366;
+  border-color: #25d366;
+  color: #fff;
+}
 
 /* ---------------- Toolbar (search + filters) ---------------- */
 .adm-toolbar {
