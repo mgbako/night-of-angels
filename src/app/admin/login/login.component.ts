@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CrestComponent } from '../../shared/crest/crest.component';
 import { AuthService } from '../services/auth.service';
 
@@ -59,7 +59,11 @@ export class LoginComponent {
   busy = signal(false);
   error = signal<string | null>(null);
 
-  constructor(private auth: AuthService, private router: Router) {}
+  constructor(
+    private auth: AuthService,
+    private router: Router,
+    private route: ActivatedRoute,
+  ) {}
 
   async submit(): Promise<void> {
     if (this.busy()) return;
@@ -71,7 +75,9 @@ export class LoginComponent {
     this.busy.set(true);
     try {
       await this.auth.login(this.email.trim(), this.password);
-      this.router.navigate(['/admin']);
+      // Honour a returnUrl (e.g. a scanned check-in link that bounced through login).
+      const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+      this.router.navigateByUrl(returnUrl || '/admin');
     } catch (e) {
       this.error.set(e instanceof Error ? e.message : 'Login failed');
     } finally {

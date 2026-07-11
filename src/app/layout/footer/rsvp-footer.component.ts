@@ -24,7 +24,7 @@ import {
           member of our team will look after you personally.
         </p>
         <div class="rsvp__ctas">
-          <a [href]="rsvpMailto" class="btn btn--solid">Email to Reserve</a>
+          <a routerLink="/reserve" class="btn btn--solid">Reserve Your Seat</a>
           <a [href]="phoneTel" class="btn btn--outline">Call {{ phoneDisplay }}</a>
         </div>
 
@@ -83,9 +83,5 @@ export class RsvpFooterComponent {
   phoneDisplay = PHONE_DISPLAY;
   instagramHandle = INSTAGRAM_HANDLE;
   instagramUrl = INSTAGRAM_URL;
-
-  rsvpMailto =
-    `mailto:${RSVP_EMAIL}` +
-    '?subject=Reservation%20Enquiry%20%E2%80%94%20A%20Night%20of%20Angels';
   phoneTel = `tel:${PHONE_TEL}`;
 }
