@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 interface Ticket {
   eyebrow: string;
@@ -14,6 +15,7 @@ interface Ticket {
 @Component({
   selector: 'app-tickets',
   standalone: true,
+  imports: [RouterLink],
   template: `
     <section class="section section--ivory" id="tickets">
       <div class="wrap">
@@ -46,7 +48,7 @@ interface Ticket {
                 <span class="unit">{{ t.unit }}</span>
               </div>
               <a
-                href="#rsvp"
+                routerLink="/reserve"
                 class="btn btn--block"
                 [class.btn--solid]="true"
                 [class.btn--ink]="!t.featured"

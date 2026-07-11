@@ -5,6 +5,7 @@ import {
   afterNextRender,
   signal,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { CrestComponent } from '../../../../shared/crest/crest.component';
 import { EVENT_DATE } from '../../../../config/event.config';
 
@@ -18,7 +19,7 @@ interface CountdownView {
 @Component({
   selector: 'app-hero',
   standalone: true,
-  imports: [CrestComponent],
+  imports: [CrestComponent, RouterLink],
   template: `
     <section class="hero" [class.loaded]="loaded()" id="hero">
       <div class="hero__grain" aria-hidden="true"></div>
@@ -36,7 +37,7 @@ interface CountdownView {
         </p>
 
         <div class="hero__ctas">
-          <a href="#tickets" class="btn btn--solid">Reserve Your Seat</a>
+          <a routerLink="/reserve" class="btn btn--solid">Reserve Your Seat</a>
           <a href="#partners" class="btn btn--outline">Become a Partner</a>
         </div>
 

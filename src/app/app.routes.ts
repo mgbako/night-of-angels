@@ -21,6 +21,14 @@ export const routes: Routes = [
     title: 'Partner With Us — A Night of Angels | Sponsorship',
   },
   {
+    path: 'reserve',
+    loadComponent: () =>
+      import('./features/ticketing/pages/reserve/reserve.component').then(
+        (m) => m.ReserveComponent,
+      ),
+    title: 'Reserve Your Seat — A Night of Angels',
+  },
+  {
     path: 'tickets',
     loadChildren: () =>
       import('./features/ticketing/ticketing.routes').then((m) => m.TICKETING_ROUTES),

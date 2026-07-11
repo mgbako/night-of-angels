@@ -20,6 +20,7 @@ export type IconName =
   | 'phone'
   | 'shield'
   | 'whatsapp'
+  | 'inbox'
   | 'external';
 
 /**
@@ -116,6 +117,10 @@ export type IconName =
         @case ('shield') {
           <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" />
           <path d="M9 12l2 2 4-4" />
+        }
+        @case ('inbox') {
+          <path d="M4 13l2.5-7a2 2 0 0 1 1.9-1.4h7.2a2 2 0 0 1 1.9 1.4L20 13" />
+          <path d="M4 13h4l1.5 2.5h5L16 13h4v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" />
         }
         @case ('whatsapp') {
           <g transform="scale(0.75)" fill="currentColor" stroke="none">

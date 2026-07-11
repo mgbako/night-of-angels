@@ -137,6 +137,7 @@ export class AdminLayoutComponent {
   links: AdminNavLink[] = [
     { path: '/admin', label: 'Dashboard', icon: 'dashboard', exact: true },
     { path: '/admin/attendees', label: 'Attendees', icon: 'attendees', exact: false },
+    { path: '/admin/reservations', label: 'Reservations', icon: 'inbox', exact: false },
     { path: '/admin/register', label: 'Register', icon: 'register', exact: false },
     { path: '/admin/tickets', label: 'Tickets', icon: 'ticket', exact: false },
     { path: '/admin/team', label: 'Team', icon: 'shield', exact: false },
@@ -145,9 +146,11 @@ export class AdminLayoutComponent {
   private headings: Record<string, string> = {
     '/admin': 'Dashboard',
     '/admin/attendees': 'Attendees',
+    '/admin/reservations': 'Reservations',
     '/admin/register': 'Register Attendee',
     '/admin/tickets': 'Ticketing',
     '/admin/team': 'Team',
+    '/admin/account': 'Account',
   };
 
   constructor(

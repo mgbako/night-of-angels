@@ -33,6 +33,14 @@ export const ADMIN_ROUTES: Routes = [
         title: 'Attendees — Back Office',
       },
       {
+        path: 'reservations',
+        loadComponent: () =>
+          import('./pages/reservations/reservations.component').then(
+            (m) => m.ReservationsComponent,
+          ),
+        title: 'Reservations — Back Office',
+      },
+      {
         path: 'register',
         loadComponent: () =>
           import('./pages/register/register.component').then((m) => m.RegisterComponent),

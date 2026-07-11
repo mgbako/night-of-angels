@@ -40,9 +40,7 @@ interface NavLink {
           </ul>
         </nav>
 
-        <a [routerLink]="'/'" fragment="tickets" class="btn btn--solid btn--sm nav__cta"
-          >Reserve</a
-        >
+        <a routerLink="/reserve" class="btn btn--solid btn--sm nav__cta">Reserve</a>
 
         <button
           class="hamburger"
@@ -66,7 +64,7 @@ interface NavLink {
           }}</a>
         }
       }
-      <a [routerLink]="'/'" fragment="tickets" class="btn btn--solid" (click)="closeMenu()"
+      <a routerLink="/reserve" class="btn btn--solid" (click)="closeMenu()"
         >Reserve Your Seat</a
       >
     </div>
