@@ -1,16 +1,16 @@
 import { Routes } from '@angular/router';
-import { adminGuard } from '../../admin/admin.guard';
+import { permissionGuard } from '../../admin/permission.guard';
 
 /**
  * Un-chromed ticket pages.
- *   /tickets/confirm/:ticketCode  -> scanner check-in (admin only)
+ *   /tickets/confirm/:ticketCode  -> scanner check-in (needs the check-in permission)
  *   /tickets/:ticketCode          -> attendee ticket + QR (public)
  * `confirm` is declared first so it wins over the :ticketCode wildcard.
  */
 export const TICKETING_ROUTES: Routes = [
   {
     path: 'confirm/:ticketCode',
-    canActivate: [adminGuard],
+    canActivate: [permissionGuard('checkin')],
     loadComponent: () =>
       import('./pages/confirm/confirm.component').then((m) => m.ConfirmComponent),
     title: 'Check-in — A Night of Angels',

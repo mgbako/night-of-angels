@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { adminGuard } from './admin.guard';
+import { permissionGuard } from './permission.guard';
 import { LoginComponent } from './login/login.component';
 import { AdminLayoutComponent } from './admin-layout/admin-layout.component';
 
@@ -22,18 +23,21 @@ export const ADMIN_ROUTES: Routes = [
     children: [
       {
         path: '',
+        canActivate: [permissionGuard('dashboard')],
         loadComponent: () =>
           import('./pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
         title: 'Dashboard — Back Office',
       },
       {
         path: 'attendees',
+        canActivate: [permissionGuard('attendees')],
         loadComponent: () =>
           import('./pages/attendees/attendees.component').then((m) => m.AttendeesComponent),
         title: 'Attendees — Back Office',
       },
       {
         path: 'reservations',
+        canActivate: [permissionGuard('reservations')],
         loadComponent: () =>
           import('./pages/reservations/reservations.component').then(
             (m) => m.ReservationsComponent,
@@ -42,18 +46,21 @@ export const ADMIN_ROUTES: Routes = [
       },
       {
         path: 'register',
+        canActivate: [permissionGuard('register')],
         loadComponent: () =>
           import('./pages/register/register.component').then((m) => m.RegisterComponent),
         title: 'Register — Back Office',
       },
       {
         path: 'tickets',
+        canActivate: [permissionGuard('tickets')],
         loadComponent: () =>
           import('./pages/tickets/tickets.component').then((m) => m.TicketsComponent),
         title: 'Ticketing — Back Office',
       },
       {
         path: 'team',
+        canActivate: [permissionGuard('team')],
         loadComponent: () =>
           import('./pages/team/team.component').then((m) => m.TeamComponent),
         title: 'Team — Back Office',

@@ -5,7 +5,7 @@
 
 // PLACEHOLDER event date — swap in the real date once announced.
 // Format: YYYY-MM-DDTHH:MM:SS (local time).
-export const EVENT_DATE = new Date('2026-09-19T19:00:00');
+export const EVENT_DATE = new Date('2026-10-24T17:00:00');
 
 // PLACEHOLDER contact details
 export const RSVP_EMAIL = 'rsvp@nightofangels.example';

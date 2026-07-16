@@ -1,7 +1,7 @@
 import type { Context } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { randomUUID } from 'node:crypto';
-import { AuthError, requireAuth } from '../shared/auth';
+import { AuthError, requirePermission } from '../shared/auth';
 import { addAttendee, TicketType } from '../shared/attendees';
 
 /**
@@ -28,6 +28,7 @@ interface Reservation {
   name: string;
   phone: string;
   email: string;
+  ticketType: TicketType;
   proofKey: string;
   proofType: string;
   proofName: string;
@@ -82,7 +83,7 @@ export default async (req: Request, context: Context): Promise<Response> => {
     if (path === '/api/reservations') {
       if (req.method === 'POST') return await create(req);
       if (req.method === 'GET') {
-        requireAuth(req);
+        requirePermission(req, 'reservations');
         return json(await readReservations());
       }
       return json({ error: 'Method not allowed' }, 405);
@@ -91,17 +92,17 @@ export default async (req: Request, context: Context): Promise<Response> => {
     if (id) {
       // Proof download (auth)
       if (path.endsWith('/proof') && req.method === 'GET') {
-        requireAuth(req);
+        requirePermission(req, 'reservations');
         return await getProof(id);
       }
       // Approve (auth)
       if (path.endsWith('/approve') && req.method === 'POST') {
-        requireAuth(req);
+        requirePermission(req, 'reservations');
         return await approve(id, req);
       }
       // Reject / delete (auth)
       if (req.method === 'DELETE') {
-        requireAuth(req);
+        requirePermission(req, 'reservations');
         return await remove(id);
       }
     }
@@ -119,11 +120,15 @@ async function create(req: Request): Promise<Response> {
     name?: string;
     phone?: string;
     email?: string;
+    ticketType?: TicketType;
     proof?: { name?: string; type?: string; dataBase64?: string };
   } | null;
 
   if (!body?.name || !body?.phone) {
     return json({ error: 'Full name and phone number are required' }, 400);
+  }
+  if (!body.ticketType || !TICKET_TYPES.includes(body.ticketType)) {
+    return json({ error: 'A valid ticket type is required' }, 400);
   }
   const proof = body.proof;
   if (!proof?.dataBase64 || !proof.type) {
@@ -148,6 +153,7 @@ async function create(req: Request): Promise<Response> {
     name: String(body.name).trim(),
     phone: String(body.phone).trim(),
     email: (body.email ?? '').trim(),
+    ticketType: body.ticketType,
     proofKey,
     proofType: proof.type,
     proofName: proof.name ?? 'proof',

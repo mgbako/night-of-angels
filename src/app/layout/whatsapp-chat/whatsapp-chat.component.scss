@@ -77,7 +77,7 @@
   overflow: hidden;
   background: var(--panel);
   border: 1px solid var(--hairline);
-  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 24px 60px -24px rgba(23, 20, 15, 0.3);
   opacity: 0;
   transform: translateY(16px) scale(0.96);
   transform-origin: bottom right;
@@ -169,7 +169,7 @@
   }
 }
 
-/* Subtle chat-paper texture using the ink palette. */
+/* Subtle chat-paper texture on warm ivory. */
 .wa-card__body {
   padding: 1.1rem;
   background:
@@ -179,7 +179,7 @@
 
 .wa-bubble {
   position: relative;
-  background: #1f1b15;
+  background: var(--panel);
   color: var(--text-on-ink);
   border: 1px solid var(--hairline);
   border-radius: 4px 14px 14px 14px;
@@ -210,7 +210,7 @@
 
   &:hover {
     background: var(--gold);
-    color: var(--ink);
+    color: var(--on-gold);
     transform: translateY(-1px);
   }
 }

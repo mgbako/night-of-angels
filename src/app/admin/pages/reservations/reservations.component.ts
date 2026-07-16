@@ -10,6 +10,7 @@ import {
 import {
   TICKET_TYPES,
   TicketType,
+  ticketTypeLabel,
 } from '../../../features/ticketing/models/attendee.model';
 
 @Component({
@@ -51,6 +52,9 @@ import {
                 <span class="res__sub">
                   {{ r.phone }}@if (r.email) { · {{ r.email }} } · {{ date(r.createdAt) }}
                 </span>
+                @if (r.ticketType) {
+                  <span class="res__req">Requested: {{ typeLabel(r.ticketType) }}</span>
+                }
               </div>
               <span class="adm-badge" [class]="badge(r.status)">{{ r.status }}</span>
             </div>
@@ -104,6 +108,16 @@ import {
       }
       .res__name { display: block; font-weight: 600; color: #23201a; }
       .res__sub { display: block; font-size: 0.8rem; color: #8a8270; margin-top: 0.15rem; }
+      .res__req {
+        display: inline-block;
+        margin-top: 0.35rem;
+        font-size: 0.72rem;
+        letter-spacing: 0.04em;
+        color: #9a7d1f;
+        border: 1px solid rgba(154, 125, 31, 0.35);
+        border-radius: 999px;
+        padding: 0.1rem 0.6rem;
+      }
       .res__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
       .res__type { padding: 0.4rem 0.6rem; font-size: 0.82rem; }
       .res__code { font-size: 0.84rem; color: #6a6354; }
@@ -140,7 +154,14 @@ export class ReservationsComponent {
   async load(): Promise<void> {
     this.loading.set(true);
     try {
-      this.all.set(await this.api.list());
+      const list = await this.api.list();
+      this.all.set(list);
+      // Default each pending row's approve selector to the type the guest requested.
+      for (const r of list) {
+        if (r.status === 'pending' && r.ticketType && !this.picked[r.id]) {
+          this.picked[r.id] = r.ticketType;
+        }
+      }
     } catch (e) {
       this.flash(e instanceof Error ? e.message : 'Could not load', false);
     } finally {
@@ -199,6 +220,10 @@ export class ReservationsComponent {
       : status === 'rejected'
         ? 'adm-badge--cancelled'
         : 'adm-badge--pending';
+  }
+
+  typeLabel(t: TicketType): string {
+    return ticketTypeLabel(t);
   }
 
   date(iso: string): string {

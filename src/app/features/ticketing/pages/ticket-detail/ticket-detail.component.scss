@@ -42,7 +42,7 @@
   border: 1px solid var(--hairline);
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 30px 70px -40px rgba(23, 20, 15, 0.22);
 }
 
 .ticket__head {
@@ -61,7 +61,7 @@
   font-family: var(--display);
   font-size: 1.4rem;
   font-weight: 600;
-  color: var(--ivory);
+  color: var(--text-on-ink);
 }
 .ticket__sub {
   font-size: 0.74rem;
@@ -90,7 +90,7 @@
 .ticket__name {
   font-family: var(--display);
   font-size: 1.7rem;
-  color: var(--ivory);
+  color: var(--text-on-ink);
   display: block;
   margin-bottom: 1rem;
 }

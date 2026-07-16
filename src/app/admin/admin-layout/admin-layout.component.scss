@@ -4,6 +4,18 @@
    unaffected. Dark sidebar + light content, brand gold accents.
    ========================================================================= */
 .adm-shell {
+  /* The public site flips to a light theme on :root; the back office keeps
+     its original dark palette by re-pinning the base tokens here. */
+  --ink: #0b0b0a;
+  --panel: #161310;
+  --gold: #c9a227;
+  --gold-soft: #e3c77b;
+  --ivory: #f4f1e7;
+  --ivory-card: #ffffff;
+  --ink-soft: #8a8270;
+  --text-on-ink: #ece6d6;
+  --hairline: rgba(201, 162, 39, 0.35);
+
   --adm-sidebar-w: 260px;
   --adm-topbar-h: 62px;
   --adm-bg: #f3f1ea;

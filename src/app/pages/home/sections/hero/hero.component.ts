@@ -33,7 +33,7 @@ interface CountdownView {
         <h1>A Night of Angels</h1>
         <p class="tagline">An All-White Luxury Dinner Experience</p>
         <p class="meta">
-          <b>Lagos, Nigeria</b> · September 2026 · By Invitation &amp; Ticket
+          <b>Lagos, Nigeria</b> · October 2026 · By Invitation &amp; Ticket
         </p>
 
         <div class="hero__ctas">

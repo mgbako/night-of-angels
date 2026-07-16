@@ -14,7 +14,50 @@ import {
 } from 'node:crypto';
 import { getStore } from '@netlify/blobs';
 
-export type Role = 'admin';
+export type Role = 'owner' | 'manager' | 'coordinator' | 'usher';
+
+/** One key per admin module / view that access is gated on. */
+export type Permission =
+  | 'dashboard'
+  | 'attendees'
+  | 'reservations'
+  | 'register'
+  | 'tickets'
+  | 'checkin'
+  | 'team';
+
+export const ROLES: Role[] = ['owner', 'manager', 'coordinator', 'usher'];
+
+/** What each role can reach. Owner is the only role that manages the team. */
+export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
+  owner: ['dashboard', 'attendees', 'reservations', 'register', 'tickets', 'checkin', 'team'],
+  manager: ['dashboard', 'attendees', 'reservations', 'register', 'tickets', 'checkin'],
+  coordinator: ['attendees', 'reservations', 'register', 'tickets', 'checkin'],
+  usher: ['checkin', 'attendees'],
+};
+
+/**
+ * Coerce any stored/legacy role to a valid one. The original app had a single
+ * 'admin' role with full access, so legacy 'admin' users become owners; any
+ * unrecognised value falls back to the least-privileged role.
+ */
+export function normalizeRole(role: string | undefined | null): Role {
+  if (role === 'owner' || role === 'manager' || role === 'coordinator' || role === 'usher') {
+    return role;
+  }
+  if (role === 'admin') return 'owner';
+  return 'usher';
+}
+
+export function hasPermission(role: string | undefined | null, perm: Permission): boolean {
+  return ROLE_PERMISSIONS[normalizeRole(role)].includes(perm);
+}
+
+/** Ushers may view attendees but not mutate them. */
+export function canManageAttendees(role: string | undefined | null): boolean {
+  const r = normalizeRole(role);
+  return hasPermission(r, 'attendees') && r !== 'usher';
+}
 
 export interface User {
   id: string;
@@ -61,7 +104,13 @@ export async function writeUsers(users: User[]): Promise<void> {
 }
 
 export function toSafe(u: User): SafeUser {
-  return { id: u.id, name: u.name, email: u.email, role: u.role, createdAt: u.createdAt };
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: normalizeRole(u.role),
+    createdAt: u.createdAt,
+  };
 }
 
 // ---------- passwords ----------
@@ -102,7 +151,7 @@ export function signToken(user: User): string {
     sub: user.id,
     email: user.email,
     name: user.name,
-    role: user.role,
+    role: normalizeRole(user.role),
     iat: now,
     exp: now + TOKEN_TTL,
   };
@@ -145,6 +194,15 @@ export function requireAuth(req: Request): TokenPayload {
   return payload;
 }
 
+/** Authenticate the request and require a specific permission (403 if lacking). */
+export function requirePermission(req: Request, perm: Permission): TokenPayload {
+  const payload = requireAuth(req);
+  if (!hasPermission(payload.role, perm)) {
+    throw new AuthError(403, 'You do not have access to this action');
+  }
+  return payload;
+}
+
 // ---------- bootstrap ----------
 /**
  * Seed the first admin from env vars if no users exist yet.
@@ -162,7 +220,7 @@ export async function ensureSeedUser(): Promise<void> {
       id: randomUUID(),
       name,
       email: email.trim().toLowerCase(),
-      role: 'admin',
+      role: 'owner',
       passwordHash: hashPassword(password),
       createdAt: new Date().toISOString(),
     },
@@ -174,10 +232,20 @@ export function newUser(input: { name: string; email: string; password: string; 
     id: randomUUID(),
     name: input.name.trim(),
     email: input.email.trim().toLowerCase(),
-    role: input.role ?? 'admin',
+    role: normalizeRole(input.role),
     passwordHash: hashPassword(input.password),
     createdAt: new Date().toISOString(),
   };
+}
+
+/** Update a user's role in the store. Returns false if the user is missing. */
+export async function setRole(userId: string, role: Role): Promise<boolean> {
+  const users = await readUsers();
+  const idx = users.findIndex((u) => u.id === userId);
+  if (idx === -1) return false;
+  users[idx] = { ...users[idx], role };
+  await writeUsers(users);
+  return true;
 }
 
 export async function findByEmail(email: string): Promise<User | undefined> {

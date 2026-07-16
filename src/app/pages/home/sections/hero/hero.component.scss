@@ -18,7 +18,7 @@
     ),
     radial-gradient(
       ellipse 90% 70% at 50% 120%,
-      rgba(201, 162, 39, 0.06),
+      rgba(201, 162, 39, 0.07),
       transparent 60%
     ),
     var(--ink);
@@ -30,7 +30,7 @@
   pointer-events: none;
   opacity: 0.5;
   background-image: radial-gradient(
-    rgba(255, 255, 255, 0.025) 1px,
+    color-mix(in srgb, var(--text-on-ink) 8%, transparent) 1px,
     transparent 1px
   );
   background-size: 3px 3px;

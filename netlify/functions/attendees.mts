@@ -1,6 +1,6 @@
 import type { Context } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
-import { AuthError, requireAuth } from '../shared/auth';
+import { AuthError, canManageAttendees, requirePermission } from '../shared/auth';
 import { EmailError, sendEmail, ticketEmailHtml } from '../shared/email';
 
 const TICKET_LABELS: Record<TicketType, string> = {
@@ -96,10 +96,10 @@ export default async (req: Request, context: Context): Promise<Response> => {
   const isEmail = pathname.endsWith('/email');
 
   try {
-    // Email the guest their ticket (organizer action)
+    // Email the guest their ticket (ticketing action)
     if (isEmail) {
       if (req.method === 'POST') {
-        requireAuth(req);
+        requirePermission(req, 'tickets');
         return await emailTicket(code, req);
       }
       return json({ error: 'Method not allowed' }, 405);
@@ -108,30 +108,35 @@ export default async (req: Request, context: Context): Promise<Response> => {
     // Collection: /api/attendees (organizer-only: contains PII)
     if (!code) {
       if (req.method === 'GET') {
-        requireAuth(req);
+        requirePermission(req, 'attendees');
         return json(await readAll());
       }
       if (req.method === 'POST') {
-        requireAuth(req);
+        requirePermission(req, 'register');
         return await register(req);
       }
       return json({ error: 'Method not allowed' }, 405);
     }
 
-    // Check-in: /api/attendees/:code/check-in — open (the QR code is the capability)
+    // Check-in: /api/attendees/:code/check-in — requires the check-in permission.
     if (isCheckin) {
-      if (req.method === 'POST') return await checkIn(code);
+      if (req.method === 'POST') {
+        requirePermission(req, 'checkin');
+        return await checkIn(code);
+      }
       return json({ error: 'Method not allowed' }, 405);
     }
 
     // Item: /api/attendees/:code
     if (req.method === 'GET') return await getOne(code); // public: the ticket page
     if (req.method === 'DELETE') {
-      requireAuth(req);
+      const actor = requirePermission(req, 'attendees');
+      if (!canManageAttendees(actor.role)) throw new AuthError(403, 'You do not have access to this action');
       return await removeOne(code);
     }
     if (req.method === 'PATCH') {
-      requireAuth(req);
+      const actor = requirePermission(req, 'attendees');
+      if (!canManageAttendees(actor.role)) throw new AuthError(403, 'You do not have access to this action');
       return await patchOne(code, req);
     }
     return json({ error: 'Method not allowed' }, 405);

@@ -3,6 +3,36 @@
 @tailwind utilities;
 
 :root {
+  /* ---- Light theme (default — the "colour of the day" all-white look) ----
+     Tokens are semantic and flip wholesale under :root[data-theme="dark"]:
+       --ink        page base surface
+       --panel      raised surface / alternating band / cards
+       --ivory      constant light (ivory band, text over photos, dark-button text)
+       --text-on-ink primary text & headings (contrasts the base surface)
+       --on-gold    text sitting on gold accents (dark in both themes)
+     The admin back office re-pins the dark palette on its own root. */
+  --ink: #ffffff; /* page base surface */
+  --panel: #f6f2ea; /* warm ivory: alternating bands + cards */
+  --gold: #b0891d; /* gold: borders, accents, button fill (deepened for white) */
+  --gold-soft: #9a7d1f; /* deep antique gold: gold text + hovers */
+  --ivory: #f4f1e7; /* constant light tone */
+  --ivory-card: #ffffff;
+  --ink-soft: #6c6555; /* muted warm-grey text */
+  --text-on-ink: #17140f; /* primary text / headings */
+  --hairline: rgba(23, 20, 15, 0.12);
+  --on-gold: #17140f; /* text on gold (constant across themes) */
+  --glass: rgba(255, 255, 255, 0.82); /* translucent nav bar */
+  --glass-solid: rgba(255, 255, 255, 0.98); /* mobile menu overlay */
+
+  --display: "Cormorant Garamond", Georgia, serif;
+  --body: "Jost", "Helvetica Neue", Arial, sans-serif;
+  --gut: clamp(20px, 5vw, 64px);
+  --nav-h: 74px;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* ---- Dark theme (the original candle-lit look) ---- */
+:root[data-theme="dark"] {
   --ink: #0b0b0a;
   --panel: #161310;
   --gold: #c9a227;
@@ -12,11 +42,9 @@
   --ink-soft: #8a8270;
   --text-on-ink: #ece6d6;
   --hairline: rgba(201, 162, 39, 0.35);
-  --display: "Cormorant Garamond", Georgia, serif;
-  --body: "Jost", "Helvetica Neue", Arial, sans-serif;
-  --gut: clamp(20px, 5vw, 64px);
-  --nav-h: 74px;
-  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --on-gold: #0b0b0a;
+  --glass: rgba(11, 11, 10, 0.82);
+  --glass-solid: rgba(11, 11, 10, 0.98);
 }
 
 html {
@@ -32,6 +60,7 @@ body {
   -webkit-font-smoothing: antialiased;
   line-height: 1.6;
   overflow-x: hidden;
+  transition: background-color 0.4s var(--ease), color 0.4s var(--ease);
 }
 
 img,
@@ -119,7 +148,7 @@ h3 {
   }
   .btn--solid {
     background: var(--gold);
-    color: var(--ink);
+    color: var(--on-gold);
     border-color: var(--gold);
     box-shadow: 0 8px 30px -12px rgba(201, 162, 39, 0.6);
   }

@@ -111,11 +111,14 @@ export class AttendeeApiService {
     return attendee;
   }
 
-  /** Marks checked-in. Throws 409 (payload = existing record) if already in. */
+  /** Marks checked-in. Requires the check-in permission. Throws 409 (payload = existing record) if already in. */
   async checkIn(ticketCode: string): Promise<Attendee> {
     const res = await fetch(`${API}/${encodeURIComponent(ticketCode)}/check-in`, {
       method: 'POST',
+      headers: this.authHeaders(),
     });
+    this.guard(res);
+    if (res.status === 403) throw new ApiError(403, 'You do not have permission to check guests in');
     if (res.status === 404) throw new ApiError(404, 'Ticket not found');
     if (res.status === 409) {
       const body = await res.json().catch(() => ({}));

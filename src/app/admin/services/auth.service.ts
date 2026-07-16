@@ -1,6 +1,13 @@
 import { Inject, Injectable, PLATFORM_ID, computed, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
+import {
+  Permission,
+  Role,
+  canManageAttendees,
+  hasPermission,
+  normalizeRole,
+} from './permissions';
 
 const LS_TOKEN = 'noa_admin_token_v1';
 
@@ -8,9 +15,19 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: Role;
   createdAt: string;
 }
+
+/** Admin routes in priority order — used to pick a landing page per role. */
+const ROUTE_PERMISSIONS: { path: string; perm: Permission }[] = [
+  { path: '/admin', perm: 'dashboard' },
+  { path: '/admin/attendees', perm: 'attendees' },
+  { path: '/admin/reservations', perm: 'reservations' },
+  { path: '/admin/register', perm: 'register' },
+  { path: '/admin/tickets', perm: 'tickets' },
+  { path: '/admin/team', perm: 'team' },
+];
 
 /**
  * Client for the self-hosted auth API (/api/auth/*). Holds the JWT + current
@@ -24,6 +41,23 @@ export class AuthService {
   readonly token = signal<string | null>(null);
   readonly user = signal<AuthUser | null>(null);
   readonly isAuthed = computed(() => !!this.token() && !this.isExpired(this.token()!));
+  readonly role = computed<Role>(() => normalizeRole(this.user()?.role));
+
+  /** Does the signed-in user have access to a given module/view? */
+  can(perm: Permission): boolean {
+    return this.isAuthed() && hasPermission(this.role(), perm);
+  }
+
+  /** Ushers can view attendees but not mutate them. */
+  canManageAttendees(): boolean {
+    return this.isAuthed() && canManageAttendees(this.role());
+  }
+
+  /** First admin route the current user is allowed to open. */
+  landingRoute(): string {
+    const match = ROUTE_PERMISSIONS.find((r) => this.can(r.perm));
+    return match?.path ?? '/admin/account';
+  }
 
   constructor(
     @Inject(PLATFORM_ID) platformId: object,
@@ -76,10 +110,22 @@ export class AuthService {
     return this.request<AuthUser[]>('/api/auth/users');
   }
 
-  async addUser(input: { name: string; email: string; password: string }): Promise<AuthUser> {
+  async addUser(input: {
+    name: string;
+    email: string;
+    password: string;
+    role: Role;
+  }): Promise<AuthUser> {
     return this.request<AuthUser>('/api/auth/users', {
       method: 'POST',
       body: JSON.stringify(input),
+    });
+  }
+
+  async updateUserRole(id: string, role: Role): Promise<void> {
+    await this.request(`/api/auth/users/${id}/role`, {
+      method: 'POST',
+      body: JSON.stringify({ role }),
     });
   }
 
@@ -139,7 +185,7 @@ export class AuthService {
   private decode(token: string): AuthUser | null {
     try {
       const p = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-      return { id: p.sub, name: p.name, email: p.email, role: p.role, createdAt: '' };
+      return { id: p.sub, name: p.name, email: p.email, role: normalizeRole(p.role), createdAt: '' };
     } catch {
       return null;
     }

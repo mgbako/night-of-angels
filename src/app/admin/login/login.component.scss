@@ -3,6 +3,18 @@
 }
 
 .login {
+  /* Keep the admin sign-in on the original dark palette, independent of the
+     public site's light theme (:root). Shared by forgot/reset too. */
+  --ink: #0b0b0a;
+  --panel: #161310;
+  --gold: #c9a227;
+  --gold-soft: #e3c77b;
+  --ivory: #f4f1e7;
+  --ivory-card: #ffffff;
+  --ink-soft: #8a8270;
+  --text-on-ink: #ece6d6;
+  --hairline: rgba(201, 162, 39, 0.35);
+
   min-height: 100vh;
   display: grid;
   place-items: center;

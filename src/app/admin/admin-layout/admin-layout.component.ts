@@ -4,6 +4,7 @@ import {
   PLATFORM_ID,
   ViewEncapsulation,
   afterNextRender,
+  computed,
   signal,
 } from '@angular/core';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
@@ -18,12 +19,14 @@ import { filter } from 'rxjs';
 import { CrestComponent } from '../../shared/crest/crest.component';
 import { AdminIconComponent, IconName } from '../shared/admin-icon.component';
 import { AuthService } from '../services/auth.service';
+import { Permission, ROLE_LABELS } from '../services/permissions';
 
 interface AdminNavLink {
   path: string;
   label: string;
   icon: IconName;
   exact: boolean;
+  perm: Permission;
 }
 
 @Component({
@@ -58,7 +61,7 @@ interface AdminNavLink {
         </a>
 
         <nav class="adm-nav" aria-label="Admin">
-          @for (link of links; track link.path) {
+          @for (link of visibleLinks(); track link.path) {
             <a
               class="adm-nav__link"
               [routerLink]="link.path"
@@ -76,7 +79,7 @@ interface AdminNavLink {
           <div class="adm-user__avatar"><app-crest [size]="26" [full]="false" /></div>
           <div class="adm-user__meta">
             <span class="adm-user__name">{{ auth.user()?.name || 'Account' }}</span>
-            <span class="adm-user__role">{{ auth.user()?.email || '' }}</span>
+            <span class="adm-user__role">{{ roleLabel() }}</span>
           </div>
           <a
             class="adm-user__logout"
@@ -135,13 +138,18 @@ export class AdminLayoutComponent {
   heading = signal('Dashboard');
 
   links: AdminNavLink[] = [
-    { path: '/admin', label: 'Dashboard', icon: 'dashboard', exact: true },
-    { path: '/admin/attendees', label: 'Attendees', icon: 'attendees', exact: false },
-    { path: '/admin/reservations', label: 'Reservations', icon: 'inbox', exact: false },
-    { path: '/admin/register', label: 'Register', icon: 'register', exact: false },
-    { path: '/admin/tickets', label: 'Tickets', icon: 'ticket', exact: false },
-    { path: '/admin/team', label: 'Team', icon: 'shield', exact: false },
+    { path: '/admin', label: 'Dashboard', icon: 'dashboard', exact: true, perm: 'dashboard' },
+    { path: '/admin/attendees', label: 'Attendees', icon: 'attendees', exact: false, perm: 'attendees' },
+    { path: '/admin/reservations', label: 'Reservations', icon: 'inbox', exact: false, perm: 'reservations' },
+    { path: '/admin/register', label: 'Register', icon: 'register', exact: false, perm: 'register' },
+    { path: '/admin/tickets', label: 'Tickets', icon: 'ticket', exact: false, perm: 'tickets' },
+    { path: '/admin/team', label: 'Team', icon: 'shield', exact: false, perm: 'team' },
   ];
+
+  /** Only the modules the signed-in user's role can open. */
+  visibleLinks = computed(() => this.links.filter((l) => this.auth.can(l.perm)));
+
+  roleLabel = computed(() => ROLE_LABELS[this.auth.role()]);
 
   private headings: Record<string, string> = {
     '/admin': 'Dashboard',

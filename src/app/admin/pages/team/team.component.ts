@@ -2,6 +2,7 @@ import { Component, afterNextRender, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminIconComponent } from '../../shared/admin-icon.component';
 import { AuthService, AuthUser } from '../../services/auth.service';
+import { ROLES, ROLE_DESCRIPTIONS, ROLE_LABELS, Role } from '../../services/permissions';
 
 @Component({
   selector: 'app-admin-team',
@@ -32,7 +33,18 @@ import { AuthService, AuthUser } from '../../services/auth.service';
                   </span>
                   <span class="team-email">{{ u.email }}</span>
                 </div>
-                <div style="display:flex; gap:.35rem">
+                <div style="display:flex; gap:.35rem; align-items:center">
+                  <select
+                    class="adm-select adm-select--sm team-role"
+                    [ngModel]="u.role"
+                    (ngModelChange)="changeRole(u, $event)"
+                    [disabled]="u.id === meId() || busy()"
+                    [title]="u.id === meId() ? 'You cannot change your own role' : 'Change role'"
+                  >
+                    @for (r of roles; track r) {
+                      <option [value]="r">{{ roleLabels[r] }}</option>
+                    }
+                  </select>
                   <button
                     class="adm-btn adm-btn--sm"
                     (click)="resetPassword(u)"
@@ -75,6 +87,15 @@ import { AuthService, AuthUser } from '../../services/auth.service';
             <input id="t-pass" name="password" type="text" [(ngModel)]="password" required />
             <span class="adm-hint">At least 8 characters. Share it with them to sign in.</span>
           </div>
+          <div class="adm-field">
+            <label for="t-role">Role</label>
+            <select id="t-role" name="role" class="adm-select" [(ngModel)]="role">
+              @for (r of roles; track r) {
+                <option [value]="r">{{ roleLabels[r] }}</option>
+              }
+            </select>
+            <span class="adm-hint">{{ roleDescriptions[role] }}</span>
+          </div>
 
           @if (error()) { <p class="adm-error">{{ error() }}</p> }
           @if (added()) { <p class="team-ok">✓ {{ added() }}</p> }
@@ -114,6 +135,8 @@ import { AuthService, AuthUser } from '../../services/auth.service';
       .team-info { display: flex; flex-direction: column; min-width: 0; }
       .team-name { font-weight: 600; color: #23201a; display: flex; align-items: center; gap: 0.4rem; }
       .team-email { font-size: 0.82rem; color: #8a8270; }
+      .team-role { min-width: 118px; }
+      .adm-select--sm { padding: 0.4rem 0.55rem; font-size: 0.8rem; }
       .team-you {
         font-size: 0.62rem;
         text-transform: uppercase;
@@ -136,6 +159,10 @@ import { AuthService, AuthUser } from '../../services/auth.service';
 export class TeamComponent {
   private auth = inject(AuthService);
 
+  readonly roles = ROLES;
+  readonly roleLabels = ROLE_LABELS;
+  readonly roleDescriptions = ROLE_DESCRIPTIONS;
+
   users = signal<AuthUser[]>([]);
   loading = signal(true);
   busy = signal(false);
@@ -145,6 +172,7 @@ export class TeamComponent {
   name = '';
   email = '';
   password = '';
+  role: Role = 'coordinator';
 
   meId = () => this.auth.user()?.id ?? '';
 
@@ -180,12 +208,30 @@ export class TeamComponent {
         name: this.name.trim(),
         email: this.email.trim(),
         password: this.password,
+        role: this.role,
       });
-      this.added.set(`${user.name} added`);
+      this.added.set(`${user.name} added as ${this.roleLabels[this.role]}`);
       this.name = this.email = this.password = '';
+      this.role = 'coordinator';
       await this.load();
     } catch (e) {
       this.error.set(e instanceof Error ? e.message : 'Could not add teammate');
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async changeRole(u: AuthUser, role: Role): Promise<void> {
+    if (role === u.role) return;
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      await this.auth.updateUserRole(u.id, role);
+      this.added.set(`${u.name} is now ${this.roleLabels[role]}`);
+      await this.load();
+    } catch (e) {
+      this.error.set(e instanceof Error ? e.message : 'Could not change role');
+      await this.load(); // revert the select to the stored value
     } finally {
       this.busy.set(false);
     }

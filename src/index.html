@@ -15,10 +15,22 @@
 
   <title>A Night of Angels | All-White Luxury Dinner Experience · Lagos</title>
   <base href="/">
+
+  <!-- Apply the saved light/dark theme before first paint (no flash). Light is the default. -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('noa-theme');
+        document.documentElement.setAttribute('data-theme', t === 'dark' ? 'dark' : 'light');
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="A Night of Angels — an exclusive all-white luxury dinner experience in Lagos, Nigeria. Reserve your seat, book a table, or become a partner for an unforgettable evening.">
   <meta name="keywords" content="all-white party Lagos, luxury dinner Lagos, exclusive event Lagos Nigeria, A Night of Angels, white themed gala, VIP dinner experience">
-  <meta name="theme-color" content="#0b0b0f">
+  <meta name="theme-color" content="#ffffff">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="author" content="A Night of Angels">
 

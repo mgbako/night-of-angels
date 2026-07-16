@@ -91,7 +91,7 @@
   &.active {
     background: var(--gold);
     border-color: var(--gold);
-    color: var(--ink);
+    color: var(--on-gold);
   }
 }
 
@@ -111,7 +111,7 @@
   border-radius: 2px;
   border: 1px solid var(--hairline);
   cursor: pointer;
-  background: var(--ink);
+  background: var(--panel);
 
   img {
     width: 100%;
@@ -178,7 +178,7 @@
   place-items: center;
   font-size: 1.3rem;
   font-weight: 300;
-  color: var(--ink);
+  color: var(--on-gold);
   background: var(--gold-soft);
   border-radius: 50%;
   opacity: 0;

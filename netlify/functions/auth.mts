@@ -1,14 +1,19 @@
 import type { Context } from '@netlify/functions';
 import {
   AuthError,
+  ROLES,
+  Role,
   consumeResetToken,
   createResetToken,
   ensureSeedUser,
   findByEmail,
   newUser,
+  normalizeRole,
   readUsers,
   requireAuth,
+  requirePermission,
   setPassword,
+  setRole,
   signToken,
   toSafe,
   verifyPassword,
@@ -37,6 +42,7 @@ export const config = {
     '/api/auth/users',
     '/api/auth/users/:id',
     '/api/auth/users/:id/password',
+    '/api/auth/users/:id/role',
   ],
 };
 
@@ -71,15 +77,19 @@ export default async (req: Request, context: Context): Promise<Response> => {
     }
 
     if (path === '/api/auth/users') {
-      requireAuth(req);
+      // Managing the team is owner-only (the 'team' permission).
+      requirePermission(req, 'team');
       if (req.method === 'GET') return json((await readUsers()).map(toSafe));
       if (req.method === 'POST') return await createUser(req);
     }
 
     if (userId) {
-      const actor = requireAuth(req);
+      const actor = requirePermission(req, 'team');
       if (path.endsWith('/password') && req.method === 'POST') {
         return await setUserPassword(userId, req);
+      }
+      if (path.endsWith('/role') && req.method === 'POST') {
+        return await updateUserRole(userId, req, actor.sub);
       }
       if (req.method === 'DELETE') return await deleteUser(userId, actor.sub);
     }
@@ -128,6 +138,7 @@ async function createUser(req: Request): Promise<Response> {
     name?: string;
     email?: string;
     password?: string;
+    role?: string;
   };
   if (!body.name || !body.email || !body.password) {
     return json({ error: 'Name, email and password are required' }, 400);
@@ -135,21 +146,55 @@ async function createUser(req: Request): Promise<Response> {
   if (body.password.length < 8) {
     return json({ error: 'Password must be at least 8 characters' }, 400);
   }
+  if (!body.role || !ROLES.includes(body.role as Role)) {
+    return json({ error: 'A valid role is required' }, 400);
+  }
   const users = await readUsers();
   const email = body.email.trim().toLowerCase();
   if (users.some((u) => u.email === email)) {
     return json({ error: 'A user with this email already exists' }, 409);
   }
-  const user = newUser({ name: body.name, email, password: body.password });
+  const user = newUser({ name: body.name, email, password: body.password, role: body.role as Role });
   await writeUsers([...users, user]);
   return json(toSafe(user), 201);
 }
 
+async function updateUserRole(id: string, req: Request, actorId: string): Promise<Response> {
+  const { role } = (await req.json().catch(() => ({}))) as { role?: string };
+  if (!role || !ROLES.includes(role as Role)) {
+    return json({ error: 'A valid role is required' }, 400);
+  }
+  const users = await readUsers();
+  const target = users.find((u) => u.id === id);
+  if (!target) return json({ error: 'User not found' }, 404);
+
+  // Never allow the last owner to be demoted — someone must be able to manage the team.
+  const owners = users.filter((u) => normalizeRole(u.role) === 'owner');
+  if (
+    normalizeRole(target.role) === 'owner' &&
+    role !== 'owner' &&
+    owners.length <= 1
+  ) {
+    return json({ error: 'There must be at least one owner' }, 400);
+  }
+  if (id === actorId && role !== 'owner') {
+    return json({ error: 'You cannot change your own role' }, 400);
+  }
+
+  await setRole(id, role as Role);
+  return json({ ok: true, user: toSafe({ ...target, role: role as Role }) });
+}
+
 async function deleteUser(id: string, actorId: string): Promise<Response> {
   const users = await readUsers();
-  if (!users.some((u) => u.id === id)) return json({ error: 'User not found' }, 404);
+  const target = users.find((u) => u.id === id);
+  if (!target) return json({ error: 'User not found' }, 404);
   if (id === actorId) return json({ error: 'You cannot delete your own account' }, 400);
   if (users.length <= 1) return json({ error: 'Cannot delete the last user' }, 400);
+  const owners = users.filter((u) => normalizeRole(u.role) === 'owner');
+  if (normalizeRole(target.role) === 'owner' && owners.length <= 1) {
+    return json({ error: 'Cannot delete the last owner' }, 400);
+  }
   await writeUsers(users.filter((u) => u.id !== id));
   return json({ ok: true });
 }

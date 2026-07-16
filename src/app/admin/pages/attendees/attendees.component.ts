@@ -11,6 +11,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AdminIconComponent } from '../../shared/admin-icon.component';
 import { AttendeeApiService } from '../../../features/ticketing/services/attendee-api.service';
+import { AuthService } from '../../services/auth.service';
 import { ticketShareUrl } from '../../../features/ticketing/share.util';
 import {
   Attendee,
@@ -55,9 +56,11 @@ import {
             </div>
           }
         </div>
-        <a routerLink="/admin/register" class="adm-btn adm-btn--primary">
-          <adm-icon name="register" [size]="17" /> Register
-        </a>
+        @if (canManage()) {
+          <a routerLink="/admin/register" class="adm-btn adm-btn--primary">
+            <adm-icon name="register" [size]="17" /> Register
+          </a>
+        }
       </div>
     </div>
 
@@ -146,14 +149,16 @@ import {
                   >
                     <adm-icon name="whatsapp" [size]="16" />
                   </a>
-                  <button
-                    class="adm-btn adm-btn--sm"
-                    (click)="emailTicket(a)"
-                    [disabled]="sendingCode() === a.ticketCode"
-                    title="Email ticket to guest"
-                  >
-                    <adm-icon name="mail" [size]="15" />
-                  </button>
+                  @if (canManage()) {
+                    <button
+                      class="adm-btn adm-btn--sm"
+                      (click)="emailTicket(a)"
+                      [disabled]="sendingCode() === a.ticketCode"
+                      title="Email ticket to guest"
+                    >
+                      <adm-icon name="mail" [size]="15" />
+                    </button>
+                  }
                   <a
                     [routerLink]="['/tickets', a.ticketCode]"
                     target="_blank"
@@ -162,23 +167,25 @@ import {
                   >
                     <adm-icon name="external" [size]="15" />
                   </a>
-                  <button
-                    class="adm-btn adm-btn--sm"
-                    (click)="toggle(a)"
-                    [title]="a.checkedIn ? 'Undo check-in' : 'Check in'"
-                  >
-                    <adm-icon
-                      [name]="a.checkedIn ? 'close' : 'check'"
-                      [size]="15"
-                    />
-                  </button>
-                  <button
-                    class="adm-btn adm-btn--sm adm-btn--danger"
-                    (click)="remove(a)"
-                    title="Delete"
-                  >
-                    <adm-icon name="trash" [size]="15" />
-                  </button>
+                  @if (canManage()) {
+                    <button
+                      class="adm-btn adm-btn--sm"
+                      (click)="toggle(a)"
+                      [title]="a.checkedIn ? 'Undo check-in' : 'Check in'"
+                    >
+                      <adm-icon
+                        [name]="a.checkedIn ? 'close' : 'check'"
+                        [size]="15"
+                      />
+                    </button>
+                    <button
+                      class="adm-btn adm-btn--sm adm-btn--danger"
+                      (click)="remove(a)"
+                      title="Delete"
+                    >
+                      <adm-icon name="trash" [size]="15" />
+                    </button>
+                  }
                 </div>
               </td>
             </tr>
@@ -300,11 +307,15 @@ import {
 })
 export class AttendeesComponent {
   private api = inject(AttendeeApiService);
+  private auth = inject(AuthService);
   private doc = inject(DOCUMENT);
   private isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   readonly ticketTypes = TICKET_TYPES;
   meta = ticketTypeMeta;
+
+  /** Ushers get a read-only view: hide register / email / check-in / delete. */
+  canManage = () => this.auth.canManageAttendees();
 
   search = signal('');
   typeFilter = signal<TicketType | 'ALL'>('ALL');

@@ -11,6 +11,7 @@ import { RouterLink } from '@angular/router';
 import { CrestComponent } from '../../../../shared/crest/crest.component';
 import { ReservationApiService } from '../../services/reservation-api.service';
 import { ReservationDto } from '../../models/reservation.model';
+import { TICKET_TYPES, TicketType } from '../../models/attendee.model';
 
 const ALLOWED = ['image/jpeg', 'image/png', 'application/pdf'];
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -68,6 +69,20 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
               @if (invalid('email')) { <span class="err">Enter a valid email address.</span> }
             </div>
 
+            <div class="rsv__field" [class.invalid]="invalid('ticketType')">
+              <label for="ticketType">Ticket type *</label>
+              <select id="ticketType" formControlName="ticketType">
+                <option value="" disabled>Choose a ticket type</option>
+                @for (t of ticketTypes; track t.value) {
+                  <option [value]="t.value">
+                    {{ t.label }} — ₦{{ t.price.toLocaleString() }}
+                    ({{ t.seats }} {{ t.seats === 1 ? 'seat' : 'seats' }})
+                  </option>
+                }
+              </select>
+              @if (invalid('ticketType')) { <span class="err">Please choose a ticket type.</span> }
+            </div>
+
             <div class="rsv__field">
               <label>Proof of payment *</label>
               <label class="dropzone" [class.has-file]="proof()">
@@ -99,6 +114,8 @@ export class ReserveComponent {
   private fb = inject(FormBuilder);
   private api = inject(ReservationApiService);
 
+  readonly ticketTypes = TICKET_TYPES;
+
   busy = signal(false);
   done = signal(false);
   error = signal<string | null>(null);
@@ -110,6 +127,7 @@ export class ReserveComponent {
     name: ['', [Validators.required, Validators.minLength(2)]],
     phone: ['', [Validators.required, phoneValidator]],
     email: ['', [Validators.email]],
+    ticketType: ['' as TicketType | '', [Validators.required]],
   });
 
   invalid(name: string): boolean {
@@ -151,9 +169,14 @@ export class ReserveComponent {
     }
     this.busy.set(true);
     try {
-      const dto: ReservationDto = { ...this.form.getRawValue(), proof: this.proof()! };
+      const { ticketType, ...rest } = this.form.getRawValue();
+      const dto: ReservationDto = {
+        ...rest,
+        ticketType: ticketType as TicketType,
+        proof: this.proof()!,
+      };
       await this.api.create(dto);
-      this.submittedName.set(this.form.getRawValue().name);
+      this.submittedName.set(rest.name);
       this.done.set(true);
     } catch (e) {
       this.error.set(e instanceof Error ? e.message : 'Something went wrong. Please try again.');

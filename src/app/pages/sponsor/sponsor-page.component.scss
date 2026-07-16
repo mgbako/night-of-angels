@@ -157,7 +157,7 @@
   left: 50%;
   transform: translateX(-50%);
   background: var(--gold);
-  color: var(--ink);
+  color: var(--on-gold);
   font-size: 0.62rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -169,7 +169,7 @@
 .tier__name {
   font-family: var(--display);
   font-size: 1.6rem;
-  color: var(--ivory);
+  color: var(--text-on-ink);
 }
 
 .tier__price {
