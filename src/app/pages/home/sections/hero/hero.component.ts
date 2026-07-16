@@ -62,15 +62,28 @@ interface CountdownView {
             <span class="cd-label">Seconds</span>
           </div>
         </div>
-        <p class="countdown-note">
-          Exact date to be confirmed — countdown will activate once announced.
-        </p>
+        <p class="countdown-note">{{ eventDateLabel }}</p>
       </div>
     </section>
   `,
   styleUrl: './hero.component.scss',
 })
 export class HeroComponent implements OnInit, OnDestroy {
+  // The announced event date + time, shown under the countdown.
+  readonly eventDateLabel =
+    EVENT_DATE.toLocaleDateString('en-GB', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }) +
+    ' · ' +
+    EVENT_DATE.toLocaleTimeString('en-GB', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).toUpperCase();
+
   loaded = signal(false);
   cd = signal<CountdownView>({ days: '00', hours: '00', mins: '00', secs: '00' });
 
