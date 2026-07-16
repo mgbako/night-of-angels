@@ -85,7 +85,7 @@ export class TicketsComponent {
       eyebrow: 'Table of Ten',
       title: 'Table',
       desc: 'A full table of ten — ideal for corporate hosting or arriving with your whole circle.',
-      amount: '₦500,000',
+      amount: '₦300,000',
       unit: 'full table · seats ten',
     },
   ];

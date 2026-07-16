@@ -55,7 +55,7 @@ export const SPONSOR_STATS: Stat[] = [
 export const SPONSOR_TIERS: SponsorTier[] = [
   {
     name: 'Title Sponsor',
-    price: '₦5,000,000',
+    price: '₦1,500,000',
     slots: 'Exclusive — 1 partner',
     summary:
       'The evening presented in partnership with your brand. Maximum visibility, woven through every touchpoint.',
@@ -72,7 +72,7 @@ export const SPONSOR_TIERS: SponsorTier[] = [
   },
   {
     name: 'Platinum',
-    price: '₦2,500,000',
+    price: '₦1,000,000',
     slots: 'Limited — 3 partners',
     summary:
       'Premium positioning within the experience and a reserved table for your guests.',
@@ -86,7 +86,7 @@ export const SPONSOR_TIERS: SponsorTier[] = [
   },
   {
     name: 'Gold',
-    price: '₦1,000,000',
+    price: '₦500,000',
     slots: 'Limited',
     summary:
       'A considered brand moment woven through the programme and guest touchpoints.',

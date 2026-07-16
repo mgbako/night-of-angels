@@ -15,7 +15,7 @@ export interface TicketTypeMeta {
 export const TICKET_TYPES: TicketTypeMeta[] = [
   { value: 'SINGLES', label: 'Singles', price: 20000, seats: 1 },
   { value: 'COUPLES', label: 'Couples', price: 35000, seats: 2 },
-  { value: 'TABLE', label: 'Table of Ten', price: 500000, seats: 10 },
+  { value: 'TABLE', label: 'Table of Ten', price: 300000, seats: 10 },
 ];
 
 export function ticketTypeMeta(t: TicketType): TicketTypeMeta {
