@@ -15,6 +15,13 @@ export const PHONE_TEL = '+2348037866963';
 export const INSTAGRAM_HANDLE = '@nightofangels';
 export const INSTAGRAM_URL = 'https://instagram.com/';
 
+// Bank / transfer details guests pay into before uploading proof of payment.
+export const PAYMENT = {
+  bank: 'PalmPay',
+  accountNumber: '8037866963',
+  accountName: 'Charles Ukasoanya',
+};
+
 // PLACEHOLDER WhatsApp number for the floating chat widget.
 // Digits only, country code first, NO "+", spaces or dashes (wa.me format).
 // e.g. Nigeria: '2348012345678'

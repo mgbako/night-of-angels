@@ -12,6 +12,7 @@ import { CrestComponent } from '../../../../shared/crest/crest.component';
 import { ReservationApiService } from '../../services/reservation-api.service';
 import { ReservationDto } from '../../models/reservation.model';
 import { TICKET_TYPES, TicketType } from '../../models/attendee.model';
+import { PAYMENT } from '../../../../config/event.config';
 
 const ALLOWED = ['image/jpeg', 'image/png', 'application/pdf'];
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -83,6 +84,35 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
               @if (invalid('ticketType')) { <span class="err">Please choose a ticket type.</span> }
             </div>
 
+            <div class="rsv__pay">
+              <span class="rsv__pay-title">Make payment to</span>
+              <div class="rsv__pay-row">
+                <span class="rsv__pay-label">Bank</span>
+                <span class="rsv__pay-value">{{ payment.bank }}</span>
+              </div>
+              <div class="rsv__pay-row">
+                <span class="rsv__pay-label">Account</span>
+                <span class="rsv__pay-value rsv__pay-acct">
+                  {{ payment.accountNumber }}
+                  <button
+                    type="button"
+                    class="rsv__pay-copy"
+                    (click)="copyAccount()"
+                    [attr.aria-label]="'Copy account number'"
+                  >
+                    {{ copied() ? '✓ Copied' : 'Copy' }}
+                  </button>
+                </span>
+              </div>
+              <div class="rsv__pay-row">
+                <span class="rsv__pay-label">Name</span>
+                <span class="rsv__pay-value">{{ payment.accountName }}</span>
+              </div>
+              <p class="rsv__pay-note">
+                Transfer the exact amount for your ticket, then upload the receipt below.
+              </p>
+            </div>
+
             <div class="rsv__field">
               <label>Proof of payment *</label>
               <label class="dropzone" [class.has-file]="proof()">
@@ -115,8 +145,10 @@ export class ReserveComponent {
   private api = inject(ReservationApiService);
 
   readonly ticketTypes = TICKET_TYPES;
+  readonly payment = PAYMENT;
 
   busy = signal(false);
+  copied = signal(false);
   done = signal(false);
   error = signal<string | null>(null);
   fileError = signal<string | null>(null);
@@ -129,6 +161,16 @@ export class ReserveComponent {
     email: ['', [Validators.email]],
     ticketType: ['' as TicketType | '', [Validators.required]],
   });
+
+  async copyAccount(): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(this.payment.accountNumber);
+      this.copied.set(true);
+      setTimeout(() => this.copied.set(false), 2000);
+    } catch {
+      // Clipboard unavailable (e.g. insecure context) — the number is still visible to copy manually.
+    }
+  }
 
   invalid(name: string): boolean {
     const c = this.form.get(name);

@@ -115,6 +115,68 @@
   }
 }
 
+/* payment details */
+.rsv__pay {
+  text-align: left;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--gold);
+  border-radius: 10px;
+  background: rgba(201, 162, 39, 0.06);
+  display: grid;
+  gap: 0.55rem;
+}
+.rsv__pay-title {
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold-soft);
+}
+.rsv__pay-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.rsv__pay-label {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.rsv__pay-value {
+  font-size: 1rem;
+  color: var(--text-on-ink);
+  font-weight: 500;
+}
+.rsv__pay-acct {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: ui-monospace, Menlo, monospace;
+  letter-spacing: 0.08em;
+}
+.rsv__pay-copy {
+  font-family: var(--body);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold-soft);
+  background: transparent;
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  cursor: pointer;
+  transition: background 0.2s var(--ease), color 0.2s var(--ease);
+
+  &:hover {
+    background: var(--gold);
+    color: var(--on-gold);
+  }
+}
+.rsv__pay-note {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
 /* file dropzone */
 .dropzone {
   display: flex;
