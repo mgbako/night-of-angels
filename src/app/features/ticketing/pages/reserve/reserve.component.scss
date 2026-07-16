@@ -115,6 +115,29 @@
   }
 }
 
+/* second guest (couples) */
+.rsv__partner {
+  text-align: left;
+  display: grid;
+  gap: 1.1rem;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+}
+.rsv__partner-title {
+  font-size: 0.76rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-soft);
+
+  .opt {
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--ink-soft);
+    opacity: 0.8;
+  }
+}
+
 /* payment details */
 .rsv__pay {
   text-align: left;

@@ -29,6 +29,9 @@ interface Reservation {
   phone: string;
   email: string;
   ticketType: TicketType;
+  partnerName?: string;
+  partnerPhone?: string;
+  partnerEmail?: string;
   proofKey: string;
   proofType: string;
   proofName: string;
@@ -121,6 +124,9 @@ async function create(req: Request): Promise<Response> {
     phone?: string;
     email?: string;
     ticketType?: TicketType;
+    partnerName?: string;
+    partnerPhone?: string;
+    partnerEmail?: string;
     proof?: { name?: string; type?: string; dataBase64?: string };
   } | null;
 
@@ -148,12 +154,21 @@ async function create(req: Request): Promise<Response> {
     metadata: { contentType: proof.type, filename: proof.name ?? 'proof' },
   });
 
+  // Second guest is only meaningful for Couples, and every field is optional.
+  const isCouples = body.ticketType === 'COUPLES';
+  const partnerName = isCouples ? (body.partnerName ?? '').trim() : '';
+  const partnerPhone = isCouples ? (body.partnerPhone ?? '').trim() : '';
+  const partnerEmail = isCouples ? (body.partnerEmail ?? '').trim() : '';
+
   const reservation: Reservation = {
     id: randomUUID(),
     name: String(body.name).trim(),
     phone: String(body.phone).trim(),
     email: (body.email ?? '').trim(),
     ticketType: body.ticketType,
+    ...(partnerName ? { partnerName } : {}),
+    ...(partnerPhone ? { partnerPhone } : {}),
+    ...(partnerEmail ? { partnerEmail } : {}),
     proofKey,
     proofType: proof.type,
     proofName: proof.name ?? 'proof',

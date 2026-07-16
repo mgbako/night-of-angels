@@ -9,6 +9,10 @@ export interface Reservation {
   email: string;
   /** Ticket type the guest requested when reserving. Optional for records created before this field existed. */
   ticketType?: TicketType;
+  /** Second guest details, captured for Couples reservations. All optional. */
+  partnerName?: string;
+  partnerPhone?: string;
+  partnerEmail?: string;
   proofType: string;
   proofName: string;
   status: ReservationStatus;
@@ -21,6 +25,9 @@ export interface ReservationDto {
   phone: string;
   email: string;
   ticketType: TicketType;
+  partnerName?: string;
+  partnerPhone?: string;
+  partnerEmail?: string;
   proof: { name: string; type: string; dataBase64: string };
 }
 

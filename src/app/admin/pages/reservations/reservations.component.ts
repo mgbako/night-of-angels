@@ -55,6 +55,13 @@ import {
                 @if (r.ticketType) {
                   <span class="res__req">Requested: {{ typeLabel(r.ticketType) }}</span>
                 }
+                @if (r.partnerName || r.partnerPhone || r.partnerEmail) {
+                  <span class="res__partner">
+                    <adm-icon name="attendees" [size]="13" />
+                    Second guest:
+                    {{ r.partnerName || '—' }}@if (r.partnerPhone) { · {{ r.partnerPhone }} }@if (r.partnerEmail) { · {{ r.partnerEmail }} }
+                  </span>
+                }
               </div>
               <span class="adm-badge" [class]="badge(r.status)">{{ r.status }}</span>
             </div>
@@ -117,6 +124,14 @@ import {
         border: 1px solid rgba(154, 125, 31, 0.35);
         border-radius: 999px;
         padding: 0.1rem 0.6rem;
+      }
+      .res__partner {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-top: 0.4rem;
+        font-size: 0.78rem;
+        color: #6a6354;
       }
       .res__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
       .res__type { padding: 0.4rem 0.6rem; font-size: 0.82rem; }

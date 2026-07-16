@@ -84,6 +84,28 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
               @if (invalid('ticketType')) { <span class="err">Please choose a ticket type.</span> }
             </div>
 
+            @if (isCouples) {
+              <div class="rsv__partner">
+                <span class="rsv__partner-title">
+                  Second guest <span class="opt">(optional)</span>
+                </span>
+                <div class="rsv__field">
+                  <label for="partnerName">Partner’s full name</label>
+                  <input id="partnerName" type="text" formControlName="partnerName" autocomplete="name" />
+                </div>
+                <div class="rsv__field" [class.invalid]="invalid('partnerPhone')">
+                  <label for="partnerPhone">Partner’s phone</label>
+                  <input id="partnerPhone" type="tel" formControlName="partnerPhone" placeholder="0803 000 0000" />
+                  @if (invalid('partnerPhone')) { <span class="err">Enter a valid phone number.</span> }
+                </div>
+                <div class="rsv__field" [class.invalid]="invalid('partnerEmail')">
+                  <label for="partnerEmail">Partner’s email</label>
+                  <input id="partnerEmail" type="email" formControlName="partnerEmail" autocomplete="email" />
+                  @if (invalid('partnerEmail')) { <span class="err">Enter a valid email address.</span> }
+                </div>
+              </div>
+            }
+
             <div class="rsv__pay">
               <span class="rsv__pay-title">Make payment to</span>
               <div class="rsv__pay-row">
@@ -160,7 +182,16 @@ export class ReserveComponent {
     phone: ['', [Validators.required, phoneValidator]],
     email: ['', [Validators.email]],
     ticketType: ['' as TicketType | '', [Validators.required]],
+    // Second guest — only shown/collected for Couples, all optional.
+    partnerName: [''],
+    partnerPhone: ['', [phoneValidator]],
+    partnerEmail: ['', [Validators.email]],
   });
+
+  /** Whether the Couples ticket (and its optional second-guest fields) is selected. */
+  get isCouples(): boolean {
+    return this.form.controls.ticketType.value === 'COUPLES';
+  }
 
   async copyAccount(): Promise<void> {
     try {
@@ -201,6 +232,10 @@ export class ReserveComponent {
 
   async submit(): Promise<void> {
     this.error.set(null);
+    // Drop any second-guest input if the ticket isn't Couples (so hidden values can't block submit).
+    if (!this.isCouples) {
+      this.form.patchValue({ partnerName: '', partnerPhone: '', partnerEmail: '' });
+    }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -211,12 +246,21 @@ export class ReserveComponent {
     }
     this.busy.set(true);
     try {
-      const { ticketType, ...rest } = this.form.getRawValue();
+      const { ticketType, partnerName, partnerPhone, partnerEmail, ...rest } =
+        this.form.getRawValue();
       const dto: ReservationDto = {
-        ...rest,
+        name: rest.name,
+        phone: rest.phone,
+        email: rest.email,
         ticketType: ticketType as TicketType,
         proof: this.proof()!,
       };
+      // Only send second-guest details for a Couples reservation, and only if provided.
+      if (ticketType === 'COUPLES') {
+        if (partnerName.trim()) dto.partnerName = partnerName.trim();
+        if (partnerPhone.trim()) dto.partnerPhone = partnerPhone.trim();
+        if (partnerEmail.trim()) dto.partnerEmail = partnerEmail.trim();
+      }
       await this.api.create(dto);
       this.submittedName.set(rest.name);
       this.done.set(true);
