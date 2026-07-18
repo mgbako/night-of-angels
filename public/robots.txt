@@ -2,5 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /tickets/
+Disallow: /api/
 
-Sitemap: https://nightofangels.com/sitemap.xml
+Sitemap: https://nightofangels2026.com/sitemap.xml

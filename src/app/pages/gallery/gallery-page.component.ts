@@ -2,8 +2,10 @@ import {
   Component,
   HostListener,
   Inject,
+  OnInit,
   PLATFORM_ID,
   computed,
+  inject,
   signal,
 } from '@angular/core';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
@@ -11,6 +13,7 @@ import { RouterLink } from '@angular/router';
 import { CrestComponent } from '../../shared/crest/crest.component';
 import { RevealDirective } from '../../shared/reveal.directive';
 import { GALLERY_ALBUMS, GalleryImage } from '../../config/gallery.config';
+import { SeoService } from '../../shared/seo.service';
 
 interface FlatImage extends GalleryImage {
   albumId: string;
@@ -145,14 +148,24 @@ interface Filter {
   `,
   styleUrl: './gallery-page.component.scss',
 })
-export class GalleryPageComponent {
+export class GalleryPageComponent implements OnInit {
   private isBrowser: boolean;
+  private seo = inject(SeoService);
 
   constructor(
     @Inject(DOCUMENT) private doc: Document,
     @Inject(PLATFORM_ID) platformId: object,
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
+  }
+
+  ngOnInit(): void {
+    this.seo.setSEO({
+      title: 'Gallery — A Night of Angels | Moments From Past Editions',
+      description:
+        'Relive past editions of A Night of Angels — the all-white harvest dinner in Lagos. Browse photos of guests, tables and celebrations from previous years.',
+      path: '/gallery',
+    });
   }
 
   readonly albums = GALLERY_ALBUMS;

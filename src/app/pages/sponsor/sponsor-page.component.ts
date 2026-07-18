@@ -1,13 +1,16 @@
 import {
   Component,
   Inject,
+  OnInit,
   PLATFORM_ID,
+  inject,
   signal,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { CrestComponent } from '../../shared/crest/crest.component';
 import { RevealDirective } from '../../shared/reveal.directive';
 import { PARTNERSHIPS_EMAIL } from '../../config/event.config';
+import { SeoService } from '../../shared/seo.service';
 import {
   CURRENT_PARTNERS,
   IMPACT_POINTS,
@@ -255,11 +258,23 @@ type FormStatus = 'idle' | 'sending' | 'sent' | 'error';
   `,
   styleUrl: './sponsor-page.component.scss',
 })
-export class SponsorPageComponent {
+export class SponsorPageComponent implements OnInit {
   private isBrowser: boolean;
+  private seo = inject(SeoService);
 
   constructor(@Inject(PLATFORM_ID) platformId: object) {
     this.isBrowser = isPlatformBrowser(platformId);
+  }
+
+  ngOnInit(): void {
+    this.seo.setSEO({
+      title: 'Partner With Us — A Night of Angels | Sponsorship & Tables',
+      description:
+        'Become a partner of A Night of Angels 2026 in Lagos. Explore Title, Platinum and Gold sponsorship tiers, book a table of ten, and reach an exclusive audience.',
+      keywords:
+        'event sponsorship Lagos, corporate partnership Nigeria, gala sponsor Lagos, A Night of Angels sponsor, table of ten',
+      path: '/sponsor',
+    });
   }
 
   readonly stats = SPONSOR_STATS;

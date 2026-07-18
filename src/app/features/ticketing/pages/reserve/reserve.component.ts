@@ -1,4 +1,4 @@
-import { Component, afterNextRender, inject, signal } from '@angular/core';
+import { Component, OnInit, afterNextRender, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   AbstractControl,
@@ -9,6 +9,7 @@ import {
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { LogoComponent } from '../../../../shared/logo/logo.component';
+import { SeoService } from '../../../../shared/seo.service';
 import { ReservationApiService } from '../../services/reservation-api.service';
 import { ReservationDto } from '../../models/reservation.model';
 import {
@@ -177,16 +178,28 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
   `,
   styleUrl: './reserve.component.scss',
 })
-export class ReserveComponent {
+export class ReserveComponent implements OnInit {
   private fb = inject(FormBuilder);
   private api = inject(ReservationApiService);
   protected settings = inject(EventSettingsService);
+  private seo = inject(SeoService);
 
   readonly ticketTypes = TICKET_TYPES;
   readonly payment = PAYMENT;
 
   constructor() {
     afterNextRender(() => this.settings.load());
+  }
+
+  ngOnInit(): void {
+    this.seo.setSEO({
+      title: 'Reserve Your Seat — A Night of Angels 2026 · Lagos',
+      description:
+        'Reserve your seat for A Night of Angels on 24 October 2026 in Lagos. Choose Singles, Couples or a Table of Ten and confirm your place at the all-white harvest dinner.',
+      keywords:
+        'reserve seat A Night of Angels, buy tickets Lagos dinner, table of ten Lagos, harvest dinner tickets 2026',
+      path: '/reserve',
+    });
   }
 
   /** Price to show for a ticket, accounting for whether early bird is still active. */

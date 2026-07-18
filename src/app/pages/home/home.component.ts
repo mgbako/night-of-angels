@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
+import { SeoService } from '../../shared/seo.service';
 import { HeroComponent } from './sections/hero/hero.component';
 import { EveningComponent } from './sections/evening/evening.component';
 import { GalleryPreviewComponent } from './sections/gallery-preview/gallery-preview.component';
@@ -39,4 +40,17 @@ import { RevealDirective } from '../../shared/reveal.directive';
     </main>
   `,
 })
-export class HomeComponent {}
+export class HomeComponent implements OnInit {
+  private seo = inject(SeoService);
+
+  ngOnInit(): void {
+    this.seo.setSEO({
+      title: 'A Night of Angels | All-White Luxury Dinner Experience · Lagos',
+      description:
+        'A Night of Angels — an exclusive all-white luxury harvest dinner in Lagos on 24 October 2026. Reserve your seat, book a table of ten, or become a partner.',
+      keywords:
+        'all-white party Lagos, luxury dinner Lagos, harvest dinner 2026, A Night of Angels, exclusive gala Lagos Nigeria, SS Peter and Paul Oke-Afa',
+      path: '/',
+    });
+  }
+}
