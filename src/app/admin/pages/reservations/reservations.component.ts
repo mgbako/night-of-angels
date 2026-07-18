@@ -1,6 +1,7 @@
-import { Component, afterNextRender, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, afterNextRender, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { AdminIconComponent } from '../../shared/admin-icon.component';
 import { ReservationApiService } from '../../../features/ticketing/services/reservation-api.service';
 import {
@@ -115,9 +116,77 @@ import { AuthService } from '../../services/auth.service';
         }
       </div>
     }
+
+    @if (proof(); as p) {
+      <div class="proof-modal" role="dialog" aria-modal="true" aria-label="Proof of payment" (click)="closeProof()">
+        <div class="proof-modal__box" (click)="$event.stopPropagation()">
+          <div class="proof-modal__head">
+            <span>Proof of payment — {{ p.name }}</span>
+            <div class="proof-modal__tools">
+              <a class="adm-btn adm-btn--sm" [href]="p.url" target="_blank" rel="noopener" title="Open in new tab">
+                <adm-icon name="external" [size]="15" /> Open
+              </a>
+              <button class="adm-btn adm-btn--sm" (click)="closeProof()" aria-label="Close">
+                <adm-icon name="close" [size]="16" />
+              </button>
+            </div>
+          </div>
+          <div class="proof-modal__body">
+            @if (p.isImage) {
+              <img [src]="p.url" [alt]="'Proof of payment from ' + p.name" />
+            } @else {
+              <iframe [src]="p.safeUrl" title="Proof of payment"></iframe>
+            }
+          </div>
+        </div>
+      </div>
+    }
   `,
   styles: [
     `
+      .proof-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.2rem;
+        background: rgba(10, 9, 8, 0.72);
+        backdrop-filter: blur(2px);
+        animation: proof-fade 0.14s ease;
+      }
+      @keyframes proof-fade { from { opacity: 0; } to { opacity: 1; } }
+      .proof-modal__box {
+        display: flex;
+        flex-direction: column;
+        width: min(720px, 100%);
+        max-height: 90vh;
+        background: #fff;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+      }
+      .proof-modal__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.6rem;
+        padding: 0.7rem 0.9rem 0.7rem 1.1rem;
+        border-bottom: 1px solid #e7e2d5;
+        font-weight: 600;
+        color: #23201a;
+      }
+      .proof-modal__tools { display: flex; gap: 0.4rem; }
+      .proof-modal__body {
+        overflow: auto;
+        background: #f2efe7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .proof-modal__body img { max-width: 100%; max-height: 82vh; display: block; }
+      .proof-modal__body iframe { width: 100%; height: 82vh; border: 0; background: #fff; }
       .res-list { display: grid; gap: 0.8rem; }
       .res { padding: 1rem 1.1rem; }
       .res__main {
@@ -158,7 +227,16 @@ export class ReservationsComponent {
   private api = inject(ReservationApiService);
   private auth = inject(AuthService);
   private settings = inject(EventSettingsService);
+  private sanitizer = inject(DomSanitizer);
   readonly ticketTypes = TICKET_TYPES;
+
+  /** Proof lightbox state (null when closed). */
+  proof = signal<{
+    name: string;
+    url: string;
+    safeUrl: SafeResourceUrl;
+    isImage: boolean;
+  } | null>(null);
 
   price(t: TicketTypeMeta): number {
     return effectivePrice(t, this.settings.isEarlyBird());
@@ -245,14 +323,32 @@ export class ReservationsComponent {
   async viewProof(r: Reservation): Promise<void> {
     this.opening.set(r.id);
     try {
-      const url = await this.api.proofObjectUrl(r.id);
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      this.closeProof(); // revoke any previous object URL
+      const { url, type } = await this.api.proofObjectUrl(r.id);
+      this.proof.set({
+        name: r.name,
+        url,
+        safeUrl: this.sanitizer.bypassSecurityTrustResourceUrl(url),
+        isImage: type.startsWith('image/'),
+      });
     } catch (e) {
       this.flash(e instanceof Error ? e.message : 'Could not open proof', false);
     } finally {
       this.opening.set(null);
     }
+  }
+
+  closeProof(): void {
+    const p = this.proof();
+    if (p) {
+      URL.revokeObjectURL(p.url);
+      this.proof.set(null);
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closeProof();
   }
 
   async approve(r: Reservation): Promise<void> {

@@ -9,8 +9,15 @@ import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminIconComponent } from '../../shared/admin-icon.component';
 import { EVENT_DATE, EVENT_ARRIVAL_NOTE } from '../../../config/event.config';
+import {
+  TICKET_TYPES,
+  TicketType,
+  ticketTypeMeta,
+} from '../../../features/ticketing/models/attendee.model';
 
 type Theme = 'dark' | 'light';
+/** What the poster advertises: a general reservation call, or a ticket tier. */
+type PosterKind = 'reserve' | TicketType;
 
 /**
  * Generates a shareable "Scan to Reserve" asset for social media and printed
@@ -31,6 +38,16 @@ type Theme = 'dark' | 'light';
 
     <div class="promo">
       <div class="promo__controls adm-card">
+        <label class="promo__field">
+          <span>Poster</span>
+          <select [ngModel]="kind()" (ngModelChange)="setKind($event)">
+            <option value="reserve">General — Reserve your seat</option>
+            @for (t of ticketTypes; track t.value) {
+              <option [value]="t.value">{{ t.label }} ticket — {{ money(t.price) }}</option>
+            }
+          </select>
+        </label>
+
         <label class="promo__field">
           <span>Reservation link</span>
           <input type="url" [(ngModel)]="link" (ngModelChange)="scheduleRender()" />
@@ -81,12 +98,14 @@ type Theme = 'dark' | 'light';
       .promo__controls { padding: 1.2rem; display: grid; gap: 1.1rem; }
       .promo__field { display: grid; gap: 0.4rem; }
       .promo__field > span { font-size: 0.8rem; color: var(--adm-muted, #8a8270); letter-spacing: 0.03em; }
-      .promo__field input {
+      .promo__field input,
+      .promo__field select {
         padding: 0.65rem 0.75rem; border: 1px solid var(--adm-line, #d9d2c2);
         border-radius: 8px; font: inherit; font-size: 0.9rem;
         background: var(--adm-surface, #fff); color: var(--adm-ink, #1a1610);
       }
-      .promo__field input:focus { outline: none; border-color: var(--adm-gold, #b0891d); }
+      .promo__field input:focus,
+      .promo__field select:focus { outline: none; border-color: var(--adm-gold, #b0891d); }
       .promo__seg { display: inline-flex; border: 1px solid var(--adm-line, #d9d2c2); border-radius: 8px; overflow: hidden; }
       .promo__seg button {
         flex: 1; padding: 0.55rem 0.6rem; background: transparent; border: 0; cursor: pointer;
@@ -110,11 +129,23 @@ export class PromoteComponent {
 
   link = '';
   theme = signal<Theme>('dark');
+  kind = signal<PosterKind>('reserve');
   posterUrl = signal<string | null>(null);
   qrUrl = signal<string | null>(null);
   copied = signal(false);
 
+  readonly ticketTypes = TICKET_TYPES;
+
   private renderTimer?: ReturnType<typeof setTimeout>;
+
+  money(n: number): string {
+    return `₦${n.toLocaleString('en-NG')}`;
+  }
+
+  setKind(k: PosterKind): void {
+    this.kind.set(k);
+    this.render();
+  }
 
   constructor(
     @Inject(DOCUMENT) private doc: Document,
@@ -283,14 +314,33 @@ export class PromoteComponent {
     ctx.fillStyle = soft;
     this.text(ctx, 'HARVEST DINNER 2026', W / 2, 420, '500 24px Jost, Arial, sans-serif', 6);
 
-    // Call to action.
-    ctx.fillStyle = text;
-    this.text(ctx, 'SCAN TO RESERVE YOUR SEAT', W / 2, 500, '600 30px Jost, Arial, sans-serif', 3);
+    // Body: either a general reserve call, or a specific ticket tier.
+    const kind = this.kind();
+    let plate: number;
+    let py: number;
+    if (kind === 'reserve') {
+      ctx.fillStyle = text;
+      this.text(ctx, 'SCAN TO RESERVE YOUR SEAT', W / 2, 500, '600 30px Jost, Arial, sans-serif', 3);
+      plate = 560;
+      py = 540;
+    } else {
+      const meta = ticketTypeMeta(kind);
+      ctx.fillStyle = text;
+      this.text(ctx, meta.label.toUpperCase(), W / 2, 486, '600 54px "Cormorant Garamond", Georgia, serif', 2);
+      ctx.fillStyle = gold;
+      this.text(ctx, this.money(meta.price), W / 2, 556, '700 46px Jost, Arial, sans-serif', 1);
+      const seats = meta.seats === 1 ? 'Admits 1 guest' : `Admits ${meta.seats} guests`;
+      const seatsLine = kind === 'COUPLES' ? `${seats} · Early-bird` : seats;
+      ctx.fillStyle = soft;
+      this.text(ctx, seatsLine.toUpperCase(), W / 2, 596, '500 22px Jost, Arial, sans-serif', 3);
+      ctx.fillStyle = text;
+      this.text(ctx, 'SCAN TO RESERVE', W / 2, 648, '600 26px Jost, Arial, sans-serif', 3);
+      plate = 460;
+      py = 678;
+    }
 
     // White QR plate.
-    const plate = 560;
     const px = (W - plate) / 2;
-    const py = 540;
     ctx.fillStyle = '#ffffff';
     this.roundRect(ctx, px, py, plate, plate, 28);
     ctx.fill();
@@ -366,7 +416,10 @@ export class PromoteComponent {
   }
 
   downloadPoster(): void {
-    this.save(this.posterUrl(), 'night-of-angels-reserve-poster.png');
+    const kind = this.kind();
+    const slug =
+      kind === 'reserve' ? 'reserve' : ticketTypeMeta(kind).label.toLowerCase().replace(/\s+/g, '-');
+    this.save(this.posterUrl(), `night-of-angels-${slug}-poster.png`);
   }
 
   downloadQr(): void {

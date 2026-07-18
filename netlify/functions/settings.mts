@@ -1,8 +1,11 @@
 import type { Context } from '@netlify/functions';
 import { AuthError, requirePermission } from '../shared/auth';
 import {
+  DEFAULT_MAINTENANCE_MESSAGE,
+  DEFAULT_MAINTENANCE_TITLE,
   EventSettings,
   normalizeDate,
+  normalizeText,
   readSettings,
   writeSettings,
 } from '../shared/settings';
@@ -41,6 +44,9 @@ export default async (req: Request, _context: Context): Promise<Response> => {
         earlyBirdEnds: normalizeDate(body.earlyBirdEnds),
         ticketSalesEnd: normalizeDate(body.ticketSalesEnd),
         reservationEnd: normalizeDate(body.reservationEnd),
+        maintenance: body.maintenance === true,
+        maintenanceTitle: normalizeText(body.maintenanceTitle, DEFAULT_MAINTENANCE_TITLE, 120),
+        maintenanceMessage: normalizeText(body.maintenanceMessage, DEFAULT_MAINTENANCE_MESSAGE, 600),
       };
       await writeSettings(settings);
       return json(settings);

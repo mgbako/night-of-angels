@@ -5,12 +5,22 @@ export interface EventSettings {
   earlyBirdEnds: string | null;
   ticketSalesEnd: string | null;
   reservationEnd: string | null;
+  maintenance: boolean;
+  maintenanceTitle: string;
+  maintenanceMessage: string;
 }
+
+export const DEFAULT_MAINTENANCE_TITLE = 'Coming Soon';
+export const DEFAULT_MAINTENANCE_MESSAGE =
+  'Something beautiful is on the way. A Night of Angels will be revealed shortly — please check back soon.';
 
 const EMPTY: EventSettings = {
   earlyBirdEnds: null,
   ticketSalesEnd: null,
   reservationEnd: null,
+  maintenance: false,
+  maintenanceTitle: DEFAULT_MAINTENANCE_TITLE,
+  maintenanceMessage: DEFAULT_MAINTENANCE_MESSAGE,
 };
 
 /**
@@ -33,6 +43,9 @@ export class EventSettingsService {
     const s = this.settings();
     return !this.isPast(s.ticketSalesEnd) && !this.isPast(s.reservationEnd);
   });
+
+  /** Maintenance mode flag (organiser-set). */
+  readonly maintenance = computed(() => this.settings().maintenance);
 
   async load(): Promise<EventSettings> {
     try {
@@ -67,6 +80,9 @@ export class EventSettingsService {
       earlyBirdEnds: d.earlyBirdEnds ?? null,
       ticketSalesEnd: d.ticketSalesEnd ?? null,
       reservationEnd: d.reservationEnd ?? null,
+      maintenance: d.maintenance === true,
+      maintenanceTitle: d.maintenanceTitle?.trim() || DEFAULT_MAINTENANCE_TITLE,
+      maintenanceMessage: d.maintenanceMessage?.trim() || DEFAULT_MAINTENANCE_MESSAGE,
     };
   }
 

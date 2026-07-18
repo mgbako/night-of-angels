@@ -15,12 +15,23 @@ export interface EventSettings {
   earlyBirdEnds: string | null;
   ticketSalesEnd: string | null;
   reservationEnd: string | null;
+  /** When true, the public site shows the coming-soon page to signed-out visitors. */
+  maintenance: boolean;
+  maintenanceTitle: string;
+  maintenanceMessage: string;
 }
+
+export const DEFAULT_MAINTENANCE_TITLE = 'Coming Soon';
+export const DEFAULT_MAINTENANCE_MESSAGE =
+  'Something beautiful is on the way. A Night of Angels will be revealed shortly — please check back soon.';
 
 export const DEFAULT_SETTINGS: EventSettings = {
   earlyBirdEnds: null,
   ticketSalesEnd: null,
   reservationEnd: null,
+  maintenance: false,
+  maintenanceTitle: DEFAULT_MAINTENANCE_TITLE,
+  maintenanceMessage: DEFAULT_MAINTENANCE_MESSAGE,
 };
 
 const STORE = 'settings';
@@ -38,11 +49,22 @@ export async function readSettings(): Promise<EventSettings> {
     earlyBirdEnds: normalizeDate(d.earlyBirdEnds),
     ticketSalesEnd: normalizeDate(d.ticketSalesEnd),
     reservationEnd: normalizeDate(d.reservationEnd),
+    maintenance: d.maintenance === true,
+    maintenanceTitle: normalizeText(d.maintenanceTitle, DEFAULT_MAINTENANCE_TITLE, 120),
+    maintenanceMessage: normalizeText(d.maintenanceMessage, DEFAULT_MAINTENANCE_MESSAGE, 600),
   };
 }
 
 export async function writeSettings(s: EventSettings): Promise<void> {
   await store().setJSON(KEY, s);
+}
+
+/** Trim a string to a max length, falling back to a default when empty. */
+export function normalizeText(value: unknown, fallback: string, max: number): string {
+  if (typeof value !== 'string') return fallback;
+  const trimmed = value.trim();
+  if (!trimmed) return fallback;
+  return trimmed.slice(0, max);
 }
 
 /** Accept a valid ISO date string, else null. */

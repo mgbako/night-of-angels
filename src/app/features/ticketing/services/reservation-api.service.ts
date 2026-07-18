@@ -33,8 +33,8 @@ export class ReservationApiService {
     return (await res.json()) as Reservation[];
   }
 
-  /** Fetch the proof file (with auth) as an object URL for viewing. */
-  async proofObjectUrl(id: string): Promise<string> {
+  /** Fetch the proof file (with auth) as an object URL + its content type. */
+  async proofObjectUrl(id: string): Promise<{ url: string; type: string }> {
     const res = await fetch(`${API}/${id}/proof`, { headers: this.auth.authHeader() });
     if (res.status === 401) {
       this.auth.handleUnauthorized();
@@ -42,7 +42,7 @@ export class ReservationApiService {
     }
     if (!res.ok) throw new Error('Could not load proof');
     const blob = await res.blob();
-    return URL.createObjectURL(blob);
+    return { url: URL.createObjectURL(blob), type: blob.type };
   }
 
   async approve(id: string, ticketType: TicketType): Promise<Attendee> {

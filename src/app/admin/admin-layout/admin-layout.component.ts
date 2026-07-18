@@ -17,6 +17,7 @@ import {
 } from '@angular/router';
 import { filter } from 'rxjs';
 import { CrestComponent } from '../../shared/crest/crest.component';
+import { LogoComponent } from '../../shared/logo/logo.component';
 import { AdminIconComponent, IconName } from '../shared/admin-icon.component';
 import { AuthService } from '../services/auth.service';
 import { Permission, ROLE_LABELS } from '../services/permissions';
@@ -38,6 +39,7 @@ interface AdminNavLink {
     RouterLink,
     RouterLinkActive,
     CrestComponent,
+    LogoComponent,
     AdminIconComponent,
   ],
   template: `
@@ -53,7 +55,7 @@ interface AdminNavLink {
       <!-- Sidebar -->
       <aside class="adm-sidebar">
         <a class="adm-brand" routerLink="/admin" aria-label="Admin home">
-          <app-crest [size]="34" [full]="false" />
+          <app-logo [size]="36" />
           <span>
             <strong>Night of Angels</strong>
             <em>Back Office</em>
@@ -100,7 +102,7 @@ interface AdminNavLink {
       <div class="adm-main">
         <header class="adm-topbar">
           <a class="adm-topbar__brand" routerLink="/admin">
-            <app-crest [size]="30" [full]="false" />
+            <app-logo [size]="30" />
             <span>Back Office</span>
           </a>
 
