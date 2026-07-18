@@ -20,9 +20,11 @@ export class ReservationApiService {
     if (!res.ok) throw new Error((body as { error?: string }).error || 'Could not submit reservation');
   }
 
-  /** Organizer — list all reservations. */
-  async list(): Promise<Reservation[]> {
-    const res = await fetch(API, { headers: this.auth.authHeader() });
+  /** Organizer — list reservations. Pass archived to list soft-deleted ones (owner only). */
+  async list(archived = false): Promise<Reservation[]> {
+    const res = await fetch(archived ? `${API}?archived=1` : API, {
+      headers: this.auth.authHeader(),
+    });
     if (res.status === 401) {
       this.auth.handleUnauthorized();
       throw new Error('Session expired');
@@ -54,8 +56,27 @@ export class ReservationApiService {
     return (body as { attendee: Attendee }).attendee;
   }
 
+  /** Archive (soft-delete) a reservation. Keeps the record + proof. */
   async remove(id: string): Promise<void> {
     const res = await fetch(`${API}/${id}`, { method: 'DELETE', headers: this.auth.authHeader() });
-    if (!res.ok) throw new Error('Could not remove reservation');
+    if (!res.ok) throw new Error('Could not archive reservation');
+  }
+
+  /** Restore an archived reservation — owner only. */
+  async restore(id: string): Promise<void> {
+    const res = await fetch(`${API}/${id}/restore`, {
+      method: 'POST',
+      headers: this.auth.authHeader(),
+    });
+    if (!res.ok) throw new Error('Could not restore reservation');
+  }
+
+  /** Permanently delete a reservation and its proof — owner only. */
+  async permanentDelete(id: string): Promise<void> {
+    const res = await fetch(`${API}/${id}?permanent=1`, {
+      method: 'DELETE',
+      headers: this.auth.authHeader(),
+    });
+    if (!res.ok) throw new Error('Could not delete reservation');
   }
 }

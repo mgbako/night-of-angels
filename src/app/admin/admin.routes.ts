@@ -59,11 +59,25 @@ export const ADMIN_ROUTES: Routes = [
         title: 'Ticketing — Back Office',
       },
       {
+        path: 'tables',
+        canActivate: [permissionGuard('attendees')],
+        loadComponent: () =>
+          import('./pages/tables/tables.component').then((m) => m.TablesComponent),
+        title: 'Tables — Back Office',
+      },
+      {
         path: 'team',
         canActivate: [permissionGuard('team')],
         loadComponent: () =>
           import('./pages/team/team.component').then((m) => m.TeamComponent),
         title: 'Team — Back Office',
+      },
+      {
+        path: 'settings',
+        canActivate: [permissionGuard('settings')],
+        loadComponent: () =>
+          import('./pages/settings/settings.component').then((m) => m.SettingsComponent),
+        title: 'Settings — Back Office',
       },
       {
         path: 'account',

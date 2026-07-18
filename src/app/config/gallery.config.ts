@@ -43,6 +43,18 @@ export const GALLERY_ALBUMS: GalleryAlbum[] = [
       'The very first Night of Angels — a room dressed entirely in white, and a community gathered in gratitude.',
     images: [
       {
+        src: 'gallery/2025-couple.jpg',
+        alt: 'A couple dressed in rich terracotta and gold at the dinner',
+        caption: 'Dressed for the evening',
+        shape: 'tall',
+      },
+      {
+        src: 'gallery/2025-guests.jpg',
+        alt: 'Three guests in coordinated terracotta attire',
+        caption: 'Friends of the harvest',
+        shape: 'tall',
+      },
+      {
         src: 'gallery/candles.svg',
         alt: 'Candlelit tables glowing across the dining room',
         caption: 'Candlelight, end to end',
@@ -120,6 +132,18 @@ export const GALLERY_ALBUMS: GalleryAlbum[] = [
     blurb:
       'The gathering that started it all — intimate, intentional, and unmistakably warm.',
     images: [
+      {
+        src: 'gallery/2023-hall.jpg',
+        alt: 'Guests seated and standing together in the softly lit banquet hall',
+        caption: 'Gathered in gratitude',
+        shape: 'wide',
+      },
+      {
+        src: 'gallery/2023-friends.jpg',
+        alt: 'Guests sharing a joyful moment together',
+        caption: 'Warmth all around',
+        shape: 'tall',
+      },
       {
         src: 'gallery/florals.svg',
         alt: 'Floral arrangement catching the candlelight',

@@ -18,6 +18,10 @@ export interface Attendee {
   checkedIn: boolean;
   checkedInAt: string | null;
   createdAt: string;
+  /** Table assignment (e.g. "12" or "VIP 3"). Optional. */
+  tableNumber?: string;
+  /** Set when soft-deleted (archived). Absent/null = active. */
+  deletedAt?: string | null;
 }
 
 const STORE = 'ticketing';
@@ -55,7 +59,7 @@ export async function addAttendee(input: {
 }): Promise<Attendee> {
   const list = await readAttendees();
   const email = input.email.trim().toLowerCase();
-  if (email && list.some((a) => a.email.toLowerCase() === email)) {
+  if (email && list.some((a) => !a.deletedAt && a.email.toLowerCase() === email)) {
     throw new Error('DUP_EMAIL');
   }
   const attendee: Attendee = {

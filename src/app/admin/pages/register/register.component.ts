@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, afterNextRender, inject, signal } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -17,8 +17,11 @@ import {
   Attendee,
   TICKET_TYPES,
   TicketType,
+  TicketTypeMeta,
+  effectivePrice,
   ticketTypeMeta,
 } from '../../../features/ticketing/models/attendee.model';
+import { EventSettingsService } from '../../../shared/event-settings.service';
 
 // Accepts Nigerian formats: 0803..., +234803..., with spaces/dashes. 10–14 digits.
 function phoneValidator(control: AbstractControl): ValidationErrors | null {
@@ -94,10 +97,15 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
                 <label class="adm-radio">
                   <input type="radio" formControlName="ticketType" [value]="t.value" />
                   <strong>{{ t.label }}</strong>
-                  <span>₦{{ t.price.toLocaleString() }} · {{ t.seats }} seat(s)</span>
+                  <span>₦{{ price(t).toLocaleString() }} · {{ t.seats }} seat(s)</span>
                 </label>
               }
             </div>
+          </div>
+
+          <div class="adm-field">
+            <label for="r-table">Table number <span style="opacity:.6">(optional)</span></label>
+            <input id="r-table" type="text" formControlName="tableNumber" placeholder="e.g. 12 or VIP 3" />
           </div>
 
           @if (error()) {
@@ -143,8 +151,17 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
 export class RegisterComponent {
   private fb = inject(FormBuilder);
   private api = inject(AttendeeApiService);
+  private settings = inject(EventSettingsService);
 
   readonly ticketTypes = TICKET_TYPES;
+
+  constructor() {
+    afterNextRender(() => this.settings.load());
+  }
+
+  price(t: TicketTypeMeta): number {
+    return effectivePrice(t, this.settings.isEarlyBird());
+  }
 
   submitting = signal(false);
   error = signal<string | null>(null);
@@ -159,6 +176,7 @@ export class RegisterComponent {
     phone: ['', [Validators.required, phoneValidator]],
     email: ['', [Validators.required, Validators.email]],
     ticketType: ['SINGLES' as TicketType, Validators.required],
+    tableNumber: [''],
   });
 
   invalid(name: string): boolean {
@@ -211,6 +229,6 @@ export class RegisterComponent {
   reset(): void {
     this.created.set(null);
     this.error.set(null);
-    this.form.reset({ name: '', phone: '', email: '', ticketType: 'SINGLES' });
+    this.form.reset({ name: '', phone: '', email: '', ticketType: 'SINGLES', tableNumber: '' });
   }
 }

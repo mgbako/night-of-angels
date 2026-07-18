@@ -6,7 +6,7 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { CrestComponent } from '../../../../shared/crest/crest.component';
+import { LogoComponent } from '../../../../shared/logo/logo.component';
 import { EVENT_DATE } from '../../../../config/event.config';
 
 interface CountdownView {
@@ -19,7 +19,7 @@ interface CountdownView {
 @Component({
   selector: 'app-hero',
   standalone: true,
-  imports: [CrestComponent, RouterLink],
+  imports: [LogoComponent, RouterLink],
   template: `
     <section class="hero" [class.loaded]="loaded()" id="hero">
       <div class="hero__grain" aria-hidden="true"></div>
@@ -29,7 +29,7 @@ interface CountdownView {
       <span class="bracket br" aria-hidden="true"></span>
 
       <div class="hero__content">
-        <app-crest [size]="64" />
+        <app-logo [size]="150" class="hero__logo" />
         <h1>A Night of Angels</h1>
         <p class="tagline">An All-White Luxury Dinner Experience</p>
         <p class="meta">

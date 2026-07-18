@@ -10,8 +10,12 @@ import {
 import {
   TICKET_TYPES,
   TicketType,
+  TicketTypeMeta,
+  effectivePrice,
   ticketTypeLabel,
 } from '../../../features/ticketing/models/attendee.model';
+import { EventSettingsService } from '../../../shared/event-settings.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-admin-reservations',
@@ -37,6 +41,9 @@ import {
         <option value="pending">Pending ({{ counts().pending }})</option>
         <option value="approved">Approved ({{ counts().approved }})</option>
         <option value="all">All ({{ all().length }})</option>
+        @if (isOwner()) {
+          <option value="archived">Archived ({{ archived().length }})</option>
+        }
       </select>
     </div>
 
@@ -71,11 +78,18 @@ import {
                 <adm-icon name="external" [size]="15" /> {{ opening() === r.id ? 'Opening…' : 'View proof' }}
               </button>
 
-              @if (r.status === 'pending') {
+              @if (r.deletedAt) {
+                <button class="adm-btn adm-btn--sm" (click)="restore(r)" [disabled]="busy()">
+                  Restore
+                </button>
+                <button class="adm-btn adm-btn--sm adm-btn--danger" (click)="permanentDelete(r)" [disabled]="busy()">
+                  <adm-icon name="trash" [size]="15" /> Delete permanently
+                </button>
+              } @else if (r.status === 'pending') {
                 <select class="adm-select res__type" [(ngModel)]="picked[r.id]">
                   <option value="">Ticket type…</option>
                   @for (t of ticketTypes; track t.value) {
-                    <option [value]="t.value">{{ t.label }} — ₦{{ t.price.toLocaleString() }}</option>
+                    <option [value]="t.value">{{ t.label }} — ₦{{ price(t).toLocaleString() }}</option>
                   }
                 </select>
                 <button class="adm-btn adm-btn--sm adm-btn--primary" (click)="approve(r)" [disabled]="busy()">
@@ -142,13 +156,22 @@ import {
 })
 export class ReservationsComponent {
   private api = inject(ReservationApiService);
+  private auth = inject(AuthService);
+  private settings = inject(EventSettingsService);
   readonly ticketTypes = TICKET_TYPES;
 
+  price(t: TicketTypeMeta): number {
+    return effectivePrice(t, this.settings.isEarlyBird());
+  }
+
+  isOwner = () => this.auth.isOwner();
+
   all = signal<Reservation[]>([]);
+  archived = signal<Reservation[]>([]);
   loading = signal(true);
   busy = signal(false);
   opening = signal<string | null>(null);
-  filter = signal<'pending' | 'approved' | 'all'>('pending');
+  filter = signal<'pending' | 'approved' | 'all' | 'archived'>('pending');
   notice = signal<{ msg: string; ok: boolean } | null>(null);
   picked: Record<string, TicketType | ''> = {};
 
@@ -159,11 +182,16 @@ export class ReservationsComponent {
 
   visible = computed(() => {
     const f = this.filter();
-    return f === 'all' ? this.all() : this.all().filter((r) => r.status === f);
+    if (f === 'archived') return this.archived();
+    if (f === 'all') return this.all();
+    return this.all().filter((r) => r.status === f);
   });
 
   constructor() {
-    afterNextRender(() => this.load());
+    afterNextRender(() => {
+      this.settings.load();
+      this.load();
+    });
   }
 
   async load(): Promise<void> {
@@ -177,10 +205,40 @@ export class ReservationsComponent {
           this.picked[r.id] = r.ticketType;
         }
       }
+      if (this.auth.isOwner()) this.archived.set(await this.api.list(true));
     } catch (e) {
       this.flash(e instanceof Error ? e.message : 'Could not load', false);
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  async restore(r: Reservation): Promise<void> {
+    this.busy.set(true);
+    try {
+      await this.api.restore(r.id);
+      this.flash(`${r.name}'s reservation restored.`, true);
+      await this.load();
+    } catch (e) {
+      this.flash(e instanceof Error ? e.message : 'Could not restore', false);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async permanentDelete(r: Reservation): Promise<void> {
+    if (!confirm(`Permanently delete ${r.name}'s reservation and its proof? This cannot be undone.`)) {
+      return;
+    }
+    this.busy.set(true);
+    try {
+      await this.api.permanentDelete(r.id);
+      this.flash(`${r.name}'s reservation deleted.`, true);
+      await this.load();
+    } catch (e) {
+      this.flash(e instanceof Error ? e.message : 'Could not delete', false);
+    } finally {
+      this.busy.set(false);
     }
   }
 
@@ -216,11 +274,13 @@ export class ReservationsComponent {
   }
 
   async reject(r: Reservation): Promise<void> {
-    if (!confirm(`Remove ${r.name}'s reservation? This deletes their uploaded proof.`)) return;
+    if (!confirm(`Archive ${r.name}'s reservation? It moves to the archive and can be restored.`)) {
+      return;
+    }
     this.busy.set(true);
     try {
       await this.api.remove(r.id);
-      this.flash(`${r.name}'s reservation removed.`, true);
+      this.flash(`${r.name}'s reservation archived.`, true);
       await this.load();
     } catch (e) {
       this.flash(e instanceof Error ? e.message : 'Could not remove', false);

@@ -7,6 +7,11 @@
 // Format: YYYY-MM-DDTHH:MM:SS (local time).
 export const EVENT_DATE = new Date('2026-10-24T17:00:00');
 
+// When guests should start arriving (doors open). Kept as a short label so it
+// can be shown on tickets, emails and the reserve flow.
+export const EVENT_ARRIVAL_TIME = '5:00 PM';
+export const EVENT_ARRIVAL_NOTE = `Arrivals from ${EVENT_ARRIVAL_TIME}`;
+
 // PLACEHOLDER contact details
 export const RSVP_EMAIL = 'rsvp@nightofangels.example';
 export const PARTNERSHIPS_EMAIL = 'partnerships@nightofangels.example';

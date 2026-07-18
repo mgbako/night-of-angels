@@ -11,7 +11,9 @@ import {
   normalizeRole,
   readUsers,
   requireAuth,
+  requireOwner,
   requirePermission,
+  setDeleted,
   setPassword,
   setRole,
   signToken,
@@ -43,6 +45,7 @@ export const config = {
     '/api/auth/users/:id',
     '/api/auth/users/:id/password',
     '/api/auth/users/:id/role',
+    '/api/auth/users/:id/restore',
   ],
 };
 
@@ -79,11 +82,19 @@ export default async (req: Request, context: Context): Promise<Response> => {
     if (path === '/api/auth/users') {
       // Managing the team is owner-only (the 'team' permission).
       requirePermission(req, 'team');
-      if (req.method === 'GET') return json((await readUsers()).map(toSafe));
+      if (req.method === 'GET') {
+        const archived = new URL(req.url).searchParams.get('archived') === '1';
+        const users = (await readUsers()).filter((u) => (archived ? u.deletedAt : !u.deletedAt));
+        return json(users.map(toSafe));
+      }
       if (req.method === 'POST') return await createUser(req);
     }
 
     if (userId) {
+      if (path.endsWith('/restore') && req.method === 'POST') {
+        requireOwner(req);
+        return await restoreUser(userId);
+      }
       const actor = requirePermission(req, 'team');
       if (path.endsWith('/password') && req.method === 'POST') {
         return await setUserPassword(userId, req);
@@ -91,7 +102,14 @@ export default async (req: Request, context: Context): Promise<Response> => {
       if (path.endsWith('/role') && req.method === 'POST') {
         return await updateUserRole(userId, req, actor.sub);
       }
-      if (req.method === 'DELETE') return await deleteUser(userId, actor.sub);
+      if (req.method === 'DELETE') {
+        // ?permanent=1 hard-deletes the account (owner only); otherwise deactivate.
+        if (new URL(req.url).searchParams.get('permanent') === '1') {
+          requireOwner(req);
+          return await deleteUser(userId, actor.sub, true);
+        }
+        return await deleteUser(userId, actor.sub, false);
+      }
     }
 
     return json({ error: 'Not found' }, 404);
@@ -113,8 +131,8 @@ async function login(req: Request): Promise<Response> {
   const users = await readUsers();
   const user = users.find((u) => u.email === email.trim().toLowerCase());
 
-  // Same response whether user is missing or password is wrong.
-  if (!user || !verifyPassword(password, user.passwordHash)) {
+  // Same response whether user is missing, deactivated, or password is wrong.
+  if (!user || user.deletedAt || !verifyPassword(password, user.passwordHash)) {
     return json({ error: 'Incorrect email or password' }, 401);
   }
   return json({ token: signToken(user), user: toSafe(user) });
@@ -185,18 +203,33 @@ async function updateUserRole(id: string, req: Request, actorId: string): Promis
   return json({ ok: true, user: toSafe({ ...target, role: role as Role }) });
 }
 
-async function deleteUser(id: string, actorId: string): Promise<Response> {
+async function deleteUser(id: string, actorId: string, permanent: boolean): Promise<Response> {
   const users = await readUsers();
   const target = users.find((u) => u.id === id);
   if (!target) return json({ error: 'User not found' }, 404);
-  if (id === actorId) return json({ error: 'You cannot delete your own account' }, 400);
-  if (users.length <= 1) return json({ error: 'Cannot delete the last user' }, 400);
-  const owners = users.filter((u) => normalizeRole(u.role) === 'owner');
-  if (normalizeRole(target.role) === 'owner' && owners.length <= 1) {
-    return json({ error: 'Cannot delete the last owner' }, 400);
+  if (id === actorId) return json({ error: 'You cannot remove your own account' }, 400);
+
+  // Guard the last active user / owner only when the target is currently active.
+  if (!target.deletedAt) {
+    const active = users.filter((u) => !u.deletedAt);
+    const activeOwners = active.filter((u) => normalizeRole(u.role) === 'owner');
+    if (active.length <= 1) return json({ error: 'Cannot remove the last user' }, 400);
+    if (normalizeRole(target.role) === 'owner' && activeOwners.length <= 1) {
+      return json({ error: 'There must be at least one active owner' }, 400);
+    }
   }
-  await writeUsers(users.filter((u) => u.id !== id));
+
+  if (permanent) {
+    await writeUsers(users.filter((u) => u.id !== id));
+  } else if (!target.deletedAt) {
+    await setDeleted(id, true);
+  }
   return json({ ok: true });
+}
+
+async function restoreUser(id: string): Promise<Response> {
+  const ok = await setDeleted(id, false);
+  return ok ? json({ ok: true }) : json({ error: 'User not found' }, 404);
 }
 
 async function changePassword(req: Request, actorId: string): Promise<Response> {

@@ -18,6 +18,7 @@ export interface Reservation {
   status: ReservationStatus;
   ticketCode?: string;
   createdAt: string;
+  deletedAt?: string | null;
 }
 
 export interface ReservationDto {

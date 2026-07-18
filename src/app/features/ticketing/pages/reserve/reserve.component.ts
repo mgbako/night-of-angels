@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, afterNextRender, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   AbstractControl,
@@ -8,11 +8,17 @@ import {
   Validators,
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { CrestComponent } from '../../../../shared/crest/crest.component';
+import { LogoComponent } from '../../../../shared/logo/logo.component';
 import { ReservationApiService } from '../../services/reservation-api.service';
 import { ReservationDto } from '../../models/reservation.model';
-import { TICKET_TYPES, TicketType } from '../../models/attendee.model';
+import {
+  TICKET_TYPES,
+  TicketType,
+  TicketTypeMeta,
+  effectivePrice,
+} from '../../models/attendee.model';
 import { PAYMENT } from '../../../../config/event.config';
+import { EventSettingsService } from '../../../../shared/event-settings.service';
 
 const ALLOWED = ['image/jpeg', 'image/png', 'application/pdf'];
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -28,11 +34,11 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
 @Component({
   selector: 'app-reserve',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, CrestComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, LogoComponent],
   template: `
     <section class="rsv">
       <div class="rsv__card">
-        <app-crest [size]="46" />
+        <app-logo [size]="64" />
 
         @if (done()) {
           <span class="rsv__tick">✓</span>
@@ -41,6 +47,15 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
             Thank you, {{ submittedName() }}. We’ve received your details and proof of
             payment. Our team will confirm and send your ticket shortly — keep an eye on
             WhatsApp and your email.
+          </p>
+          <a routerLink="/" class="btn btn--outline">Back to site</a>
+        } @else if (settings.loaded() && !settings.reservationsOpen()) {
+          <span class="eyebrow">Reserve Your Seat</span>
+          <h1>Reservations are closed</h1>
+          <p class="rsv__lead">
+            Thank you for your interest — online reservations for A Night of Angels
+            have now closed. For late enquiries, please reach out to our team on
+            WhatsApp and we’ll do our best to help.
           </p>
           <a routerLink="/" class="btn btn--outline">Back to site</a>
         } @else {
@@ -76,7 +91,7 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
                 <option value="" disabled>Choose a ticket type</option>
                 @for (t of ticketTypes; track t.value) {
                   <option [value]="t.value">
-                    {{ t.label }} — ₦{{ t.price.toLocaleString() }}
+                    {{ t.label }} — ₦{{ price(t).toLocaleString() }}
                     ({{ t.seats }} {{ t.seats === 1 ? 'seat' : 'seats' }})
                   </option>
                 }
@@ -165,9 +180,19 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
 export class ReserveComponent {
   private fb = inject(FormBuilder);
   private api = inject(ReservationApiService);
+  protected settings = inject(EventSettingsService);
 
   readonly ticketTypes = TICKET_TYPES;
   readonly payment = PAYMENT;
+
+  constructor() {
+    afterNextRender(() => this.settings.load());
+  }
+
+  /** Price to show for a ticket, accounting for whether early bird is still active. */
+  price(t: TicketTypeMeta): number {
+    return effectivePrice(t, this.settings.isEarlyBird());
+  }
 
   busy = signal(false);
   copied = signal(false);

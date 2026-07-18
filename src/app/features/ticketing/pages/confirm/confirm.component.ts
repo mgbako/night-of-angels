@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { CrestComponent } from '../../../../shared/crest/crest.component';
+import { LogoComponent } from '../../../../shared/logo/logo.component';
 import {
   ApiError,
   AttendeeApiService,
@@ -19,7 +19,7 @@ type State = 'loading' | 'notfound' | 'confirm' | 'success' | 'already';
 @Component({
   selector: 'app-ticket-confirm',
   standalone: true,
-  imports: [RouterLink, CrestComponent],
+  imports: [RouterLink, LogoComponent],
   template: `
     <section class="cf">
       <div class="cf__card" [attr.data-state]="state()">
@@ -36,10 +36,11 @@ type State = 'loading' | 'notfound' | 'confirm' | 'success' | 'already';
           }
           @case ('confirm') {
             @if (attendee(); as a) {
-              <app-crest [size]="40" />
+              <app-logo [size]="56" />
               <span class="cf__eyebrow">Check-in</span>
               <h1>{{ a.name }}</h1>
               <p class="cf__meta">{{ meta(a.ticketType).label }} · Admit {{ meta(a.ticketType).seats }} · <span class="mono">{{ a.ticketCode }}</span></p>
+              @if (a.tableNumber) { <p class="cf__table">Table {{ a.tableNumber }}</p> }
               <button class="btn btn--solid cf__btn" (click)="confirm()" [disabled]="working()">
                 {{ working() ? 'Checking in…' : 'Confirm check-in' }}
               </button>
@@ -51,6 +52,7 @@ type State = 'loading' | 'notfound' | 'confirm' | 'success' | 'already';
               <span class="cf__icon cf__icon--good">✓</span>
               <h1>Checked in</h1>
               <p class="cf__meta">{{ a.name }} · {{ meta(a.ticketType).label }}</p>
+              @if (a.tableNumber) { <p class="cf__table">Table {{ a.tableNumber }}</p> }
               <p class="cf__stamp">Admitted at {{ time(a.checkedInAt) }}</p>
             }
           }
@@ -59,6 +61,7 @@ type State = 'loading' | 'notfound' | 'confirm' | 'success' | 'already';
               <span class="cf__icon cf__icon--warn">!</span>
               <h1>Already checked in</h1>
               <p class="cf__meta">{{ a.name }} · {{ meta(a.ticketType).label }}</p>
+              @if (a.tableNumber) { <p class="cf__table">Table {{ a.tableNumber }}</p> }
               <p class="cf__stamp">This ticket was admitted at {{ time(a.checkedInAt) }}. Do not admit again.</p>
             }
           }

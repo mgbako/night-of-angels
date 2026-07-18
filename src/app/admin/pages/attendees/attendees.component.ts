@@ -15,8 +15,11 @@ import { AuthService } from '../../services/auth.service';
 import { ticketShareUrl } from '../../../features/ticketing/share.util';
 import {
   Attendee,
+  TABLE_CAPACITY,
   TICKET_TYPES,
   TicketType,
+  seatsFor,
+  tablePersons,
   ticketTypeMeta,
 } from '../../../features/ticketing/models/attendee.model';
 
@@ -27,8 +30,8 @@ import {
   template: `
     <div class="adm-page-head">
       <div>
-        <h2>Attendees</h2>
-        <p>{{ filtered().length }} of {{ all().length }} shown</p>
+        <h2>Attendees @if (showArchived()) { <span class="adm-badge">Archived</span> }</h2>
+        <p>{{ filtered().length }} of {{ (showArchived() ? archived() : all()).length }} shown</p>
       </div>
       <div style="display:flex; gap:.6rem; flex-wrap:wrap">
         <div class="exp">
@@ -56,7 +59,17 @@ import {
             </div>
           }
         </div>
-        @if (canManage()) {
+        @if (isOwner()) {
+          <button
+            class="adm-btn"
+            [class.adm-btn--primary]="showArchived()"
+            (click)="toggleArchived()"
+          >
+            <adm-icon name="trash" [size]="16" />
+            {{ showArchived() ? 'Back to active' : 'Archived' }}
+          </button>
+        }
+        @if (canManage() && !showArchived()) {
           <a routerLink="/admin/register" class="adm-btn adm-btn--primary">
             <adm-icon name="register" [size]="17" /> Register
           </a>
@@ -109,6 +122,7 @@ import {
             <th>Full Name</th>
             <th>Email</th>
             <th>Ticket</th>
+            <th>Table</th>
             <th>Phone</th>
             <th>Code</th>
             <th>Check-in</th>
@@ -125,6 +139,20 @@ import {
                 {{ a.email }}
               </td>
               <td>{{ meta(a.ticketType).label }}</td>
+              <td>
+                @if (!showArchived() && canManage()) {
+                  <button
+                    class="adm-btn adm-btn--sm adm-btn--ghost adm-table-edit"
+                    (click)="editTable(a)"
+                    [disabled]="busy()"
+                    title="Set table number"
+                  >
+                    {{ a.tableNumber || '—' }}
+                  </button>
+                } @else {
+                  {{ a.tableNumber || '—' }}
+                }
+              </td>
               <td>{{ a.phone }}</td>
               <td>
                 <span class="adm-code">{{ a.ticketCode }}</span>
@@ -140,6 +168,19 @@ import {
               </td>
               <td>
                 <div class="row-actions">
+                  @if (showArchived()) {
+                    <button class="adm-btn adm-btn--sm" (click)="restore(a)" [disabled]="busy()">
+                      Restore
+                    </button>
+                    <button
+                      class="adm-btn adm-btn--sm adm-btn--danger"
+                      (click)="permanentDelete(a)"
+                      [disabled]="busy()"
+                      title="Delete permanently"
+                    >
+                      <adm-icon name="trash" [size]="15" /> Delete
+                    </button>
+                  } @else {
                   <a
                     [href]="waLink(a)"
                     target="_blank"
@@ -181,17 +222,18 @@ import {
                     <button
                       class="adm-btn adm-btn--sm adm-btn--danger"
                       (click)="remove(a)"
-                      title="Delete"
+                      title="Archive"
                     >
                       <adm-icon name="trash" [size]="15" />
                     </button>
+                  }
                   }
                 </div>
               </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="7">
+              <td colspan="8">
                 @if (loading() && !all().length) {
                   <div class="adm-loading">
                     <div class="adm-spinner"></div>
@@ -332,8 +374,56 @@ export class AttendeesComponent {
   loading = this.api.loading;
   loadError = this.api.loadError;
 
+  /** Owner-only archive view of soft-deleted attendees. */
+  showArchived = signal(false);
+  archived = signal<Attendee[]>([]);
+  isOwner = () => this.auth.isOwner();
+
   constructor() {
     afterNextRender(() => this.api.refresh().catch(() => {}));
+  }
+
+  async toggleArchived(): Promise<void> {
+    const next = !this.showArchived();
+    this.showArchived.set(next);
+    this.page.set(1);
+    if (next) {
+      try {
+        this.archived.set(await this.api.archived());
+      } catch (e) {
+        this.flash(e instanceof Error ? e.message : 'Could not load archive', false);
+        this.showArchived.set(false);
+      }
+    }
+  }
+
+  async restore(a: Attendee): Promise<void> {
+    this.busy.set(true);
+    try {
+      await this.api.restore(a.ticketCode);
+      this.archived.set(await this.api.archived());
+      this.flash(`${a.name} restored.`, true);
+    } catch (e) {
+      this.flash(e instanceof Error ? e.message : 'Could not restore', false);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async permanentDelete(a: Attendee): Promise<void> {
+    if (!confirm(`Permanently delete ${a.name}? Their ticket is voided and this cannot be undone.`)) {
+      return;
+    }
+    this.busy.set(true);
+    try {
+      await this.api.permanentDelete(a.ticketCode);
+      this.archived.set(await this.api.archived());
+      this.flash(`${a.name} permanently deleted.`, true);
+    } catch (e) {
+      this.flash(e instanceof Error ? e.message : 'Could not delete', false);
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   filtered = computed<Attendee[]>(() => {
@@ -341,7 +431,8 @@ export class AttendeesComponent {
     const qDigits = q.replace(/\D/g, '');
     const type = this.typeFilter();
     const check = this.checkFilter();
-    return this.all().filter((a) => {
+    const base = this.showArchived() ? this.archived() : this.all();
+    return base.filter((a) => {
       if (q) {
         const hay = `${a.name} ${a.email} ${a.phone} ${a.ticketCode}`.toLowerCase();
         const phoneDigits = a.phone.replace(/\D/g, '');
@@ -401,8 +492,35 @@ export class AttendeesComponent {
     await this.api.setCheckIn(a.ticketCode, !a.checkedIn);
   }
 
+  async editTable(a: Attendee): Promise<void> {
+    if (!this.isBrowser) return;
+    const value = prompt(`Table number for ${a.name}:`, a.tableNumber ?? '');
+    if (value === null) return; // cancelled
+    const next = value.trim();
+    if (next === (a.tableNumber ?? '')) return;
+    if (next) {
+      const already = tablePersons(this.all(), next, a.id);
+      if (already + seatsFor(a.ticketType) > TABLE_CAPACITY) {
+        this.flash(
+          `Table ${next} is full — ${already}/${TABLE_CAPACITY} seated, and ${a.name} needs ${seatsFor(a.ticketType)}.`,
+          false,
+        );
+        return;
+      }
+    }
+    this.busy.set(true);
+    try {
+      await this.api.setTable(a.ticketCode, next);
+      this.flash(next ? `${a.name} assigned to table ${next}.` : `Table cleared for ${a.name}.`, true);
+    } catch (e) {
+      this.flash(e instanceof Error ? e.message : 'Could not update table', false);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
   async remove(a: Attendee): Promise<void> {
-    if (this.isBrowser && !confirm(`Delete ${a.name}? This cannot be undone.`))
+    if (this.isBrowser && !confirm(`Archive ${a.name}? They can be restored from the archive.`))
       return;
     await this.api.remove(a.ticketCode);
     if (this.page() > this.totalPages()) this.page.set(this.totalPages());
@@ -429,6 +547,7 @@ export class AttendeesComponent {
     'Email',
     'Phone',
     'Ticket',
+    'Table',
     'Code',
     'Checked In',
     'Checked In At',
@@ -442,6 +561,7 @@ export class AttendeesComponent {
       a.email,
       a.phone,
       ticketTypeMeta(a.ticketType).label,
+      a.tableNumber ?? '',
       a.ticketCode,
       a.checkedIn ? 'Yes' : 'No',
       a.checkedInAt ? new Date(a.checkedInAt).toLocaleString() : '',
@@ -473,7 +593,7 @@ export class AttendeesComponent {
   private async exportExcel(): Promise<void> {
     const XLSX = await import('xlsx');
     const ws = XLSX.utils.aoa_to_sheet([this.columns, ...this.exportData()]);
-    ws['!cols'] = [24, 26, 16, 14, 10, 11, 20, 20].map((w) => ({ wch: w }));
+    ws['!cols'] = [24, 26, 16, 14, 10, 10, 11, 20, 20].map((w) => ({ wch: w }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Attendees');
     XLSX.writeFile(wb, this.fileName('xlsx'));

@@ -5,7 +5,7 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { CrestComponent } from '../../shared/crest/crest.component';
+import { LogoComponent } from '../../shared/logo/logo.component';
 import { ThemeService } from '../../shared/theme.service';
 import { AuthService } from '../../admin/services/auth.service';
 
@@ -20,12 +20,12 @@ interface NavLink {
 @Component({
   selector: 'app-nav',
   standalone: true,
-  imports: [CrestComponent, RouterLink, RouterLinkActive],
+  imports: [LogoComponent, RouterLink, RouterLinkActive],
   template: `
     <header class="nav" [class.scrolled]="scrolled()" [class.nav-open]="menuOpen()">
       <div class="nav__inner">
         <a class="brand" routerLink="/" aria-label="Night of Angels — home">
-          <app-crest [size]="46" />
+          <app-logo [size]="44" />
           <span class="wordmark">Night of Angels</span>
         </a>
 

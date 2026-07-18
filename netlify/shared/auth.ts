@@ -24,13 +24,23 @@ export type Permission =
   | 'register'
   | 'tickets'
   | 'checkin'
-  | 'team';
+  | 'team'
+  | 'settings';
 
 export const ROLES: Role[] = ['owner', 'manager', 'coordinator', 'usher'];
 
 /** What each role can reach. Owner is the only role that manages the team. */
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
-  owner: ['dashboard', 'attendees', 'reservations', 'register', 'tickets', 'checkin', 'team'],
+  owner: [
+    'dashboard',
+    'attendees',
+    'reservations',
+    'register',
+    'tickets',
+    'checkin',
+    'team',
+    'settings',
+  ],
   manager: ['dashboard', 'attendees', 'reservations', 'register', 'tickets', 'checkin'],
   coordinator: ['attendees', 'reservations', 'register', 'tickets', 'checkin'],
   usher: ['checkin', 'attendees'],
@@ -66,6 +76,8 @@ export interface User {
   role: Role;
   passwordHash: string; // "salt:hash"
   createdAt: string;
+  /** Set when the user is deactivated (soft-deleted). Absent/null = active. */
+  deletedAt?: string | null;
 }
 
 /** Public shape (never leak passwordHash to the client). */
@@ -75,6 +87,7 @@ export interface SafeUser {
   email: string;
   role: Role;
   createdAt: string;
+  deletedAt?: string | null;
 }
 
 export interface TokenPayload {
@@ -110,6 +123,7 @@ export function toSafe(u: User): SafeUser {
     email: u.email,
     role: normalizeRole(u.role),
     createdAt: u.createdAt,
+    deletedAt: u.deletedAt ?? null,
   };
 }
 
@@ -203,6 +217,18 @@ export function requirePermission(req: Request, perm: Permission): TokenPayload 
   return payload;
 }
 
+/**
+ * Require the super admin (owner). Used for destructive actions — permanently
+ * deleting or restoring soft-deleted records.
+ */
+export function requireOwner(req: Request): TokenPayload {
+  const payload = requireAuth(req);
+  if (normalizeRole(payload.role) !== 'owner') {
+    throw new AuthError(403, 'Only an owner can perform this action');
+  }
+  return payload;
+}
+
 // ---------- bootstrap ----------
 /**
  * Seed the first admin from env vars if no users exist yet.
@@ -250,7 +276,17 @@ export async function setRole(userId: string, role: Role): Promise<boolean> {
 
 export async function findByEmail(email: string): Promise<User | undefined> {
   const e = email.trim().toLowerCase();
-  return (await readUsers()).find((u) => u.email === e);
+  return (await readUsers()).find((u) => u.email === e && !u.deletedAt);
+}
+
+/** Set or clear a user's deactivation timestamp. Returns false if missing. */
+export async function setDeleted(userId: string, deleted: boolean): Promise<boolean> {
+  const users = await readUsers();
+  const idx = users.findIndex((u) => u.id === userId);
+  if (idx === -1) return false;
+  users[idx] = { ...users[idx], deletedAt: deleted ? new Date().toISOString() : null };
+  await writeUsers(users);
+  return true;
 }
 
 export async function setPassword(userId: string, newPassword: string): Promise<boolean> {

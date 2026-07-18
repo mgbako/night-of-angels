@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, afterNextRender, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { EventSettingsService } from '../../../../shared/event-settings.service';
 
 interface Ticket {
   eyebrow: string;
@@ -29,7 +30,7 @@ interface Ticket {
         </div>
 
         <div class="tickets__grid">
-          @for (t of tickets; track t.title) {
+          @for (t of tickets(); track t.title) {
             <article class="ticket" [class.ticket--featured]="t.featured">
               @if (t.badge) {
                 <span class="ticket__badge">{{ t.badge }}</span>
@@ -47,13 +48,19 @@ interface Ticket {
                 <span class="amount">{{ t.amount }}</span>
                 <span class="unit">{{ t.unit }}</span>
               </div>
-              <a
-                routerLink="/reserve"
-                class="btn btn--block"
-                [class.btn--solid]="true"
-                [class.btn--ink]="!t.featured"
-                >Reserve</a
-              >
+              @if (settings.reservationsOpen()) {
+                <a
+                  routerLink="/reserve"
+                  class="btn btn--block"
+                  [class.btn--solid]="true"
+                  [class.btn--ink]="!t.featured"
+                  >Reserve</a
+                >
+              } @else {
+                <span class="btn btn--block btn--ink ticket__closed" aria-disabled="true"
+                  >Sales closed</span
+                >
+              }
             </article>
           }
         </div>
@@ -63,30 +70,51 @@ interface Ticket {
   styleUrl: './tickets.component.scss',
 })
 export class TicketsComponent {
-  tickets: Ticket[] = [
-    {
-      eyebrow: 'Single Entry',
-      title: 'Regular',
-      desc: 'One seat at the table, with full access to the dinner and the evening’s programme.',
-      amount: '₦20,000',
-      unit: 'per guest · single entry',
-    },
-    {
-      eyebrow: 'Two Paired Seats',
-      title: 'Couples',
-      desc: 'Two seats together — perfect for arriving in pairs and sharing the night side by side.',
-      strike: '₦40,000 regular',
-      amount: '₦35,000',
-      unit: 'early bird · two seats',
-      featured: true,
-      badge: 'Early Bird',
-    },
-    {
-      eyebrow: 'Table of Ten',
-      title: 'Table',
-      desc: 'A full table of ten — ideal for corporate hosting or arriving with your whole circle.',
-      amount: '₦300,000',
-      unit: 'full table · seats ten',
-    },
-  ];
+  protected settings = inject(EventSettingsService);
+
+  constructor() {
+    afterNextRender(() => this.settings.load());
+  }
+
+  /** Couples pricing swaps between early-bird and regular based on the deadline. */
+  readonly tickets = computed<Ticket[]>(() => {
+    const early = this.settings.isEarlyBird();
+    const couples: Ticket = early
+      ? {
+          eyebrow: 'Two Paired Seats',
+          title: 'Couples',
+          desc: 'Two seats together — perfect for arriving in pairs and sharing the night side by side.',
+          strike: '₦40,000 regular',
+          amount: '₦35,000',
+          unit: 'early bird · two seats',
+          featured: true,
+          badge: 'Early Bird',
+        }
+      : {
+          eyebrow: 'Two Paired Seats',
+          title: 'Couples',
+          desc: 'Two seats together — perfect for arriving in pairs and sharing the night side by side.',
+          amount: '₦40,000',
+          unit: 'per couple · two seats',
+          featured: true,
+        };
+
+    return [
+      {
+        eyebrow: 'Single Entry',
+        title: 'Regular',
+        desc: 'One seat at the table, with full access to the dinner and the evening’s programme.',
+        amount: '₦20,000',
+        unit: 'per guest · single entry',
+      },
+      couples,
+      {
+        eyebrow: 'Table of Ten',
+        title: 'Table',
+        desc: 'A full table of ten — ideal for corporate hosting or arriving with your whole circle.',
+        amount: '₦300,000',
+        unit: 'full table · seats ten',
+      },
+    ];
+  });
 }

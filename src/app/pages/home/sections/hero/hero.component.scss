@@ -84,7 +84,9 @@
   z-index: 3;
   max-width: 840px;
 }
-.hero ::ng-deep .crest {
+.hero__logo {
+  display: block;
+  width: fit-content;
   margin: 0 auto 1.8rem;
 }
 .hero h1 {
@@ -157,11 +159,13 @@
   line-height: 1.2;
 }
 .countdown-note {
-  font-size: 0.72rem;
-  letter-spacing: 0.12em;
-  color: var(--ink-soft);
-  font-style: italic;
-  font-family: var(--display);
+  font-size: clamp(0.92rem, 2.4vw, 1.15rem);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold-soft);
+  font-weight: 500;
+  font-family: var(--body);
+  margin-top: 0.4rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

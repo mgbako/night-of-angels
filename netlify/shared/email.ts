@@ -34,13 +34,22 @@ export async function sendEmail(opts: {
   }
 }
 
+// The event emblem + arrival details, shared across ticket emails.
+const ARRIVAL_NOTE = 'Arrivals from 5:00 PM';
+const EVENT_WHEN = 'Saturday, 24 October 2026';
+
 // ---------- templates (email-safe inline styles) ----------
-function shell(heading: string, bodyHtml: string): string {
+function shell(heading: string, bodyHtml: string, logoUrl?: string): string {
+  const logo = logoUrl
+    ? `<img src="${logoUrl}" width="72" height="72" alt="A Night of Angels"
+         style="display:block;margin:0 0 12px;width:72px;height:72px;" />`
+    : '';
   return `<!doctype html><html><body style="margin:0;background:#0b0b0a;font-family:Georgia,'Times New Roman',serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0b0b0a;padding:28px 16px;">
     <tr><td align="center">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#161310;border:1px solid rgba(201,162,39,.35);border-radius:14px;overflow:hidden;">
         <tr><td style="padding:26px 30px;background:#0b0b0a;border-bottom:1px solid rgba(201,162,39,.25);">
+          ${logo}
           <div style="font-size:22px;font-weight:600;color:#f4f1e7;letter-spacing:.5px;">A Night of Angels</div>
           <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#c9a227;">Harvest of Internal Peace</div>
         </td></tr>
@@ -63,14 +72,28 @@ function button(label: string, url: string): string {
     </td></tr></table>`;
 }
 
-export function ticketEmailHtml(name: string, ticketType: string, url: string): string {
+export function ticketEmailHtml(
+  name: string,
+  ticketType: string,
+  url: string,
+  logoUrl?: string,
+): string {
   return shell(
     'Your ticket is ready',
     `<p>Hello ${escapeHtml(name)},</p>
      <p>Thank you for reserving your place at <strong>A Night of Angels</strong>. Here is your <strong>${escapeHtml(ticketType)}</strong> ticket.</p>
+     <table role="presentation" cellpadding="0" cellspacing="0" style="margin:18px 0;border:1px solid rgba(201,162,39,.3);border-radius:10px;">
+       <tr><td style="padding:14px 18px;">
+         <div style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#c9a227;">When</div>
+         <div style="font-size:16px;color:#f4f1e7;margin:2px 0 10px;">${EVENT_WHEN}</div>
+         <div style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#c9a227;">Arrival</div>
+         <div style="font-size:16px;color:#f4f1e7;margin:2px 0 0;">${ARRIVAL_NOTE}</div>
+       </td></tr>
+     </table>
      ${button('View Your Ticket', url)}
      <p style="font-size:14px;color:#c9c2b0;">Open the link above to see your QR code, then present it at the door. You can save or print the page.</p>
      <p style="font-size:13px;color:#8a8270;word-break:break-all;">${url}</p>`,
+    logoUrl,
   );
 }
 

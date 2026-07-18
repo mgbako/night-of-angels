@@ -52,6 +52,14 @@
   font-size: 0.9rem;
   margin: 0.4rem 0 0;
 }
+.cf__table {
+  margin: 0.6rem 0 0;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 1.5rem;
+  color: var(--gold-soft);
+  letter-spacing: 0.02em;
+}
 .mono {
   font-family: ui-monospace, Menlo, monospace;
   letter-spacing: 0.08em;

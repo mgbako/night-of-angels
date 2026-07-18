@@ -143,7 +143,9 @@ export class AdminLayoutComponent {
     { path: '/admin/reservations', label: 'Reservations', icon: 'inbox', exact: false, perm: 'reservations' },
     { path: '/admin/register', label: 'Register', icon: 'register', exact: false, perm: 'register' },
     { path: '/admin/tickets', label: 'Tickets', icon: 'ticket', exact: false, perm: 'tickets' },
+    { path: '/admin/tables', label: 'Tables', icon: 'tables', exact: false, perm: 'attendees' },
     { path: '/admin/team', label: 'Team', icon: 'shield', exact: false, perm: 'team' },
+    { path: '/admin/settings', label: 'Settings', icon: 'settings', exact: false, perm: 'settings' },
   ];
 
   /** Only the modules the signed-in user's role can open. */
@@ -157,7 +159,9 @@ export class AdminLayoutComponent {
     '/admin/reservations': 'Reservations',
     '/admin/register': 'Register Attendee',
     '/admin/tickets': 'Ticketing',
+    '/admin/tables': 'Tables',
     '/admin/team': 'Team',
+    '/admin/settings': 'Settings',
     '/admin/account': 'Account',
   };
 

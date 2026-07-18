@@ -108,6 +108,35 @@ import { ROLES, ROLE_DESCRIPTIONS, ROLE_LABELS, Role } from '../../services/perm
         </form>
       </div>
     </div>
+
+    @if (isOwner() && archived().length) {
+      <div class="adm-card adm-card--pad team-archived">
+        <h3 class="team-title">Deactivated ({{ archived().length }})</h3>
+        <ul class="team-list">
+          @for (u of archived(); track u.id) {
+            <li>
+              <div class="team-info">
+                <span class="team-name">{{ u.name }}</span>
+                <span class="team-email">{{ u.email }} · {{ roleLabels[u.role] }}</span>
+              </div>
+              <div style="display:flex; gap:.35rem; align-items:center">
+                <button class="adm-btn adm-btn--sm" (click)="restore(u)" [disabled]="busy()">
+                  Restore
+                </button>
+                <button
+                  class="adm-btn adm-btn--sm adm-btn--danger"
+                  (click)="permanentDelete(u)"
+                  [disabled]="busy()"
+                  title="Delete permanently"
+                >
+                  <adm-icon name="trash" [size]="15" /> Delete
+                </button>
+              </div>
+            </li>
+          }
+        </ul>
+      </div>
+    }
   `,
   styles: [
     `
@@ -164,6 +193,7 @@ export class TeamComponent {
   readonly roleDescriptions = ROLE_DESCRIPTIONS;
 
   users = signal<AuthUser[]>([]);
+  archived = signal<AuthUser[]>([]);
   loading = signal(true);
   busy = signal(false);
   error = signal<string | null>(null);
@@ -175,6 +205,7 @@ export class TeamComponent {
   role: Role = 'coordinator';
 
   meId = () => this.auth.user()?.id ?? '';
+  isOwner = () => this.auth.isOwner();
 
   constructor() {
     afterNextRender(() => this.load());
@@ -184,10 +215,41 @@ export class TeamComponent {
     this.loading.set(true);
     try {
       this.users.set(await this.auth.listUsers());
+      if (this.auth.isOwner()) {
+        this.archived.set(await this.auth.listArchivedUsers());
+      }
     } catch (e) {
       this.error.set(e instanceof Error ? e.message : 'Could not load team');
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  async restore(u: AuthUser): Promise<void> {
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      await this.auth.restoreUser(u.id);
+      this.added.set(`${u.name} reactivated`);
+      await this.load();
+    } catch (e) {
+      this.error.set(e instanceof Error ? e.message : 'Could not restore member');
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async permanentDelete(u: AuthUser): Promise<void> {
+    if (!confirm(`Permanently delete ${u.name}? This cannot be undone.`)) return;
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      await this.auth.permanentDeleteUser(u.id);
+      await this.load();
+    } catch (e) {
+      this.error.set(e instanceof Error ? e.message : 'Could not delete member');
+    } finally {
+      this.busy.set(false);
     }
   }
 

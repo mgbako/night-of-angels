@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { CrestComponent } from '../../shared/crest/crest.component';
+import { LogoComponent } from '../../shared/logo/logo.component';
 import {
   INSTAGRAM_HANDLE,
   INSTAGRAM_URL,
@@ -13,7 +13,7 @@ import {
 @Component({
   selector: 'app-rsvp-footer',
   standalone: true,
-  imports: [CrestComponent, RouterLink],
+  imports: [LogoComponent, RouterLink],
   template: `
     <section class="section section--panel rsvp" id="rsvp">
       <div class="wrap">
@@ -31,7 +31,7 @@ import {
         <div class="footer">
           <div class="footer__brand">
             <div class="brand">
-              <app-crest [size]="46" />
+              <app-logo [size]="46" />
               <span class="wordmark">Night of Angels</span>
             </div>
             <p>

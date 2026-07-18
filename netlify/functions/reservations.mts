@@ -1,8 +1,9 @@
 import type { Context } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { randomUUID } from 'node:crypto';
-import { AuthError, requirePermission } from '../shared/auth';
+import { AuthError, requireOwner, requirePermission } from '../shared/auth';
 import { addAttendee, TicketType } from '../shared/attendees';
+import { readSettings, reservationsOpen } from '../shared/settings';
 
 /**
  * Self-service reservations with proof of payment.
@@ -18,6 +19,7 @@ export const config = {
     '/api/reservations/:id',
     '/api/reservations/:id/proof',
     '/api/reservations/:id/approve',
+    '/api/reservations/:id/restore',
   ],
 };
 
@@ -38,6 +40,7 @@ interface Reservation {
   status: Status;
   ticketCode?: string;
   createdAt: string;
+  deletedAt?: string | null;
 }
 
 const RES_STORE = 'reservations';
@@ -86,8 +89,13 @@ export default async (req: Request, context: Context): Promise<Response> => {
     if (path === '/api/reservations') {
       if (req.method === 'POST') return await create(req);
       if (req.method === 'GET') {
+        // ?archived=1 lists soft-deleted reservations (owner only).
+        if (new URL(req.url).searchParams.get('archived') === '1') {
+          requireOwner(req);
+          return json((await readReservations()).filter((r) => r.deletedAt));
+        }
         requirePermission(req, 'reservations');
-        return json(await readReservations());
+        return json((await readReservations()).filter((r) => !r.deletedAt));
       }
       return json({ error: 'Method not allowed' }, 405);
     }
@@ -103,10 +111,19 @@ export default async (req: Request, context: Context): Promise<Response> => {
         requirePermission(req, 'reservations');
         return await approve(id, req);
       }
-      // Reject / delete (auth)
+      // Restore an archived reservation (owner only)
+      if (path.endsWith('/restore') && req.method === 'POST') {
+        requireOwner(req);
+        return await restore(id);
+      }
+      // Reject / delete (auth) — ?permanent=1 hard-deletes + drops the proof (owner only).
       if (req.method === 'DELETE') {
+        if (new URL(req.url).searchParams.get('permanent') === '1') {
+          requireOwner(req);
+          return await remove(id, true);
+        }
         requirePermission(req, 'reservations');
-        return await remove(id);
+        return await remove(id, false);
       }
     }
 
@@ -130,6 +147,9 @@ async function create(req: Request): Promise<Response> {
     proof?: { name?: string; type?: string; dataBase64?: string };
   } | null;
 
+  if (!reservationsOpen(await readSettings())) {
+    return json({ error: 'Reservations are now closed' }, 403);
+  }
   if (!body?.name || !body?.phone) {
     return json({ error: 'Full name and phone number are required' }, 400);
   }
@@ -225,12 +245,27 @@ async function approve(id: string, req: Request): Promise<Response> {
   return json({ ok: true, attendee });
 }
 
-async function remove(id: string): Promise<Response> {
+async function remove(id: string, permanent: boolean): Promise<Response> {
   const list = await readReservations();
-  const reservation = list.find((r) => r.id === id);
-  if (reservation) {
-    await proofsStore().delete(reservation.proofKey).catch(() => {});
+  const idx = list.findIndex((r) => r.id === id);
+  if (idx === -1) return json({ error: 'Reservation not found' }, 404);
+
+  if (permanent) {
+    // Hard delete also drops the uploaded proof file.
+    await proofsStore().delete(list[idx].proofKey).catch(() => {});
+    await writeReservations(list.filter((r) => r.id !== id));
+  } else if (!list[idx].deletedAt) {
+    list[idx] = { ...list[idx], deletedAt: new Date().toISOString() };
+    await writeReservations(list);
   }
-  await writeReservations(list.filter((r) => r.id !== id));
+  return json({ ok: true });
+}
+
+async function restore(id: string): Promise<Response> {
+  const list = await readReservations();
+  const idx = list.findIndex((r) => r.id === id);
+  if (idx === -1) return json({ error: 'Reservation not found' }, 404);
+  list[idx] = { ...list[idx], deletedAt: null };
+  await writeReservations(list);
   return json({ ok: true });
 }

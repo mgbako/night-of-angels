@@ -21,7 +21,9 @@ export type IconName =
   | 'shield'
   | 'whatsapp'
   | 'inbox'
-  | 'external';
+  | 'external'
+  | 'settings'
+  | 'tables';
 
 /**
  * Tiny inline-SVG icon set (stroke = currentColor). Rendered directly in the
@@ -131,6 +133,18 @@ export type IconName =
           <path d="M14 4h6v6" />
           <path d="M20 4l-9 9" />
           <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+        }
+        @case ('tables') {
+          <circle cx="7.5" cy="7.5" r="3.5" />
+          <circle cx="16.5" cy="7.5" r="3.5" />
+          <circle cx="7.5" cy="16.5" r="3.5" />
+          <circle cx="16.5" cy="16.5" r="3.5" />
+        }
+        @case ('settings') {
+          <circle cx="12" cy="12" r="3" />
+          <path
+            d="M12 2.5l1.4 2.2 2.6-.5.5 2.6 2.2 1.4-1.1 2.3 1.1 2.3-2.2 1.4-.5 2.6-2.6-.5-1.4 2.2-1.4-2.2-2.6.5-.5-2.6-2.2-1.4 1.1-2.3-1.1-2.3 2.2-1.4.5-2.6 2.6.5z"
+          />
         }
       }
     </svg>

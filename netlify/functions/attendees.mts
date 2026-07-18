@@ -1,6 +1,6 @@
 import type { Context } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
-import { AuthError, canManageAttendees, requirePermission } from '../shared/auth';
+import { AuthError, canManageAttendees, requireOwner, requirePermission } from '../shared/auth';
 import { EmailError, sendEmail, ticketEmailHtml } from '../shared/email';
 
 const TICKET_LABELS: Record<TicketType, string> = {
@@ -8,6 +8,18 @@ const TICKET_LABELS: Record<TicketType, string> = {
   COUPLES: 'Couples',
   TABLE: 'Table of Ten',
 };
+
+/** Persons each ticket occupies at a table. A table seats TABLE_CAPACITY. */
+const SEATS: Record<TicketType, number> = { SINGLES: 1, COUPLES: 2, TABLE: 10 };
+const TABLE_CAPACITY = 10;
+
+/** Persons already at a table (sum of seats), excluding one attendee id. */
+function tablePersons(list: Attendee[], table: string, excludeId?: string): number {
+  const key = table.trim();
+  return list
+    .filter((a) => !a.deletedAt && (a.tableNumber ?? '').trim() === key && a.id !== excludeId)
+    .reduce((sum, a) => sum + SEATS[a.ticketType], 0);
+}
 
 /**
  * Ticketing API backed by Netlify Blobs (shared across all devices).
@@ -44,6 +56,8 @@ interface Attendee {
   checkedIn: boolean;
   checkedInAt: string | null;
   createdAt: string;
+  tableNumber?: string;
+  deletedAt?: string | null;
 }
 
 const STORE = 'ticketing';
@@ -108,8 +122,13 @@ export default async (req: Request, context: Context): Promise<Response> => {
     // Collection: /api/attendees (organizer-only: contains PII)
     if (!code) {
       if (req.method === 'GET') {
+        // ?archived=1 lists soft-deleted records (super admin / owner only).
+        if (new URL(req.url).searchParams.get('archived') === '1') {
+          requireOwner(req);
+          return json((await readAll()).filter((a) => a.deletedAt));
+        }
         requirePermission(req, 'attendees');
-        return json(await readAll());
+        return json((await readAll()).filter((a) => !a.deletedAt));
       }
       if (req.method === 'POST') {
         requirePermission(req, 'register');
@@ -130,15 +149,16 @@ export default async (req: Request, context: Context): Promise<Response> => {
     // Item: /api/attendees/:code
     if (req.method === 'GET') return await getOne(code); // public: the ticket page
     if (req.method === 'DELETE') {
+      // ?permanent=1 hard-deletes (owner only); otherwise soft-delete (archive).
+      if (new URL(req.url).searchParams.get('permanent') === '1') {
+        requireOwner(req);
+        return await removeOne(code, true);
+      }
       const actor = requirePermission(req, 'attendees');
       if (!canManageAttendees(actor.role)) throw new AuthError(403, 'You do not have access to this action');
-      return await removeOne(code);
+      return await removeOne(code, false);
     }
-    if (req.method === 'PATCH') {
-      const actor = requirePermission(req, 'attendees');
-      if (!canManageAttendees(actor.role)) throw new AuthError(403, 'You do not have access to this action');
-      return await patchOne(code, req);
-    }
+    if (req.method === 'PATCH') return await patchOne(code, req);
     return json({ error: 'Method not allowed' }, 405);
   } catch (err) {
     if (err instanceof AuthError) return json({ error: err.message }, err.status);
@@ -154,8 +174,15 @@ async function register(req: Request): Promise<Response> {
   }
   const list = await readAll();
   const email = String(body.email).trim().toLowerCase();
-  if (list.some((a) => a.email.toLowerCase() === email)) {
+  if (list.some((a) => !a.deletedAt && a.email.toLowerCase() === email)) {
     return json({ error: 'An attendee with this email already exists' }, 409);
+  }
+  const tableNumber = String(body.tableNumber ?? '').trim();
+  if (tableNumber) {
+    const persons = tablePersons(list, tableNumber) + SEATS[body.ticketType as TicketType];
+    if (persons > TABLE_CAPACITY) {
+      return json({ error: `Table ${tableNumber} is full (seats ${TABLE_CAPACITY})` }, 409);
+    }
   }
   const attendee: Attendee = {
     id: crypto.randomUUID(),
@@ -167,19 +194,25 @@ async function register(req: Request): Promise<Response> {
     checkedIn: false,
     checkedInAt: null,
     createdAt: new Date().toISOString(),
+    ...(tableNumber ? { tableNumber } : {}),
   };
   await writeAll([attendee, ...list]);
   return json(attendee, 201);
 }
 
 async function getOne(code: string): Promise<Response> {
-  const found = (await readAll()).find((a) => a.ticketCode.toLowerCase() === code.toLowerCase());
+  // Public ticket page — archived (soft-deleted) tickets are void.
+  const found = (await readAll()).find(
+    (a) => !a.deletedAt && a.ticketCode.toLowerCase() === code.toLowerCase(),
+  );
   return found ? json(found) : json({ error: 'Ticket not found' }, 404);
 }
 
 async function checkIn(code: string): Promise<Response> {
   const list = await readAll();
-  const idx = list.findIndex((a) => a.ticketCode.toLowerCase() === code.toLowerCase());
+  const idx = list.findIndex(
+    (a) => !a.deletedAt && a.ticketCode.toLowerCase() === code.toLowerCase(),
+  );
   if (idx === -1) return json({ error: 'Ticket not found' }, 404);
   if (list[idx].checkedIn) {
     return json({ error: 'This ticket has already been checked in', attendee: list[idx] }, 409);
@@ -190,10 +223,29 @@ async function checkIn(code: string): Promise<Response> {
 }
 
 async function patchOne(code: string, req: Request): Promise<Response> {
-  const body = (await req.json().catch(() => null)) as { checkedIn?: boolean } | null;
+  const body = (await req.json().catch(() => null)) as {
+    checkedIn?: boolean;
+    restore?: boolean;
+    tableNumber?: string;
+  } | null;
   const list = await readAll();
   const idx = list.findIndex((a) => a.ticketCode.toLowerCase() === code.toLowerCase());
   if (idx === -1) return json({ error: 'Ticket not found' }, 404);
+
+  // Restore an archived attendee — super admin (owner) only.
+  if (body?.restore === true) {
+    requireOwner(req);
+    list[idx] = { ...list[idx], deletedAt: null };
+    await writeAll(list);
+    return json(list[idx]);
+  }
+
+  // Otherwise a check-in override — needs manage rights, and only on active records.
+  const actor = requirePermission(req, 'attendees');
+  if (!canManageAttendees(actor.role)) {
+    throw new AuthError(403, 'You do not have access to this action');
+  }
+  if (list[idx].deletedAt) return json({ error: 'Ticket not found' }, 404);
   if (typeof body?.checkedIn === 'boolean') {
     list[idx] = {
       ...list[idx],
@@ -201,20 +253,38 @@ async function patchOne(code: string, req: Request): Promise<Response> {
       checkedInAt: body.checkedIn ? list[idx].checkedInAt ?? new Date().toISOString() : null,
     };
   }
+  if (typeof body?.tableNumber === 'string') {
+    const tableNumber = body.tableNumber.trim();
+    if (tableNumber) {
+      const persons = tablePersons(list, tableNumber, list[idx].id) + SEATS[list[idx].ticketType];
+      if (persons > TABLE_CAPACITY) {
+        return json({ error: `Table ${tableNumber} is full (seats ${TABLE_CAPACITY})` }, 409);
+      }
+    }
+    list[idx] = { ...list[idx], tableNumber: tableNumber || undefined };
+  }
   await writeAll(list);
   return json(list[idx]);
 }
 
-async function removeOne(code: string): Promise<Response> {
+async function removeOne(code: string, permanent: boolean): Promise<Response> {
   const list = await readAll();
-  const next = list.filter((a) => a.ticketCode.toLowerCase() !== code.toLowerCase());
-  await writeAll(next);
+  const idx = list.findIndex((a) => a.ticketCode.toLowerCase() === code.toLowerCase());
+  if (idx === -1) return json({ error: 'Ticket not found' }, 404);
+  if (permanent) {
+    await writeAll(list.filter((_, i) => i !== idx));
+  } else {
+    if (!list[idx].deletedAt) {
+      list[idx] = { ...list[idx], deletedAt: new Date().toISOString() };
+      await writeAll(list);
+    }
+  }
   return json({ ok: true });
 }
 
 async function emailTicket(code: string, req: Request): Promise<Response> {
   const attendee = (await readAll()).find(
-    (a) => a.ticketCode.toLowerCase() === code.toLowerCase(),
+    (a) => !a.deletedAt && a.ticketCode.toLowerCase() === code.toLowerCase(),
   );
   if (!attendee) return json({ error: 'Ticket not found' }, 404);
 
@@ -224,7 +294,12 @@ async function emailTicket(code: string, req: Request): Promise<Response> {
     await sendEmail({
       to: attendee.email,
       subject: 'Your ticket — A Night of Angels',
-      html: ticketEmailHtml(attendee.name, TICKET_LABELS[attendee.ticketType], url),
+      html: ticketEmailHtml(
+        attendee.name,
+        TICKET_LABELS[attendee.ticketType],
+        url,
+        `${base}/noa-logo.png`,
+      ),
     });
   } catch (e) {
     if (e instanceof EmailError) return json({ error: e.message }, 502);

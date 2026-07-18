@@ -17,6 +17,7 @@ export interface AuthUser {
   email: string;
   role: Role;
   createdAt: string;
+  deletedAt?: string | null;
 }
 
 /** Admin routes in priority order — used to pick a landing page per role. */
@@ -51,6 +52,11 @@ export class AuthService {
   /** Ushers can view attendees but not mutate them. */
   canManageAttendees(): boolean {
     return this.isAuthed() && canManageAttendees(this.role());
+  }
+
+  /** The super admin — the only role that can restore or permanently delete. */
+  isOwner(): boolean {
+    return this.isAuthed() && this.role() === 'owner';
   }
 
   /** First admin route the current user is allowed to open. */
@@ -129,8 +135,24 @@ export class AuthService {
     });
   }
 
+  /** Deactivate (soft-delete) a user — they can no longer sign in. */
   async removeUser(id: string): Promise<void> {
     await this.request(`/api/auth/users/${id}`, { method: 'DELETE' });
+  }
+
+  /** List deactivated users — owner only. */
+  async listArchivedUsers(): Promise<AuthUser[]> {
+    return this.request<AuthUser[]>('/api/auth/users?archived=1');
+  }
+
+  /** Reactivate a deactivated user — owner only. */
+  async restoreUser(id: string): Promise<void> {
+    await this.request(`/api/auth/users/${id}/restore`, { method: 'POST' });
+  }
+
+  /** Permanently delete a user account — owner only. */
+  async permanentDeleteUser(id: string): Promise<void> {
+    await this.request(`/api/auth/users/${id}?permanent=1`, { method: 'DELETE' });
   }
 
   async setUserPassword(id: string, password: string): Promise<void> {

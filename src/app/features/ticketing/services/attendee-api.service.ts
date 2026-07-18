@@ -142,14 +142,61 @@ export class AttendeeApiService {
     return attendee;
   }
 
+  /** Assign / clear an attendee's table number. */
+  async setTable(ticketCode: string, tableNumber: string): Promise<Attendee> {
+    const res = await fetch(`${API}/${encodeURIComponent(ticketCode)}`, {
+      method: 'PATCH',
+      headers: this.authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ tableNumber }),
+    });
+    this.guard(res);
+    if (!res.ok) throw new ApiError(res.status, 'Update failed');
+    const attendee = (await res.json()) as Attendee;
+    await this.refresh();
+    return attendee;
+  }
+
+  /** Archive (soft-delete) an attendee — removes them from the active list. */
   async remove(ticketCode: string): Promise<void> {
     const res = await fetch(`${API}/${encodeURIComponent(ticketCode)}`, {
       method: 'DELETE',
       headers: this.authHeaders(),
     });
     this.guard(res);
-    if (!res.ok) throw new ApiError(res.status, 'Delete failed');
+    if (!res.ok) throw new ApiError(res.status, 'Archive failed');
     await this.refresh();
+  }
+
+  /** List archived (soft-deleted) attendees — super admin (owner) only. */
+  async archived(): Promise<Attendee[]> {
+    const res = await fetch(`${API}?archived=1`, {
+      headers: this.authHeaders({ Accept: 'application/json' }),
+    });
+    this.guard(res);
+    if (!res.ok) throw new ApiError(res.status, 'Failed to load archive');
+    return (await res.json()) as Attendee[];
+  }
+
+  /** Restore an archived attendee — owner only. */
+  async restore(ticketCode: string): Promise<void> {
+    const res = await fetch(`${API}/${encodeURIComponent(ticketCode)}`, {
+      method: 'PATCH',
+      headers: this.authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ restore: true }),
+    });
+    this.guard(res);
+    if (!res.ok) throw new ApiError(res.status, (await this.msg(res)) || 'Restore failed');
+    await this.refresh();
+  }
+
+  /** Permanently delete an attendee — owner only. */
+  async permanentDelete(ticketCode: string): Promise<void> {
+    const res = await fetch(`${API}/${encodeURIComponent(ticketCode)}?permanent=1`, {
+      method: 'DELETE',
+      headers: this.authHeaders(),
+    });
+    this.guard(res);
+    if (!res.ok) throw new ApiError(res.status, (await this.msg(res)) || 'Delete failed');
   }
 
   /** Email the guest their ticket link. Returns the address it was sent to. */

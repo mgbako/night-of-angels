@@ -1,17 +1,17 @@
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { CrestComponent } from '../../shared/crest/crest.component';
+import { LogoComponent } from '../../shared/logo/logo.component';
 import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-admin-login',
   standalone: true,
-  imports: [FormsModule, RouterLink, CrestComponent],
+  imports: [FormsModule, RouterLink, LogoComponent],
   template: `
     <div class="login">
       <form class="login__card" (ngSubmit)="submit()">
-        <app-crest [size]="48" />
+        <app-logo [size]="72" />
         <h1>Back Office</h1>
         <p class="login__sub">Sign in to manage tickets and attendees.</p>
 

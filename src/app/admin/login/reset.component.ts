@@ -1,17 +1,17 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink, Router } from '@angular/router';
-import { CrestComponent } from '../../shared/crest/crest.component';
+import { LogoComponent } from '../../shared/logo/logo.component';
 import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-admin-reset',
   standalone: true,
-  imports: [FormsModule, RouterLink, CrestComponent],
+  imports: [FormsModule, RouterLink, LogoComponent],
   template: `
     <div class="login">
       <form class="login__card" (ngSubmit)="submit()">
-        <app-crest [size]="48" />
+        <app-logo [size]="72" />
         <h1>Choose a new password</h1>
 
         @if (!token) {
