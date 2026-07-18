@@ -66,6 +66,13 @@ export const ADMIN_ROUTES: Routes = [
         title: 'Tables — Back Office',
       },
       {
+        path: 'promote',
+        canActivate: [permissionGuard('reservations')],
+        loadComponent: () =>
+          import('./pages/promote/promote.component').then((m) => m.PromoteComponent),
+        title: 'Promote — Back Office',
+      },
+      {
         path: 'team',
         canActivate: [permissionGuard('team')],
         loadComponent: () =>

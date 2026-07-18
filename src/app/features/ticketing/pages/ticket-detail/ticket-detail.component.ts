@@ -47,6 +47,9 @@ type State = 'loading' | 'ready' | 'notfound';
                   <span class="ticket__name">{{ a.name }}</span>
                   <dl>
                     <div><dt>Ticket</dt><dd>{{ meta(a.ticketType).label }}</dd></div>
+                    @if (a.tableNumber) {
+                      <div><dt>Table</dt><dd>{{ a.tableNumber }}</dd></div>
+                    }
                     <div><dt>When</dt><dd>{{ eventDateLabel }}</dd></div>
                     <div><dt>Arrival</dt><dd>{{ arrivalNote }}</dd></div>
                     <div><dt>Email</dt><dd>{{ a.email }}</dd></div>
@@ -121,13 +124,17 @@ export class TicketDetailComponent {
 
     // QR is best-effort: a failure here must NOT hide the ticket.
     try {
-      await this.makeQr(this.api.checkInUrl(attendee.ticketCode), attendee.ticketCode);
+      await this.makeQr(
+        this.api.checkInUrl(attendee.ticketCode),
+        attendee.ticketCode,
+        attendee.tableNumber,
+      );
     } catch (e) {
       console.error('QR generation failed', e);
     }
   }
 
-  private async makeQr(url: string, code: string): Promise<void> {
+  private async makeQr(url: string, code: string, table?: string): Promise<void> {
     if (!this.isBrowser) return;
     // qrcode is CommonJS: under dynamic import its API sits on `.default`.
     const mod = (await import('qrcode')) as unknown as {
@@ -155,8 +162,9 @@ export class TicketDetailComponent {
       // If the logo can't be drawn (e.g. load blocked), keep the plain QR.
     }
 
-    // Compose onto a taller canvas so the ticket number is printed on the image.
-    const footer = 96;
+    // Compose onto a taller canvas so the ticket number (and table) print on the image.
+    const hasTable = !!(table && table.trim());
+    const footer = hasTable ? 132 : 96;
     const out = this.doc.createElement('canvas');
     out.width = size;
     out.height = size + footer;
@@ -176,6 +184,11 @@ export class TicketDetailComponent {
     ctx.fillStyle = '#0b0b0a';
     ctx.font = '700 30px "Courier New", monospace';
     ctx.fillText(code.toUpperCase(), size / 2, size + 66);
+    if (hasTable) {
+      ctx.fillStyle = '#b0891d';
+      ctx.font = '700 24px Jost, Arial, sans-serif';
+      ctx.fillText(`TABLE ${table!.trim().toUpperCase()}`, size / 2, size + 108);
+    }
 
     this.qr.set(out.toDataURL('image/png'));
   }

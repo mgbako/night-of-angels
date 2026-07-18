@@ -13,12 +13,12 @@ export const EVENT_ARRIVAL_TIME = '5:00 PM';
 export const EVENT_ARRIVAL_NOTE = `Arrivals from ${EVENT_ARRIVAL_TIME}`;
 
 // PLACEHOLDER contact details
-export const RSVP_EMAIL = 'rsvp@nightofangels.example';
-export const PARTNERSHIPS_EMAIL = 'partnerships@nightofangels.example';
+export const RSVP_EMAIL = 'info@nightofangels2026.com';
+export const PARTNERSHIPS_EMAIL = 'info@nightofangels2026.com';
 export const PHONE_DISPLAY = '+234 4803 786 6963';
 export const PHONE_TEL = '+2348037866963';
-export const INSTAGRAM_HANDLE = '@nightofangels';
-export const INSTAGRAM_URL = 'https://instagram.com/';
+export const INSTAGRAM_HANDLE = '@nightofangels2026';
+export const INSTAGRAM_URL = 'https://www.instagram.com/nightofangels2026/';
 
 // Bank / transfer details guests pay into before uploading proof of payment.
 export const PAYMENT = {

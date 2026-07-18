@@ -23,7 +23,8 @@ export type IconName =
   | 'inbox'
   | 'external'
   | 'settings'
-  | 'tables';
+  | 'tables'
+  | 'qr';
 
 /**
  * Tiny inline-SVG icon set (stroke = currentColor). Rendered directly in the
@@ -139,6 +140,12 @@ export type IconName =
           <circle cx="16.5" cy="7.5" r="3.5" />
           <circle cx="7.5" cy="16.5" r="3.5" />
           <circle cx="16.5" cy="16.5" r="3.5" />
+        }
+        @case ('qr') {
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+          <path d="M14 14h3v3M20 14v.01M14 20v.01M20 20v.01M17 17h.01M20 17h.01M17 20h3" />
         }
         @case ('settings') {
           <circle cx="12" cy="12" r="3" />
