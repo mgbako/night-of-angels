@@ -54,6 +54,9 @@ type Theme = 'dark' | 'light';
           <button class="adm-btn" (click)="copyLink()">
             <adm-icon name="qr" [size]="16" /> {{ copied() ? 'Copied!' : 'Copy link' }}
           </button>
+          <button class="adm-btn wa-share" (click)="shareWhatsApp()">
+            <adm-icon name="whatsapp" [size]="16" /> Share to WhatsApp
+          </button>
         </div>
 
         <p class="promo__hint">
@@ -132,6 +135,48 @@ export class PromoteComponent {
   scheduleRender(): void {
     clearTimeout(this.renderTimer);
     this.renderTimer = setTimeout(() => this.render(), 400);
+  }
+
+  /**
+   * Share to WhatsApp. On mobile, the native share sheet lets the user attach
+   * the poster image and pick WhatsApp; elsewhere we open WhatsApp pre-filled
+   * with the invite text and reservation link.
+   */
+  async shareWhatsApp(): Promise<void> {
+    const when = EVENT_DATE.toLocaleDateString('en-GB', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+    const msg =
+      `You're invited to A Night of Angels — Harvest Dinner 2026.\n` +
+      `${when} · ${EVENT_ARRIVAL_NOTE}.\n` +
+      `Reserve your seat: ${this.link}`;
+
+    const nav = navigator as Navigator & {
+      canShare?: (data?: ShareData) => boolean;
+    };
+    const poster = this.posterUrl();
+    if (poster && nav.canShare) {
+      try {
+        const blob = await (await fetch(poster)).blob();
+        const file = new File([blob], 'night-of-angels-reserve-poster.png', {
+          type: 'image/png',
+        });
+        if (nav.canShare({ files: [file] })) {
+          await nav.share({ files: [file], text: msg, title: 'A Night of Angels' });
+          return;
+        }
+      } catch {
+        /* user cancelled or sharing unavailable — fall through to link */
+      }
+    }
+    this.doc.defaultView?.open(
+      `https://wa.me/?text=${encodeURIComponent(msg)}`,
+      '_blank',
+      'noopener',
+    );
   }
 
   async copyLink(): Promise<void> {
