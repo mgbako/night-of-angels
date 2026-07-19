@@ -1,12 +1,10 @@
 /**
  * Sponsorship + impact content for A Night of Angels — the signature dinner of
- * the "Harvest of Internal Peace" programme, Saints Peter and Paul Catholic
- * Church, Oke Afa.
+ * the "Harvest of Everlasting Peace" programme (Isaiah 26:3), Saints Peter and
+ * Paul Catholic Church, Oke-Afa, Ejigbo, Lagos.
  *
- * ----------------------------------------------------------------------------
- * Most figures below are PLACEHOLDERS — replace with your real numbers before
- * sharing with sponsors. Honest, modest numbers convert better than none.
- * ----------------------------------------------------------------------------
+ * Figures and tiers below are synced to the official 2026 Sponsorship Proposal
+ * (Nights of Angels · Harvest Dinner 2026 · 24 October 2026).
  */
 
 export interface Stat {
@@ -41,72 +39,76 @@ export interface ImpactPoint {
   body: string;
 }
 
-// PLACEHOLDER deadline — set the real sponsorship cut-off.
+// The brochure states seating is allocated on a first-confirmed basis and does
+// NOT specify a cut-off date. This is the one figure still to be confirmed.
 export const SPONSOR_DEADLINE = 'Friday, 29 August 2026';
 
-// PLACEHOLDER audience numbers.
+// Audience numbers — from the 2026 Sponsorship Proposal (slide 4).
 export const SPONSOR_STATS: Stat[] = [
-  { value: '300+', label: 'Distinguished guests in the room' },
-  { value: '60%', label: 'Entrepreneurs, executives & professionals' },
-  { value: '50K+', label: 'Combined social & community reach' },
-  { value: '3rd', label: 'Annual edition of the dinner' },
+  { value: '6,000+', label: 'Parishioners reached through the harvest network' },
+  { value: '250+', label: 'High-net-worth guests seated at the dinner' },
+  { value: '100%', label: 'Affluent, invitation-only professional audience' },
+  { value: '1 Brand', label: 'Per category — exclusive, uncontested visibility' },
 ];
 
 export const SPONSOR_TIERS: SponsorTier[] = [
   {
-    name: 'Title Sponsor',
+    name: 'Official Brand Partner',
     price: '₦1,500,000',
-    slots: 'Exclusive — 1 partner',
+    slots: 'Category-exclusive — 1 partner',
     summary:
-      'The evening presented in partnership with your brand. Maximum visibility, woven through every touchpoint.',
+      'The most comprehensive partnership available — one brand per category, uncontested across every touchpoint of the night.',
     benefits: [
-      '“Presented by” lock-up across all event branding',
-      'Logo on stage backdrop & step-and-repeat',
-      'A premium reserved table of ten',
+      '“Official Brand Partner” lock-up on all event branding',
+      'Brand logo on the stage backdrop & step-and-repeat',
+      '5 premium reserved ticket seats',
       'A speaking or recognition moment on stage',
-      'Your brand woven into one programme segment',
-      '6 social features + email & WhatsApp mentions',
+      'Full-page ad in the 2026 Harvest Brochure',
+      'Social features across all platforms',
       'Premier logo placement on website & prospectus',
+      'Red-carpet engagement & roll-up banner feature',
+      'Brand logo on the official ticket document',
     ],
     featured: true,
   },
   {
     name: 'Platinum',
     price: '₦1,000,000',
-    slots: 'Limited — 3 partners',
+    slots: 'Category-exclusive — 3 partners',
     summary:
-      'Premium positioning within the experience and a reserved table for your guests.',
+      'Premium positioning through the evening, with a Harvest Brochure ad and social reach across the 6,000+ congregation.',
     benefits: [
-      'Logo on event branding & step-and-repeat',
-      'A reserved table of ten',
-      'Recognition during the toast',
-      '4 social features',
-      'Logo placement on website & prospectus',
+      'Logo on event branding & step-and-repeat backdrop',
+      '3 premium reserved ticket seats',
+      'Stage mention of your brand during the evening',
+      'Full-page commercial ad in the 2026 Harvest Brochure',
+      'Social features: Instagram, WhatsApp, Facebook & TikTok',
+      'Premier logo placement on website & prospectus',
     ],
   },
   {
     name: 'Gold',
     price: '₦500,000',
-    slots: 'Limited',
+    slots: 'Category-exclusive',
     summary:
-      'A considered brand moment woven through the programme and guest touchpoints.',
+      'A considered brand presence with premium website & prospectus placement and full social features.',
     benefits: [
       'Logo on select event branding',
-      '4 premium seats',
-      '2 social features',
-      'Logo placement on website',
+      '2 premium reserved ticket seats',
+      'Premier logo placement on website & prospectus',
+      'Social features: Instagram, WhatsApp, Facebook & TikTok',
     ],
   },
   {
-    name: 'Supporting & In-Kind',
-    price: 'Custom',
-    slots: 'Open',
+    name: 'Backdrop & Step-and-Repeat',
+    price: '₦100,000',
+    slots: 'Add-on opportunity',
     summary:
-      'Support the night with product or services — drinks, décor, printing, valet and more — for negotiated visibility.',
+      'Your brand logo on the event’s primary photo wall — present in every guest’s arrival photograph.',
     benefits: [
-      'Recognition as an official partner',
-      'Logo on website',
-      'Visibility tailored to your contribution',
+      'Brand logo on the dinner backdrop / photo wall',
+      'Present in every guest’s arrival & selfie shot',
+      'High-visibility placement across arrival imagery',
     ],
   },
 ];
@@ -137,7 +139,7 @@ export const CURRENT_PARTNERS: Partner[] = [
 export const IMPACT_POINTS: ImpactPoint[] = [
   {
     title: 'A community gathered in gratitude',
-    body: 'A Night of Angels is the centrepiece of Harvest of Internal Peace — a moment for our parish family and friends to give thanks and break bread together.',
+    body: 'A Night of Angels is the centrepiece of Harvest of Everlasting Peace (Isaiah 26:3) — a moment for our parish family and friends to give thanks and break bread together.',
   },
   {
     title: 'Supporting the harvest',
@@ -145,6 +147,6 @@ export const IMPACT_POINTS: ImpactPoint[] = [
   },
   {
     title: 'Goodwill that travels with your brand',
-    body: 'Partnering places your brand at the heart of a respected faith community — visible, valued and remembered long after the night ends.',
+    body: 'Partnership extends beyond one night — your brand is featured in the SS Peter & Paul 2026 Harvest Brochure, a physical and digital publication reaching the full 6,000+ congregation.',
   },
 ];

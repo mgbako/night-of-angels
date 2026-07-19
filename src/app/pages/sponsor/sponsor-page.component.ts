@@ -268,11 +268,11 @@ export class SponsorPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.seo.setSEO({
-      title: 'Partner With Us — A Night of Angels | Sponsorship & Tables',
+      title: 'Partner With Us — A Night of Angels | Sponsorship',
       description:
-        'Become a partner of A Night of Angels 2026 in Lagos. Explore Title, Platinum and Gold sponsorship tiers, book a table of ten, and reach an exclusive audience.',
+        'Become a partner of A Night of Angels 2026 in Lagos. Explore Official Brand Partner, Platinum, Gold and Backdrop sponsorship tiers, reserve premium seats, and reach an exclusive, invitation-only audience.',
       keywords:
-        'event sponsorship Lagos, corporate partnership Nigeria, gala sponsor Lagos, A Night of Angels sponsor, table of ten',
+        'event sponsorship Lagos, corporate partnership Nigeria, gala sponsor Lagos, A Night of Angels sponsor, brand partner Lagos',
       path: '/sponsor',
     });
   }
