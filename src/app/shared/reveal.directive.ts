@@ -35,6 +35,9 @@ export class RevealDirective implements OnDestroy {
         return;
       }
 
+      // threshold 0 (not a ratio of the element) so tall hosts — e.g. the full
+      // gallery grid — reveal as soon as their top edge scrolls into view. A
+      // ratio like 0.12 can never be met by an element taller than the viewport.
       this.observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
@@ -44,7 +47,7 @@ export class RevealDirective implements OnDestroy {
             }
           });
         },
-        { threshold: 0.12, rootMargin: '0px 0px -8% 0px' }
+        { threshold: 0, rootMargin: '0px 0px -8% 0px' }
       );
       this.observer.observe(host);
     });

@@ -43,12 +43,12 @@ export interface ImpactPoint {
 // NOT specify a cut-off date. This is the one figure still to be confirmed.
 export const SPONSOR_DEADLINE = 'Friday, 29 August 2026';
 
-// Audience numbers — from the 2026 Sponsorship Proposal (slide 4).
+// Audience numbers — from the official 2026 Sponsorship Prospectus.
 export const SPONSOR_STATS: Stat[] = [
-  { value: '6,000+', label: 'Parishioners reached through the harvest network' },
-  { value: '250+', label: 'High-net-worth guests seated at the dinner' },
-  { value: '100%', label: 'Affluent, invitation-only professional audience' },
-  { value: '1 Brand', label: 'Per category — exclusive, uncontested visibility' },
+  { value: '250+', label: 'Distinguished guests in the room on the night' },
+  { value: '6,000+', label: 'Parishioners reached through the Harvest Brochure & church community' },
+  { value: '3', label: 'Sponsorship tiers, each offering distinct, uncrowded brand prominence' },
+  { value: '100%', label: 'Curated all-white guest list, by invitation and ticket' },
 ];
 
 export const SPONSOR_TIERS: SponsorTier[] = [
@@ -59,14 +59,15 @@ export const SPONSOR_TIERS: SponsorTier[] = [
     summary:
       'The most comprehensive partnership available — one brand per category, uncontested across every touchpoint of the night.',
     benefits: [
-      '“Official Brand Partner” lock-up on all event branding',
-      'Brand logo on the stage backdrop & step-and-repeat',
+      '“Official Brand Partner” lock-up across all event branding',
+      'Brand logo on stage backdrop & step-and-repeat',
       '5 premium reserved ticket seats',
       'A speaking or recognition moment on stage',
-      'Full-page ad in the 2026 Harvest Brochure',
-      'Social features across all platforms',
+      'Full-page commercial ad in the Church’s 2026 Harvest Brochure',
+      'Social features — Instagram, WhatsApp, Facebook & TikTok mentions',
       'Premier logo placement on website & prospectus',
-      'Red-carpet engagement & roll-up banner feature',
+      'Red-carpet engagement',
+      'Roll-up banner feature',
       'Brand logo on the official ticket document',
     ],
     featured: true,

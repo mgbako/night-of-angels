@@ -297,7 +297,14 @@ export class SponsorPageComponent implements OnInit {
   }
 
   downloadPdf(): void {
-    if (this.isBrowser) window.print();
+    if (!this.isBrowser) return;
+    const a = document.createElement('a');
+    a.href = '/sponsorship-prospectus-2026.pdf';
+    a.download = 'A-Night-of-Angels-Sponsorship-Prospectus-2026.pdf';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   }
 
   submit(event: Event): void {
