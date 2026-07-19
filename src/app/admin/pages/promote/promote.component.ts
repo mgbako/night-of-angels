@@ -321,7 +321,7 @@ export class PromoteComponent {
     if (kind === 'reserve') {
       ctx.fillStyle = text;
       this.text(ctx, 'SCAN TO RESERVE YOUR SEAT', W / 2, 500, '600 30px Jost, Arial, sans-serif', 3);
-      plate = 560;
+      plate = 500;
       py = 540;
     } else {
       const meta = ticketTypeMeta(kind);
@@ -335,8 +335,8 @@ export class PromoteComponent {
       this.text(ctx, seatsLine.toUpperCase(), W / 2, 596, '500 22px Jost, Arial, sans-serif', 3);
       ctx.fillStyle = text;
       this.text(ctx, 'SCAN TO RESERVE', W / 2, 648, '600 26px Jost, Arial, sans-serif', 3);
-      plate = 460;
-      py = 678;
+      plate = 404;
+      py = 660;
     }
 
     // White QR plate.
@@ -354,14 +354,24 @@ export class PromoteComponent {
       month: 'long',
       year: 'numeric',
     }).toUpperCase();
+    const qrEnd = py + plate;
     ctx.fillStyle = text;
-    this.text(ctx, when, W / 2, py + plate + 76, '600 30px "Cormorant Garamond", Georgia, serif', 1);
+    this.text(ctx, when, W / 2, qrEnd + 54, '600 30px "Cormorant Garamond", Georgia, serif', 1);
     ctx.fillStyle = gold;
-    this.text(ctx, EVENT_ARRIVAL_NOTE.toUpperCase(), W / 2, py + plate + 120, '500 22px Jost, Arial, sans-serif', 4);
+    this.text(ctx, EVENT_ARRIVAL_NOTE.toUpperCase(), W / 2, qrEnd + 92, '500 22px Jost, Arial, sans-serif', 4);
+
+    // Title sponsor lockup.
+    const sponsor = await this.loadImage('/sponsors/fcmb.svg').catch(() => null);
+    if (sponsor) {
+      ctx.fillStyle = soft;
+      this.text(ctx, 'TITLE SPONSOR', W / 2, qrEnd + 140, '600 18px Jost, Arial, sans-serif', 5);
+      const ls = 60;
+      ctx.drawImage(sponsor, (W - ls) / 2, qrEnd + 152, ls, ls);
+    }
 
     // Link footer.
     ctx.fillStyle = soft;
-    this.text(ctx, this.displayLink(), W / 2, H - 70, '400 22px Jost, Arial, sans-serif', 1);
+    this.text(ctx, this.displayLink(), W / 2, H - 52, '400 22px Jost, Arial, sans-serif', 1);
 
     return canvas;
   }
