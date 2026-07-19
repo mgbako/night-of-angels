@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { CrestComponent } from '../../shared/crest/crest.component';
+import { LogoComponent } from '../../shared/logo/logo.component';
 import { RevealDirective } from '../../shared/reveal.directive';
 import { GALLERY_ALBUMS, GalleryImage } from '../../config/gallery.config';
 import { SeoService } from '../../shared/seo.service';
@@ -29,14 +29,14 @@ interface Filter {
 @Component({
   selector: 'app-gallery-page',
   standalone: true,
-  imports: [RouterLink, CrestComponent, RevealDirective],
+  imports: [RouterLink, LogoComponent, RevealDirective],
   template: `
     <main class="gallery-page" id="top">
       <!-- Header -->
       <header class="g-hero section section--ink">
         <div class="g-hero__grain" aria-hidden="true"></div>
         <div class="wrap g-hero__inner">
-          <app-crest [size]="56" />
+          <app-logo [size]="80" />
           <span class="eyebrow">The Gallery</span>
           <h1 class="g-hero__title">Moments From Past Evenings</h1>
           <p class="g-hero__lead">
