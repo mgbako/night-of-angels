@@ -1,5 +1,5 @@
 import { Component, HostListener, signal } from '@angular/core';
-import { CrestComponent } from '../../shared/crest/crest.component';
+import { LogoComponent } from '../../shared/logo/logo.component';
 import { WHATSAPP_GREETING, WHATSAPP_NUMBER } from '../../config/event.config';
 
 interface QuickReply {
@@ -10,7 +10,7 @@ interface QuickReply {
 @Component({
   selector: 'app-whatsapp-chat',
   standalone: true,
-  imports: [CrestComponent],
+  imports: [LogoComponent],
   template: `
     <!-- Chat card -->
     <div
@@ -21,7 +21,7 @@ interface QuickReply {
       aria-label="Chat with A Night of Angels on WhatsApp"
     >
       <div class="wa-card__head">
-        <span class="wa-card__avatar"><app-crest [size]="34" [full]="false" /></span>
+        <span class="wa-card__avatar"><app-logo [size]="36" /></span>
         <div class="wa-card__id">
           <span class="wa-card__name">A Night of Angels</span>
           <span class="wa-card__status"><i></i> Typically replies within minutes</span>
