@@ -16,7 +16,10 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
       [style.width.px]="size"
       [style.height.px]="size"
     >
-      <img src="/noa-logo.png" [attr.width]="size" [attr.height]="size" [alt]="alt" />
+      <picture>
+        <source srcset="/noa-logo.webp" type="image/webp" />
+        <img src="/noa-logo.png" [attr.width]="size" [attr.height]="size" [alt]="alt" />
+      </picture>
     </span>
   `,
   styles: [
@@ -24,6 +27,11 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
       .noa-logo {
         display: inline-block;
         line-height: 0;
+      }
+      .noa-logo picture {
+        display: block;
+        width: 100%;
+        height: 100%;
       }
       .noa-logo img {
         width: 100%;

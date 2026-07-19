@@ -62,7 +62,12 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- Load fonts without blocking first paint (display=swap already avoids invisible text). -->
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Jost:wght@300;400;500;600&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  </noscript>
 
   <!-- Structured data: Event (drives Google rich results) -->
   <script type="application/ld+json">
@@ -208,5 +213,48 @@
   </form>
 
   <app-root></app-root>
+
+  <!--
+    ============================================================
+    ANALYTICS & MARKETING PIXELS — inert until you activate them.
+    Nothing below loads (no extra requests, no perf cost) until you
+    fill these in, so it's safe to ship as-is.
+
+      1) PLAUSIBLE (privacy-friendly, no cookie banner needed):
+         create a site for "nightofangels2026.com" at plausible.io,
+         then change ENABLE_PLAUSIBLE to true.
+      2) META (Facebook/Instagram) PIXEL — for retargeting ads:
+         paste your numeric Pixel ID into META_PIXEL_ID.
+    ============================================================
+  -->
+  <script>
+    (function () {
+      var ENABLE_PLAUSIBLE = false;
+      var META_PIXEL_ID = ''; // e.g. '123456789012345'
+
+      if (ENABLE_PLAUSIBLE) {
+        var p = document.createElement('script');
+        p.defer = true;
+        p.setAttribute('data-domain', 'nightofangels2026.com');
+        p.src = 'https://plausible.io/js/script.js';
+        document.head.appendChild(p);
+      }
+
+      if (META_PIXEL_ID) {
+        !(function (f, b, e, v, n, t, s) {
+          if (f.fbq) return;
+          n = f.fbq = function () {
+            n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+          };
+          if (!f._fbq) f._fbq = n;
+          n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = [];
+          t = b.createElement(e); t.async = !0; t.src = v;
+          s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s);
+        })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+        window.fbq('init', META_PIXEL_ID);
+        window.fbq('track', 'PageView');
+      }
+    })();
+  </script>
 </body>
 </html>
