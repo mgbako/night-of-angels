@@ -41,7 +41,7 @@ interface Filter {
           <h1 class="g-hero__title">Moments From Past Evenings</h1>
           <p class="g-hero__lead">
             A Night of Angels is the signature dinner of
-            <em>Harvest of Internal Peace</em>, the annual harvest programme of
+            <em>Harvest of Everlasting Peace</em>, the annual harvest programme of
             Saints Peter and Paul Catholic Church, Oke Afa. Every edition gathers
             the community in white — for candlelight, live music, fine dining and
             gratitude. Here is a look back. This year, there’s a seat for you.
@@ -161,9 +161,11 @@ export class GalleryPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.seo.setSEO({
-      title: 'Gallery — A Night of Angels | Moments From Past Editions',
+      title: 'Gallery — A Night of Angels | Past Harvest Dinners, Lagos',
       description:
-        'Relive past editions of A Night of Angels — the all-white harvest dinner in Lagos. Browse photos of guests, tables and celebrations from previous years.',
+        'Photos from past editions of A Night of Angels — the all-white harvest dinner of SS Peter & Paul Catholic Church, Oke-Afa, Lagos. Browse 2025, 2024, 2023 and 2020 highlights.',
+      keywords:
+        'A Night of Angels photos, Night of Angels gallery, harvest dinner Lagos photos, all-white dinner Lagos pictures, SS Peter and Paul Oke-Afa harvest, Night of Angels 2025, Night of Angels 2024',
       path: '/gallery',
     });
   }

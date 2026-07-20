@@ -38,7 +38,7 @@ type State = 'loading' | 'ready' | 'notfound';
                 <app-logo [size]="56" />
                 <div>
                   <span class="ticket__event">A Night of Angels</span>
-                  <span class="ticket__sub">Harvest of Internal Peace · Admit {{ meta(a.ticketType).seats }}</span>
+                  <span class="ticket__sub">Harvest of Everlasting Peace · Admit {{ meta(a.ticketType).seats }}</span>
                 </div>
               </header>
 

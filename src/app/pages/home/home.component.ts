@@ -45,11 +45,11 @@ export class HomeComponent implements OnInit {
 
   ngOnInit(): void {
     this.seo.setSEO({
-      title: 'A Night of Angels | All-White Luxury Dinner Experience · Lagos',
+      title: 'A Night of Angels 2026 | All-White Harvest Dinner, Lagos',
       description:
-        'A Night of Angels — an exclusive all-white luxury harvest dinner in Lagos on 24 October 2026. Reserve your seat, book a table of ten, or become a partner.',
+        'A Night of Angels 2026 — the all-white luxury harvest dinner of SS Peter & Paul Catholic Church, Oke-Afa, Ejigbo, Lagos, on 24 October. Reserve your seat, book a table, or become a partner.',
       keywords:
-        'all-white party Lagos, luxury dinner Lagos, harvest dinner 2026, A Night of Angels, exclusive gala Lagos Nigeria, SS Peter and Paul Oke-Afa',
+        'A Night of Angels, Night of Angels 2026, Night of Angels Lagos, all-white dinner Lagos, luxury harvest dinner Lagos, harvest dinner Lagos 2026, SS Peter and Paul Catholic Church Oke-Afa, Harvest of Everlasting Peace, all-white party Lagos, Oke-Afa Ejigbo event, exclusive gala Lagos Nigeria',
       path: '/',
     });
   }

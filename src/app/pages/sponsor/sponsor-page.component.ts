@@ -37,7 +37,7 @@ type FormStatus = 'idle' | 'sending' | 'sent' | 'error';
           <h1 class="sp-hero__title">Partner With Purpose</h1>
           <p class="sp-hero__lead">
             Place your brand at the heart of <em>A Night of Angels</em> — the
-            signature dinner of Harvest of Internal Peace, Saints Peter and Paul
+            signature dinner of Harvest of Everlasting Peace, Saints Peter and Paul
             Catholic Church, Oke Afa. A room of distinguished guests, a respected
             faith community, and goodwill that travels with your name.
           </p>

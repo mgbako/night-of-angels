@@ -14,7 +14,7 @@ import { GALLERY_PREVIEW } from '../../../../config/gallery.config';
           <h2 class="section-title">Moments From Past Evenings</h2>
           <p class="gallery-preview__lead">
             A Night of Angels is the signature dinner of
-            <em>Harvest of Internal Peace</em> — the annual harvest programme of
+            <em>Harvest of Everlasting Peace</em> — the annual harvest programme of
             Saints Peter and Paul Catholic Church, Oke Afa. Step into the rooms
             we’ve shared: candlelight, live strings, and a community dressed in
             white.

@@ -12,7 +12,7 @@ import { IMPACT_POINTS, SPONSOR_STATS } from '../../../../config/sponsor.config'
           <h2 class="section-title">More Than a Dinner</h2>
           <p class="impact__lead">
             A Night of Angels is the signature evening of
-            <em>Harvest of Internal Peace</em> — the annual harvest programme of
+            <em>Harvest of Everlasting Peace</em> — the annual harvest programme of
             Saints Peter and Paul Catholic Church, Oke Afa. Beneath the
             candlelight and fine dining is a community giving thanks, and a cause
             worth standing beside.

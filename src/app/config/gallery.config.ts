@@ -2,7 +2,7 @@
  * Gallery content for past editions of the dinner.
  *
  * A Night of Angels is the signature dinner of the annual harvest programme
- * "Harvest of Internal Peace" by Saints Peter and Paul Catholic Church, Oke Afa.
+ * "Harvest of Everlasting Peace" by Saints Peter and Paul Catholic Church, Oke Afa.
  *
  * ----------------------------------------------------------------------------
  * PLACEHOLDER IMAGES: the files in /public/gallery are tasteful stand-ins.
