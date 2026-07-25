@@ -229,35 +229,30 @@ export class AttendeeApiService {
     await this.refresh();
   }
 
-  /** Archive several attendees at once, then refresh once. Returns how many failed. */
+  /** Archive several attendees in one atomic request, then refresh. Returns how many failed. */
   async removeMany(ticketCodes: string[]): Promise<number> {
-    const results = await Promise.allSettled(
-      ticketCodes.map(async (code) => {
-        const res = await fetch(`${API}/${encodeURIComponent(code)}`, {
-          method: 'DELETE',
-          headers: this.authHeaders(),
-        });
-        this.guard(res);
-        if (!res.ok) throw new ApiError(res.status, 'Archive failed');
-      }),
-    );
+    const removed = await this.bulkDelete(ticketCodes, false);
     await this.refresh();
-    return results.filter((r) => r.status === 'rejected').length;
+    return ticketCodes.length - removed;
   }
 
-  /** Permanently delete several attendees at once — owner only. Returns how many failed. */
+  /** Permanently delete several attendees in one atomic request — owner only. Returns how many failed. */
   async permanentDeleteMany(ticketCodes: string[]): Promise<number> {
-    const results = await Promise.allSettled(
-      ticketCodes.map(async (code) => {
-        const res = await fetch(`${API}/${encodeURIComponent(code)}?permanent=1`, {
-          method: 'DELETE',
-          headers: this.authHeaders(),
-        });
-        this.guard(res);
-        if (!res.ok) throw new ApiError(res.status, 'Delete failed');
-      }),
-    );
-    return results.filter((r) => r.status === 'rejected').length;
+    const removed = await this.bulkDelete(ticketCodes, true);
+    return ticketCodes.length - removed;
+  }
+
+  /** POST the whole list of codes so the server removes them in a single write. */
+  private async bulkDelete(ticketCodes: string[], permanent: boolean): Promise<number> {
+    const res = await fetch(`${API}/bulk-delete`, {
+      method: 'POST',
+      headers: this.authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ codes: ticketCodes, permanent }),
+    });
+    this.guard(res);
+    if (!res.ok) throw new ApiError(res.status, (await this.msg(res)) || 'Bulk delete failed');
+    const body = (await res.json().catch(() => ({ removed: 0 }))) as { removed?: number };
+    return body.removed ?? 0;
   }
 
   /** List archived (soft-deleted) attendees — super admin (owner) only. */

@@ -38,6 +38,7 @@ function tablePersons(list: Attendee[], table: string, excludeId?: string): numb
 export const config = {
   path: [
     '/api/attendees',
+    '/api/attendees/bulk-delete',
     '/api/attendees/:code',
     '/api/attendees/:code/check-in',
     '/api/attendees/:code/email',
@@ -108,8 +109,15 @@ export default async (req: Request, context: Context): Promise<Response> => {
   const pathname = new URL(req.url).pathname;
   const isCheckin = pathname.endsWith('/check-in');
   const isEmail = pathname.endsWith('/email');
+  const isBulk = pathname.endsWith('/bulk-delete');
 
   try {
+    // Bulk archive / permanent delete — one read-modify-write so it can't race.
+    if (isBulk) {
+      if (req.method === 'POST') return await bulkRemove(req);
+      return json({ error: 'Method not allowed' }, 405);
+    }
+
     // Email the guest their ticket (ticketing action)
     if (isEmail) {
       if (req.method === 'POST') {
@@ -266,6 +274,53 @@ async function patchOne(code: string, req: Request): Promise<Response> {
   }
   await writeAll(list);
   return json(list[idx]);
+}
+
+/**
+ * Archive (or permanently delete) many attendees in a single read-modify-write.
+ * Doing it in one pass avoids the lost-update race you get from firing many
+ * concurrent single deletes at the blob store.
+ */
+async function bulkRemove(req: Request): Promise<Response> {
+  const body = (await req.json().catch(() => null)) as
+    | { codes?: unknown; permanent?: unknown }
+    | null;
+  const codes = Array.isArray(body?.codes)
+    ? body!.codes.map((c) => String(c).trim().toLowerCase()).filter(Boolean)
+    : [];
+  const permanent = body?.permanent === true;
+  if (!codes.length) return json({ error: 'No ticket codes provided' }, 400);
+
+  if (permanent) {
+    requireOwner(req);
+  } else {
+    const actor = requirePermission(req, 'attendees');
+    if (!canManageAttendees(actor.role)) throw new AuthError(403, 'You do not have access to this action');
+  }
+
+  const set = new Set(codes);
+  const list = await readAll();
+  let removed = 0;
+
+  if (permanent) {
+    const next = list.filter((a) => {
+      const hit = set.has(a.ticketCode.toLowerCase());
+      if (hit) removed++;
+      return !hit;
+    });
+    if (removed) await writeAll(next);
+  } else {
+    const now = new Date().toISOString();
+    const next = list.map((a) => {
+      if (!a.deletedAt && set.has(a.ticketCode.toLowerCase())) {
+        removed++;
+        return { ...a, deletedAt: now };
+      }
+      return a;
+    });
+    if (removed) await writeAll(next);
+  }
+  return json({ removed });
 }
 
 async function removeOne(code: string, permanent: boolean): Promise<Response> {
