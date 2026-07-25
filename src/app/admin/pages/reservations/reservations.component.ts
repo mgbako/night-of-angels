@@ -38,6 +38,16 @@ import { AuthService } from '../../services/auth.service';
     }
 
     <div class="adm-toolbar">
+      <div class="adm-search">
+        <adm-icon name="search" [size]="17" />
+        <input
+          type="search"
+          placeholder="Search name, phone, email or code…"
+          [ngModel]="search()"
+          (ngModelChange)="search.set($event)"
+          aria-label="Search reservations by name, phone, email, ticket code or second guest"
+        />
+      </div>
       <select class="adm-select" [ngModel]="filter()" (ngModelChange)="filter.set($event)">
         <option value="pending">Pending ({{ counts().pending }})</option>
         <option value="approved">Approved ({{ counts().approved }})</option>
@@ -111,7 +121,11 @@ import { AuthService } from '../../services/auth.service';
         } @empty {
           <div class="adm-empty">
             <adm-icon name="ticket" [size]="28" />
-            <p style="margin-top:.5rem">No {{ filter() === 'all' ? '' : filter() }} reservations.</p>
+            @if (search().trim()) {
+              <p style="margin-top:.5rem">No reservations match “{{ search().trim() }}”.</p>
+            } @else {
+              <p style="margin-top:.5rem">No {{ filter() === 'all' ? '' : filter() }} reservations.</p>
+            }
           </div>
         }
       </div>
@@ -250,6 +264,7 @@ export class ReservationsComponent {
   busy = signal(false);
   opening = signal<string | null>(null);
   filter = signal<'pending' | 'approved' | 'all' | 'archived'>('pending');
+  search = signal('');
   notice = signal<{ msg: string; ok: boolean } | null>(null);
   picked: Record<string, TicketType | ''> = {};
 
@@ -260,9 +275,17 @@ export class ReservationsComponent {
 
   visible = computed(() => {
     const f = this.filter();
-    if (f === 'archived') return this.archived();
-    if (f === 'all') return this.all();
-    return this.all().filter((r) => r.status === f);
+    const base =
+      f === 'archived' ? this.archived() : f === 'all' ? this.all() : this.all().filter((r) => r.status === f);
+    const q = this.search().trim().toLowerCase();
+    if (!q) return base;
+    return base.filter((r) =>
+      [r.name, r.phone, r.email, r.ticketCode, r.partnerName, r.partnerPhone, r.partnerEmail]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(q),
+    );
   });
 
   constructor() {
