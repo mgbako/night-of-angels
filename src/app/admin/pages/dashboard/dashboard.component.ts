@@ -1,4 +1,4 @@
-import { Component, afterNextRender, computed, inject } from '@angular/core';
+import { Component, OnDestroy, afterNextRender, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AdminIconComponent } from '../../shared/admin-icon.component';
 import { AttendeeApiService } from '../../../features/ticketing/services/attendee-api.service';
@@ -14,7 +14,13 @@ import { TICKET_TYPES, ticketTypeMeta } from '../../../features/ticketing/models
         <h2>Overview</h2>
         <p>Ticket sales and check-ins at a glance.</p>
       </div>
-      <div style="display:flex; gap:.6rem; flex-wrap:wrap">
+      <div style="display:flex; gap:.6rem; flex-wrap:wrap; align-items:center">
+        @if (live()) {
+          <span title="Check-ins update automatically"
+            style="display:inline-flex; align-items:center; gap:.4rem; padding:.3rem .6rem; border-radius:999px; background:rgba(26,127,82,.12); color:#1a7f52; font-size:.78rem; font-weight:600">
+            <span style="width:8px; height:8px; border-radius:50%; background:#1a7f52"></span> Live
+          </span>
+        }
         <a routerLink="/admin/register" class="adm-btn adm-btn--primary">
           <adm-icon name="register" [size]="17" /> Register attendee
         </a>
@@ -133,15 +139,23 @@ import { TICKET_TYPES, ticketTypeMeta } from '../../../features/ticketing/models
     `,
   ],
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnDestroy {
   private api = inject(AttendeeApiService);
   readonly ticketTypes = TICKET_TYPES;
   meta = ticketTypeMeta;
+  readonly live = this.api.live;
 
   private list = this.api.attendees;
 
   constructor() {
-    afterNextRender(() => this.api.refresh().catch(() => {}));
+    afterNextRender(() => {
+      this.api.refresh().catch(() => {});
+      this.api.startLive();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.api.stopLive();
   }
 
   registrations = computed(() => this.list().length);

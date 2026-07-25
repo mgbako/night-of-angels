@@ -169,12 +169,13 @@ export default async (req: Request, context: Context): Promise<Response> => {
 
 async function register(req: Request): Promise<Response> {
   const body = (await req.json().catch(() => null)) as Partial<Attendee> | null;
-  if (!body?.name || !body?.email || !body?.phone || !body?.ticketType) {
+  if (!body?.name || !body?.phone || !body?.ticketType) {
     return json({ error: 'Missing required fields' }, 400);
   }
   const list = await readAll();
-  const email = String(body.email).trim().toLowerCase();
-  if (list.some((a) => !a.deletedAt && a.email.toLowerCase() === email)) {
+  // Email is optional. Only dedupe when one is supplied.
+  const email = String(body.email ?? '').trim().toLowerCase();
+  if (email && list.some((a) => !a.deletedAt && a.email.toLowerCase() === email)) {
     return json({ error: 'An attendee with this email already exists' }, 409);
   }
   const tableNumber = String(body.tableNumber ?? '').trim();
@@ -187,7 +188,7 @@ async function register(req: Request): Promise<Response> {
   const attendee: Attendee = {
     id: crypto.randomUUID(),
     name: String(body.name).trim(),
-    email: String(body.email).trim(),
+    email: String(body.email ?? '').trim(),
     phone: String(body.phone).trim(),
     ticketType: body.ticketType as TicketType,
     ticketCode: genCode(new Set(list.map((a) => a.ticketCode))),
@@ -287,6 +288,7 @@ async function emailTicket(code: string, req: Request): Promise<Response> {
     (a) => !a.deletedAt && a.ticketCode.toLowerCase() === code.toLowerCase(),
   );
   if (!attendee) return json({ error: 'Ticket not found' }, 404);
+  if (!attendee.email) return json({ error: 'This guest has no email on file' }, 400);
 
   const base = process.env['URL'] || new URL(req.url).origin;
   const url = `${base}/tickets/${attendee.ticketCode}`;

@@ -34,6 +34,14 @@ export class AttendeeApiService {
   readonly attendees = signal<Attendee[]>([]);
   readonly loading = signal(false);
   readonly loadError = signal(false);
+  /** True while near-real-time polling is active (drives a "Live" indicator). */
+  readonly live = signal(false);
+
+  private pollTimer?: ReturnType<typeof setInterval>;
+  private pollCount = 0;
+  private polling = false;
+  private visHandler?: () => void;
+  private readonly POLL_MS = 7000;
 
   constructor(
     @Inject(PLATFORM_ID) platformId: object,
@@ -85,6 +93,60 @@ export class AttendeeApiService {
       throw this.asApiError(e);
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  /**
+   * Begin near-real-time updates: silently re-fetch the attendee list every
+   * few seconds while the tab is visible, and immediately when the tab regains
+   * focus. Reference-counted so several open pages share one timer — call
+   * stopLive() once for each startLive().
+   */
+  startLive(): void {
+    if (!this.isBrowser) return;
+    this.pollCount++;
+    if (this.pollCount > 1) return; // already polling
+    this.live.set(true);
+    this.visHandler = () => {
+      if (document.visibilityState === 'visible') void this.silentRefresh();
+    };
+    document.addEventListener('visibilitychange', this.visHandler);
+    this.pollTimer = setInterval(() => {
+      if (document.visibilityState === 'visible') void this.silentRefresh();
+    }, this.POLL_MS);
+  }
+
+  /** Stop near-real-time updates (reference-counted). */
+  stopLive(): void {
+    if (!this.isBrowser || this.pollCount === 0) return;
+    this.pollCount--;
+    if (this.pollCount > 0) return;
+    this.live.set(false);
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = undefined;
+    }
+    if (this.visHandler) {
+      document.removeEventListener('visibilitychange', this.visHandler);
+      this.visHandler = undefined;
+    }
+  }
+
+  /** Re-fetch the list without toggling the loading spinner — for polling. */
+  private async silentRefresh(): Promise<void> {
+    if (this.polling) return;
+    this.polling = true;
+    try {
+      const res = await fetch(API, { headers: this.authHeaders({ Accept: 'application/json' }) });
+      this.guard(res);
+      if (!res.ok) return;
+      const list = (await res.json()) as Attendee[];
+      this.attendees.set(list);
+      this.loadError.set(false);
+    } catch {
+      /* keep the last good data on transient network errors */
+    } finally {
+      this.polling = false;
     }
   }
 

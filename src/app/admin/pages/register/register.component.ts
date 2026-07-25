@@ -55,9 +55,11 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
             <a [href]="waLink(att)" target="_blank" rel="noopener" class="adm-btn wa-share">
               <adm-icon name="whatsapp" [size]="17" /> Send on WhatsApp
             </a>
-            <button class="adm-btn" (click)="emailTicket(att)" [disabled]="emailing()">
-              <adm-icon name="mail" [size]="17" /> {{ emailing() ? 'Sending…' : 'Email ticket' }}
-            </button>
+            @if (att.email) {
+              <button class="adm-btn" (click)="emailTicket(att)" [disabled]="emailing()">
+                <adm-icon name="mail" [size]="17" /> {{ emailing() ? 'Sending…' : 'Email ticket' }}
+              </button>
+            }
             <a [routerLink]="['/tickets', att.ticketCode]" target="_blank" class="adm-btn adm-btn--primary">
               <adm-icon name="ticket" [size]="17" /> Open ticket
             </a>
@@ -85,8 +87,8 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
           </div>
 
           <div class="adm-field" [class.adm-field--invalid]="invalid('email')">
-            <label for="r-email">Email</label>
-            <input id="r-email" type="email" formControlName="email" autocomplete="email" />
+            <label for="r-email">Email <span class="adm-muted-label">(optional)</span></label>
+            <input id="r-email" type="email" formControlName="email" autocomplete="email" placeholder="Optional — for emailing the ticket" />
             @if (invalid('email')) { <span class="adm-error">Enter a valid email address.</span> }
           </div>
 
@@ -174,7 +176,7 @@ export class RegisterComponent {
   form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
     phone: ['', [Validators.required, phoneValidator]],
-    email: ['', [Validators.required, Validators.email]],
+    email: ['', [Validators.email]],
     ticketType: ['SINGLES' as TicketType, Validators.required],
     tableNumber: [''],
   });

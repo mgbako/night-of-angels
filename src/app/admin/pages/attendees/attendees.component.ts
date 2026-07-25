@@ -1,5 +1,6 @@
 import {
   Component,
+  OnDestroy,
   PLATFORM_ID,
   afterNextRender,
   computed,
@@ -33,7 +34,13 @@ import {
         <h2>Attendees @if (showArchived()) { <span class="adm-badge">Archived</span> }</h2>
         <p>{{ filtered().length }} of {{ (showArchived() ? archived() : all()).length }} shown</p>
       </div>
-      <div style="display:flex; gap:.6rem; flex-wrap:wrap">
+      <div style="display:flex; gap:.6rem; flex-wrap:wrap; align-items:center">
+        @if (live()) {
+          <span title="Check-ins update automatically"
+            style="display:inline-flex; align-items:center; gap:.4rem; padding:.3rem .6rem; border-radius:999px; background:rgba(26,127,82,.12); color:#1a7f52; font-size:.78rem; font-weight:600">
+            <span style="width:8px; height:8px; border-radius:50%; background:#1a7f52"></span> Live
+          </span>
+        }
         <div class="exp">
           <button
             class="adm-btn"
@@ -347,7 +354,7 @@ import {
     `,
   ],
 })
-export class AttendeesComponent {
+export class AttendeesComponent implements OnDestroy {
   private api = inject(AttendeeApiService);
   private auth = inject(AuthService);
   private doc = inject(DOCUMENT);
@@ -373,6 +380,7 @@ export class AttendeesComponent {
   all = this.api.attendees;
   loading = this.api.loading;
   loadError = this.api.loadError;
+  readonly live = this.api.live;
 
   /** Owner-only archive view of soft-deleted attendees. */
   showArchived = signal(false);
@@ -380,7 +388,14 @@ export class AttendeesComponent {
   isOwner = () => this.auth.isOwner();
 
   constructor() {
-    afterNextRender(() => this.api.refresh().catch(() => {}));
+    afterNextRender(() => {
+      this.api.refresh().catch(() => {});
+      this.api.startLive();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.api.stopLive();
   }
 
   async toggleArchived(): Promise<void> {
