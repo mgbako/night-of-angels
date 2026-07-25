@@ -229,6 +229,37 @@ export class AttendeeApiService {
     await this.refresh();
   }
 
+  /** Archive several attendees at once, then refresh once. Returns how many failed. */
+  async removeMany(ticketCodes: string[]): Promise<number> {
+    const results = await Promise.allSettled(
+      ticketCodes.map(async (code) => {
+        const res = await fetch(`${API}/${encodeURIComponent(code)}`, {
+          method: 'DELETE',
+          headers: this.authHeaders(),
+        });
+        this.guard(res);
+        if (!res.ok) throw new ApiError(res.status, 'Archive failed');
+      }),
+    );
+    await this.refresh();
+    return results.filter((r) => r.status === 'rejected').length;
+  }
+
+  /** Permanently delete several attendees at once — owner only. Returns how many failed. */
+  async permanentDeleteMany(ticketCodes: string[]): Promise<number> {
+    const results = await Promise.allSettled(
+      ticketCodes.map(async (code) => {
+        const res = await fetch(`${API}/${encodeURIComponent(code)}?permanent=1`, {
+          method: 'DELETE',
+          headers: this.authHeaders(),
+        });
+        this.guard(res);
+        if (!res.ok) throw new ApiError(res.status, 'Delete failed');
+      }),
+    );
+    return results.filter((r) => r.status === 'rejected').length;
+  }
+
   /** List archived (soft-deleted) attendees — super admin (owner) only. */
   async archived(): Promise<Attendee[]> {
     const res = await fetch(`${API}?archived=1`, {

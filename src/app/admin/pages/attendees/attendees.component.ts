@@ -95,14 +95,14 @@ import {
           type="search"
           placeholder="Search name, email, phone or code…"
           [ngModel]="search()"
-          (ngModelChange)="search.set($event); page.set(1)"
+          (ngModelChange)="search.set($event); page.set(1); clearSelection()"
           aria-label="Search attendees by name, email, phone or ticket code"
         />
       </div>
       <select
         class="adm-select"
         [ngModel]="typeFilter()"
-        (ngModelChange)="typeFilter.set($event); page.set(1)"
+        (ngModelChange)="typeFilter.set($event); page.set(1); clearSelection()"
         aria-label="Filter by ticket type"
       >
         <option value="ALL">All ticket types</option>
@@ -113,7 +113,7 @@ import {
       <select
         class="adm-select"
         [ngModel]="checkFilter()"
-        (ngModelChange)="checkFilter.set($event); page.set(1)"
+        (ngModelChange)="checkFilter.set($event); page.set(1); clearSelection()"
         aria-label="Filter by check-in"
       >
         <option value="ALL">All check-in</option>
@@ -122,10 +122,35 @@ import {
       </select>
     </div>
 
+    @if (canManage() && selected().size) {
+      <div class="bulk-bar">
+        <span class="bulk-bar__count">{{ selected().size }} selected</span>
+        <button class="adm-btn adm-btn--sm adm-btn--danger" (click)="bulkDelete()" [disabled]="busy()">
+          <adm-icon name="trash" [size]="15" />
+          {{ showArchived() ? 'Delete permanently' : 'Archive selected' }}
+        </button>
+        <button class="adm-btn adm-btn--sm adm-btn--ghost" (click)="clearSelection()" [disabled]="busy()">
+          Clear
+        </button>
+      </div>
+    }
+
     <div class="adm-table-wrap">
       <table class="adm-table">
         <thead>
           <tr>
+            @if (canManage()) {
+              <th class="adm-check-col">
+                <input
+                  type="checkbox"
+                  [checked]="allFilteredSelected()"
+                  [indeterminate]="someSelected()"
+                  (change)="toggleSelectAll()"
+                  [disabled]="!filtered().length"
+                  aria-label="Select all attendees"
+                />
+              </th>
+            }
             <th>Full Name</th>
             <th>Email</th>
             <th>Ticket</th>
@@ -138,7 +163,17 @@ import {
         </thead>
         <tbody>
           @for (a of paged(); track a.id) {
-            <tr>
+            <tr [class.adm-row--selected]="isSelected(a.ticketCode)">
+              @if (canManage()) {
+                <td class="adm-check-col">
+                  <input
+                    type="checkbox"
+                    [checked]="isSelected(a.ticketCode)"
+                    (change)="toggleSelect(a.ticketCode)"
+                    [attr.aria-label]="'Select ' + a.name"
+                  />
+                </td>
+              }
               <td>
                 {{ a.name }}
               </td>
@@ -240,7 +275,7 @@ import {
             </tr>
           } @empty {
             <tr>
-              <td colspan="8">
+              <td [attr.colspan]="canManage() ? 9 : 8">
                 @if (loading() && !all().length) {
                   <div class="adm-loading">
                     <div class="adm-spinner"></div>
@@ -295,6 +330,37 @@ import {
         display: flex;
         gap: 0.35rem;
         justify-content: flex-end;
+      }
+      .bulk-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin-bottom: 0.8rem;
+        padding: 0.55rem 0.85rem;
+        background: rgba(176, 55, 55, 0.06);
+        border: 1px solid rgba(176, 55, 55, 0.28);
+        border-radius: 8px;
+      }
+      .bulk-bar__count {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #23201a;
+        margin-right: auto;
+      }
+      .adm-check-col {
+        width: 36px;
+        text-align: center;
+        padding-right: 0;
+      }
+      .adm-check-col input {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: #b0891d;
+        vertical-align: middle;
+      }
+      .adm-row--selected {
+        background: rgba(176, 137, 29, 0.08);
       }
       .exp {
         position: relative;
@@ -382,6 +448,17 @@ export class AttendeesComponent implements OnDestroy {
   loadError = this.api.loadError;
   readonly live = this.api.live;
 
+  /** Bulk selection — set of selected ticket codes (persists across pages). */
+  selected = signal<Set<string>>(new Set<string>());
+  isSelected = (code: string) => this.selected().has(code);
+
+  allFilteredSelected = computed(() => {
+    const f = this.filtered();
+    return f.length > 0 && f.every((a) => this.selected().has(a.ticketCode));
+  });
+
+  someSelected = computed(() => this.selected().size > 0 && !this.allFilteredSelected());
+
   /** Owner-only archive view of soft-deleted attendees. */
   showArchived = signal(false);
   archived = signal<Attendee[]>([]);
@@ -402,6 +479,7 @@ export class AttendeesComponent implements OnDestroy {
     const next = !this.showArchived();
     this.showArchived.set(next);
     this.page.set(1);
+    this.clearSelection();
     if (next) {
       try {
         this.archived.set(await this.api.archived());
@@ -539,6 +617,57 @@ export class AttendeesComponent implements OnDestroy {
       return;
     await this.api.remove(a.ticketCode);
     if (this.page() > this.totalPages()) this.page.set(this.totalPages());
+  }
+
+  toggleSelect(code: string): void {
+    const next = new Set(this.selected());
+    if (next.has(code)) next.delete(code);
+    else next.add(code);
+    this.selected.set(next);
+  }
+
+  /** Header checkbox: select or clear every row in the current filtered view (all pages). */
+  toggleSelectAll(): void {
+    if (this.allFilteredSelected()) this.selected.set(new Set());
+    else this.selected.set(new Set(this.filtered().map((a) => a.ticketCode)));
+  }
+
+  clearSelection(): void {
+    this.selected.set(new Set());
+  }
+
+  /** Archive (or permanently delete, in the archive view) every selected attendee. */
+  async bulkDelete(): Promise<void> {
+    const codes = [...this.selected()];
+    if (!codes.length || this.busy()) return;
+    const permanent = this.showArchived();
+    const n = codes.length;
+    const noun = n === 1 ? 'attendee' : 'attendees';
+    const msg = permanent
+      ? `Permanently delete ${n} ${noun}? Their tickets are voided and this cannot be undone.`
+      : `Archive ${n} ${noun}? They can be restored from the archive.`;
+    if (this.isBrowser && !confirm(msg)) return;
+    this.busy.set(true);
+    try {
+      const failed = permanent
+        ? await this.api.permanentDeleteMany(codes)
+        : await this.api.removeMany(codes);
+      if (permanent) this.archived.set(await this.api.archived());
+      this.clearSelection();
+      if (this.page() > this.totalPages()) this.page.set(this.totalPages());
+      const ok = n - failed;
+      const verb = permanent ? 'deleted' : 'archived';
+      this.flash(
+        failed
+          ? `${ok} ${verb}, ${failed} failed.`
+          : `${ok} ${ok === 1 ? 'attendee' : 'attendees'} ${verb}.`,
+        failed === 0,
+      );
+    } catch (e) {
+      this.flash(e instanceof Error ? e.message : 'Bulk delete failed', false);
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   /** Route an export choice from the dropdown. */
