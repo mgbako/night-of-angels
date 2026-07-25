@@ -3,5 +3,5 @@
 // Leave empty to fall back to window.location.origin at runtime.
 export const environment = {
   production: true,
-  appBaseUrl: 'https://nightofangel2026.com/',
+  appBaseUrl: 'https://nightofangels2026.com/',
 };
