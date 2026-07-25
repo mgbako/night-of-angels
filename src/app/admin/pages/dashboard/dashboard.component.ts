@@ -73,6 +73,52 @@ import { TICKET_TYPES, ticketTypeMeta } from '../../../features/ticketing/models
       </div>
     </div>
 
+    <div class="adm-card adm-card--pad tsplit">
+      <h3 class="dash-title">Singles vs Couples</h3>
+      @if (ticketSplit().total) {
+        <div class="tsplit__grid">
+          <figure class="tsplit__donut">
+            <svg viewBox="0 0 120 120" role="img"
+              [attr.aria-label]="'Singles ' + ticketSplit().singles + ' (' + ticketSplit().singlesPct + '%), Couples ' + ticketSplit().couples + ' (' + ticketSplit().couplesPct + '%)'">
+              <circle cx="60" cy="60" r="45" fill="none" stroke="#efeade" stroke-width="14" />
+              <g transform="rotate(-90 60 60)">
+                <circle cx="60" cy="60" r="45" fill="none" stroke-width="14"
+                  [attr.stroke]="cSingles" [attr.stroke-dasharray]="donut().singlesDash" />
+                <circle cx="60" cy="60" r="45" fill="none" stroke-width="14"
+                  [attr.stroke]="cCouples" [attr.stroke-dasharray]="donut().couplesDash"
+                  [attr.transform]="'rotate(' + donut().couplesRotate + ' 60 60)'" />
+              </g>
+              <text x="60" y="57" text-anchor="middle" class="tsplit__cnum">{{ ticketSplit().total }}</text>
+              <text x="60" y="73" text-anchor="middle" class="tsplit__clbl">tickets</text>
+            </svg>
+          </figure>
+
+          <div class="tsplit__bars">
+            <div class="tsbar">
+              <div class="tsbar__head">
+                <span class="tsbar__key"><i [style.background]="cSingles"></i> Singles</span>
+                <span class="tsbar__val">{{ ticketSplit().singles }} · {{ ticketSplit().singlesPct }}%</span>
+              </div>
+              <div class="tsbar__track">
+                <div class="tsbar__fill" [style.background]="cSingles" [style.width.%]="barPct(ticketSplit().singles)"></div>
+              </div>
+            </div>
+            <div class="tsbar">
+              <div class="tsbar__head">
+                <span class="tsbar__key"><i [style.background]="cCouples"></i> Couples</span>
+                <span class="tsbar__val">{{ ticketSplit().couples }} · {{ ticketSplit().couplesPct }}%</span>
+              </div>
+              <div class="tsbar__track">
+                <div class="tsbar__fill" [style.background]="cCouples" [style.width.%]="barPct(ticketSplit().couples)"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      } @else {
+        <p class="adm-empty" style="padding:1.5rem 0">No Singles or Couples tickets yet.</p>
+      }
+    </div>
+
     <div class="dash-grid">
       <!-- Breakdown -->
       <div class="adm-card adm-card--pad">
@@ -207,6 +253,33 @@ import { TICKET_TYPES, ticketTypeMeta } from '../../../features/ticketing/models
       .adm-meter--tall { height: 12px; border-radius: 999px; }
       .adm-meter__fill--green { background: #1a7f52; }
       .dash-tick { color: #1a7f52; display: inline-flex; flex: 0 0 auto; }
+      .tsplit { margin-bottom: 1rem; }
+      .tsplit__grid {
+        display: grid;
+        grid-template-columns: 150px 1fr;
+        gap: 1.6rem;
+        align-items: center;
+      }
+      .tsplit__donut { margin: 0; }
+      .tsplit__donut svg { width: 150px; height: 150px; display: block; }
+      .tsplit__cnum { font-family: var(--display); font-weight: 700; font-size: 24px; fill: #23201a; }
+      .tsplit__clbl { font-size: 11px; fill: #8a8270; letter-spacing: 0.04em; }
+      .tsplit__bars { display: grid; gap: 1.1rem; }
+      .tsbar__head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.4rem;
+      }
+      .tsbar__key { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.88rem; font-weight: 600; color: #23201a; }
+      .tsbar__key i { width: 11px; height: 11px; border-radius: 3px; }
+      .tsbar__val { font-size: 0.82rem; color: #6a6354; }
+      .tsbar__track { height: 12px; border-radius: 999px; background: #efeade; overflow: hidden; }
+      .tsbar__fill { height: 100%; border-radius: 999px; min-width: 2px; transition: width 0.4s ease; }
+      @media (max-width: 560px) {
+        .tsplit__grid { grid-template-columns: 1fr; justify-items: center; }
+      }
       @media (max-width: 860px) {
         .dash-grid { grid-template-columns: 1fr; }
       }
@@ -218,6 +291,9 @@ export class DashboardComponent implements OnDestroy {
   readonly ticketTypes = TICKET_TYPES;
   meta = ticketTypeMeta;
   readonly live = this.api.live;
+  /** Categorical hues (validated colorblind-safe pair) for the Singles/Couples charts. */
+  readonly cSingles = '#b0891d';
+  readonly cCouples = '#2f6f9f';
 
   private list = this.api.attendees;
 
@@ -310,6 +386,42 @@ export class DashboardComponent implements OnDestroy {
       .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
       .slice(0, 6),
   );
+
+  /** Singles vs Couples counts and percentages (Table tickets excluded). */
+  ticketSplit = computed(() => {
+    const singles = this.list().filter((a) => a.ticketType === 'SINGLES').length;
+    const couples = this.list().filter((a) => a.ticketType === 'COUPLES').length;
+    const total = singles + couples;
+    const singlesPct = total ? Math.round((singles / total) * 100) : 0;
+    return {
+      singles,
+      couples,
+      total,
+      singlesPct,
+      couplesPct: total ? 100 - singlesPct : 0,
+      max: Math.max(singles, couples, 1),
+    };
+  });
+
+  /** Pre-computed donut geometry (r=45, viewBox 120) for the pie chart. */
+  donut = computed(() => {
+    const { singles, total } = this.ticketSplit();
+    const C = 2 * Math.PI * 45;
+    const sFrac = total ? singles / total : 0;
+    const gap = total && singles > 0 && singles < total ? 3 : 0;
+    const sVis = Math.max(0, sFrac * C - gap);
+    const cVis = Math.max(0, (1 - sFrac) * C - gap);
+    return {
+      singlesDash: `${sVis} ${C - sVis}`,
+      couplesDash: `${cVis} ${C - cVis}`,
+      couplesRotate: sFrac * 360,
+    };
+  });
+
+  /** Bar length as a % of the larger of the two counts. */
+  barPct(n: number): number {
+    return Math.round((n / this.ticketSplit().max) * 100);
+  }
 
   money(n: number): string {
     return '₦' + n.toLocaleString('en-NG');
