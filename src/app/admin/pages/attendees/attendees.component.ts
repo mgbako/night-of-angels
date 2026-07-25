@@ -201,8 +201,8 @@ import {
                     <button
                       class="adm-btn adm-btn--sm"
                       (click)="emailTicket(a)"
-                      [disabled]="sendingCode() === a.ticketCode"
-                      title="Email ticket to guest"
+                      [disabled]="sendingCode() === a.ticketCode || !a.email"
+                      [title]="a.email ? 'Email ticket to guest' : 'No email on file for this guest'"
                     >
                       <adm-icon name="mail" [size]="15" />
                     </button>
