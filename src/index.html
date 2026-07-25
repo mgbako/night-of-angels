@@ -28,6 +28,30 @@
       }
     })();
   </script>
+
+  <!-- Boot splash for client-rendered areas (admin + ticket pages): show a
+       branded loader immediately so there's no flash of the empty shell while
+       Angular boots. AppComponent removes it once the first route renders. -->
+  <script>
+    (function () {
+      try {
+        var p = location.pathname;
+        if (p.lastIndexOf('/admin', 0) === 0 || p.lastIndexOf('/tickets', 0) === 0) {
+          document.documentElement.classList.add('route-loading');
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    #app-splash { position: fixed; inset: 0; z-index: 9999; display: none; align-items: center; justify-content: center; background: #0b0b0a; }
+    html.route-loading #app-splash { display: flex; }
+    #app-splash .app-splash__inner { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+    #app-splash img { width: 96px; height: 96px; filter: drop-shadow(0 6px 24px rgba(201, 162, 39, 0.28)); animation: app-splash-pulse 1.8s ease-in-out infinite; }
+    #app-splash .app-splash__spin { width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid rgba(201, 162, 39, 0.25); border-top-color: #c9a227; animation: app-splash-rot 0.8s linear infinite; }
+    #app-splash.app-splash--hide { opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
+    @keyframes app-splash-rot { to { transform: rotate(360deg); } }
+    @keyframes app-splash-pulse { 0%, 100% { opacity: 0.85; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
+  </style>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="A Night of Angels 2026 — the all-white luxury harvest dinner of SS Peter & Paul Catholic Church, Oke-Afa, Ejigbo, Lagos, on 24 October. Reserve your seat, book a table, or become a partner.">
   <meta name="keywords" content="A Night of Angels, Night of Angels 2026, Night of Angels Lagos, all-white dinner Lagos, luxury harvest dinner Lagos, harvest dinner Lagos 2026, SS Peter and Paul Catholic Church Oke-Afa, Harvest of Everlasting Peace, all-white party Lagos, Oke-Afa Ejigbo event, exclusive gala Lagos Nigeria, 24 October 2026 Lagos">
@@ -198,6 +222,13 @@
   </script>
 </head>
 <body>
+  <div id="app-splash" aria-hidden="true">
+    <div class="app-splash__inner">
+      <img src="/noa-logo.png" alt="" width="96" height="96" />
+      <span class="app-splash__spin"></span>
+    </div>
+  </div>
+
   <!--
     Static form for Netlify Forms detection (scanned at build time).
     The visible, interactive form lives in the Angular /sponsor page and

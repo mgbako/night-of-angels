@@ -73,9 +73,27 @@ export class AppComponent {
 
     const evaluate = (url: string) => this.showChrome.set(!url.startsWith('/admin'));
     evaluate(router.url);
+
+    // Remove the boot splash (index.html) once the first route has rendered.
+    const clearSplash = () => {
+      if (!this.isBrowser) return;
+      document.documentElement.classList.remove('route-loading');
+      const el = document.getElementById('app-splash');
+      if (el && !el.classList.contains('app-splash--hide')) {
+        el.classList.add('app-splash--hide');
+        setTimeout(() => el.remove(), 320);
+      }
+    };
+
     router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
-      .subscribe((e) => evaluate(e.urlAfterRedirects));
+      .subscribe((e) => {
+        evaluate(e.urlAfterRedirects);
+        clearSplash();
+      });
+
+    // Fallback: never leave the splash up if the first navigation stalls.
+    if (this.isBrowser) setTimeout(clearSplash, 8000);
 
     // Load organiser settings once (browser only) to know if maintenance is on.
     afterNextRender(() => {
