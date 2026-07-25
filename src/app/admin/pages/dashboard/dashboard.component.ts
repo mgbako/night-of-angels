@@ -1,8 +1,17 @@
-import { Component, OnDestroy, afterNextRender, computed, inject } from '@angular/core';
+import {
+  Component,
+  OnDestroy,
+  afterNextRender,
+  computed,
+  inject,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AdminIconComponent } from '../../shared/admin-icon.component';
 import { AttendeeApiService } from '../../../features/ticketing/services/attendee-api.service';
-import { TICKET_TYPES, ticketTypeMeta } from '../../../features/ticketing/models/attendee.model';
+import {
+  TICKET_TYPES,
+  ticketTypeMeta,
+} from '../../../features/ticketing/models/attendee.model';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -16,9 +25,14 @@ import { TICKET_TYPES, ticketTypeMeta } from '../../../features/ticketing/models
       </div>
       <div style="display:flex; gap:.6rem; flex-wrap:wrap; align-items:center">
         @if (live()) {
-          <span title="Check-ins update automatically"
-            style="display:inline-flex; align-items:center; gap:.4rem; padding:.3rem .6rem; border-radius:999px; background:rgba(26,127,82,.12); color:#1a7f52; font-size:.78rem; font-weight:600">
-            <span style="width:8px; height:8px; border-radius:50%; background:#1a7f52"></span> Live
+          <span
+            title="Check-ins update automatically"
+            style="display:inline-flex; align-items:center; gap:.4rem; padding:.3rem .6rem; border-radius:999px; background:rgba(26,127,82,.12); color:#1a7f52; font-size:.78rem; font-weight:600"
+          >
+            <span
+              style="width:8px; height:8px; border-radius:50%; background:#1a7f52"
+            ></span>
+            Live
           </span>
         }
         <a routerLink="/admin/register" class="adm-btn adm-btn--primary">
@@ -32,32 +46,46 @@ import { TICKET_TYPES, ticketTypeMeta } from '../../../features/ticketing/models
 
     <div class="adm-stats">
       <div class="adm-stat">
-        <span class="adm-stat__label"><adm-icon name="ticket" [size]="15" /> Revenue</span>
+        <span class="adm-stat__label"
+          ><adm-icon name="ticket" [size]="15" /> Revenue</span
+        >
         <div class="adm-stat__value">{{ money(revenue()) }}</div>
         <span class="adm-stat__sub">{{ registrations() }} registrations</span>
       </div>
       <div class="adm-stat">
-        <span class="adm-stat__label"><adm-icon name="ticket" [size]="15" /> Tickets sold</span>
+        <span class="adm-stat__label"
+          ><adm-icon name="ticket" [size]="15" /> Tickets sold</span
+        >
         <div class="adm-stat__value">{{ registrations() }}</div>
-        <span class="adm-stat__sub">across {{ ticketTypes.length }} ticket types</span>
+        <span class="adm-stat__sub"
+          >across {{ ticketTypes.length }} ticket types</span
+        >
       </div>
       <div class="adm-stat">
-        <span class="adm-stat__label"><adm-icon name="attendees" [size]="15" /> Guests expected</span>
+        <span class="adm-stat__label"
+          ><adm-icon name="attendees" [size]="15" /> Guests expected</span
+        >
         <div class="adm-stat__value">{{ seats() }}</div>
         <span class="adm-stat__sub">seats reserved</span>
       </div>
       <div class="adm-stat">
-        <span class="adm-stat__label"><adm-icon name="check-circle" [size]="15" /> Checked in</span>
+        <span class="adm-stat__label"
+          ><adm-icon name="check-circle" [size]="15" /> Checked in</span
+        >
         <div class="adm-stat__value">{{ checkedIn() }}</div>
         <span class="adm-stat__sub">{{ attendanceRate() }}% of guests</span>
       </div>
       <div class="adm-stat">
-        <span class="adm-stat__label"><adm-icon name="attendees" [size]="15" /> Still to arrive</span>
+        <span class="adm-stat__label"
+          ><adm-icon name="attendees" [size]="15" /> Still to arrive</span
+        >
         <div class="adm-stat__value">{{ stillToArrive() }}</div>
         <span class="adm-stat__sub">guests not yet in</span>
       </div>
       <div class="adm-stat">
-        <span class="adm-stat__label"><adm-icon name="check-circle" [size]="15" /> Arrivals · 15 min</span>
+        <span class="adm-stat__label"
+          ><adm-icon name="check-circle" [size]="15" /> Arrivals · 15 min</span
+        >
         <div class="adm-stat__value">{{ arrivalsLast15() }}</div>
         <span class="adm-stat__sub">recent check-ins</span>
       </div>
@@ -66,7 +94,10 @@ import { TICKET_TYPES, ticketTypeMeta } from '../../../features/ticketing/models
     <div class="adm-card adm-card--pad dash-progress">
       <div class="dash-progress__head">
         <h3 class="dash-title" style="margin:0">Check-in progress</h3>
-        <span class="dash-progress__val">{{ checkedInSeats() }} / {{ seats() }} guests in · {{ attendanceRate() }}%</span>
+        <span class="dash-progress__val"
+          >{{ checkedInSeats() }} / {{ seats() }} guests in ·
+          {{ attendanceRate() }}%</span
+        >
       </div>
       <div class="adm-meter adm-meter--tall">
         <div class="adm-meter__fill" [style.width.%]="attendanceRate()"></div>
@@ -78,44 +109,104 @@ import { TICKET_TYPES, ticketTypeMeta } from '../../../features/ticketing/models
       @if (ticketSplit().total) {
         <div class="tsplit__grid">
           <figure class="tsplit__donut">
-            <svg viewBox="0 0 120 120" role="img"
-              [attr.aria-label]="'Singles ' + ticketSplit().singles + ' (' + ticketSplit().singlesPct + '%), Couples ' + ticketSplit().couples + ' (' + ticketSplit().couplesPct + '%)'">
-              <circle cx="60" cy="60" r="45" fill="none" stroke="#efeade" stroke-width="14" />
+            <svg
+              viewBox="0 0 120 120"
+              role="img"
+              [attr.aria-label]="
+                'Singles ' +
+                ticketSplit().singles +
+                ' (' +
+                ticketSplit().singlesPct +
+                '%), Couples ' +
+                ticketSplit().couples +
+                ' (' +
+                ticketSplit().couplesPct +
+                '%)'
+              "
+            >
+              <circle
+                cx="60"
+                cy="60"
+                r="45"
+                fill="none"
+                stroke="#efeade"
+                stroke-width="14"
+              />
               <g transform="rotate(-90 60 60)">
-                <circle cx="60" cy="60" r="45" fill="none" stroke-width="14"
-                  [attr.stroke]="cSingles" [attr.stroke-dasharray]="donut().singlesDash" />
-                <circle cx="60" cy="60" r="45" fill="none" stroke-width="14"
-                  [attr.stroke]="cCouples" [attr.stroke-dasharray]="donut().couplesDash"
-                  [attr.transform]="'rotate(' + donut().couplesRotate + ' 60 60)'" />
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="45"
+                  fill="none"
+                  stroke-width="14"
+                  [attr.stroke]="cSingles"
+                  [attr.stroke-dasharray]="donut().singlesDash"
+                />
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="45"
+                  fill="none"
+                  stroke-width="14"
+                  [attr.stroke]="cCouples"
+                  [attr.stroke-dasharray]="donut().couplesDash"
+                  [attr.transform]="
+                    'rotate(' + donut().couplesRotate + ' 60 60)'
+                  "
+                />
               </g>
-              <text x="60" y="57" text-anchor="middle" class="tsplit__cnum">{{ ticketSplit().total }}</text>
-              <text x="60" y="73" text-anchor="middle" class="tsplit__clbl">tickets</text>
+              <text x="60" y="57" text-anchor="middle" class="tsplit__cnum">
+                {{ ticketSplit().total }}
+              </text>
+              <text x="60" y="73" text-anchor="middle" class="tsplit__clbl">
+                tickets
+              </text>
             </svg>
           </figure>
 
           <div class="tsplit__bars">
             <div class="tsbar">
               <div class="tsbar__head">
-                <span class="tsbar__key"><i [style.background]="cSingles"></i> Singles</span>
-                <span class="tsbar__val">{{ ticketSplit().singles }} · {{ ticketSplit().singlesPct }}%</span>
+                <span class="tsbar__key"
+                  ><i [style.background]="cSingles"></i> Singles</span
+                >
+                <span class="tsbar__val"
+                  >{{ ticketSplit().singles }} ·
+                  {{ ticketSplit().singlesPct }}%</span
+                >
               </div>
               <div class="tsbar__track">
-                <div class="tsbar__fill" [style.background]="cSingles" [style.width.%]="barPct(ticketSplit().singles)"></div>
+                <div
+                  class="tsbar__fill"
+                  [style.background]="cSingles"
+                  [style.width.%]="barPct(ticketSplit().singles)"
+                ></div>
               </div>
             </div>
             <div class="tsbar">
               <div class="tsbar__head">
-                <span class="tsbar__key"><i [style.background]="cCouples"></i> Couples</span>
-                <span class="tsbar__val">{{ ticketSplit().couples }} · {{ ticketSplit().couplesPct }}%</span>
+                <span class="tsbar__key"
+                  ><i [style.background]="cCouples"></i> Couples</span
+                >
+                <span class="tsbar__val"
+                  >{{ ticketSplit().couples }} ·
+                  {{ ticketSplit().couplesPct }}%</span
+                >
               </div>
               <div class="tsbar__track">
-                <div class="tsbar__fill" [style.background]="cCouples" [style.width.%]="barPct(ticketSplit().couples)"></div>
+                <div
+                  class="tsbar__fill"
+                  [style.background]="cCouples"
+                  [style.width.%]="barPct(ticketSplit().couples)"
+                ></div>
               </div>
             </div>
           </div>
         </div>
       } @else {
-        <p class="adm-empty" style="padding:1.5rem 0">No Singles or Couples tickets yet.</p>
+        <p class="adm-empty" style="padding:1.5rem 0">
+          No Singles or Couples tickets yet.
+        </p>
       }
     </div>
 
@@ -128,7 +219,9 @@ import { TICKET_TYPES, ticketTypeMeta } from '../../../features/ticketing/models
             <div class="breakdown__row">
               <div class="breakdown__top">
                 <span class="breakdown__name">{{ row.label }}</span>
-                <span class="breakdown__count">{{ row.count }} sold · {{ money(row.revenue) }}</span>
+                <span class="breakdown__count"
+                  >{{ row.count }} sold · {{ money(row.revenue) }}</span
+                >
               </div>
               <div class="adm-meter">
                 <div class="adm-meter__fill" [style.width.%]="row.share"></div>
@@ -150,9 +243,17 @@ import { TICKET_TYPES, ticketTypeMeta } from '../../../features/ticketing/models
               <li>
                 <div>
                   <span class="recent__name">{{ a.name }}</span>
-                  <span class="recent__meta">{{ meta(a.ticketType).label }} · {{ shortDate(a.createdAt) }}</span>
+                  <span class="recent__meta"
+                    >{{ meta(a.ticketType).label }} ·
+                    {{ shortDate(a.createdAt) }}</span
+                  >
                 </div>
-                <a [routerLink]="['/tickets', a.ticketCode]" class="adm-btn adm-btn--sm" target="_blank" title="Open ticket">
+                <a
+                  [routerLink]="['/tickets', a.ticketCode]"
+                  class="adm-btn adm-btn--sm"
+                  target="_blank"
+                  title="Open ticket"
+                >
                   <adm-icon name="external" [size]="15" />
                 </a>
               </li>
@@ -171,10 +272,15 @@ import { TICKET_TYPES, ticketTypeMeta } from '../../../features/ticketing/models
             <div class="breakdown__row">
               <div class="breakdown__top">
                 <span class="breakdown__name">{{ row.label }}</span>
-                <span class="breakdown__count">{{ row.checkedIn }} / {{ row.total }} in</span>
+                <span class="breakdown__count"
+                  >{{ row.checkedIn }} / {{ row.total }} in</span
+                >
               </div>
               <div class="adm-meter">
-                <div class="adm-meter__fill adm-meter__fill--green" [style.width.%]="row.share"></div>
+                <div
+                  class="adm-meter__fill adm-meter__fill--green"
+                  [style.width.%]="row.share"
+                ></div>
               </div>
             </div>
           }
@@ -193,9 +299,14 @@ import { TICKET_TYPES, ticketTypeMeta } from '../../../features/ticketing/models
               <li>
                 <div>
                   <span class="recent__name">{{ a.name }}</span>
-                  <span class="recent__meta">{{ meta(a.ticketType).label }} · {{ checkinTime(a.checkedInAt!) }}</span>
+                  <span class="recent__meta"
+                    >{{ meta(a.ticketType).label }} ·
+                    {{ checkinTime(a.checkedInAt!) }}</span
+                  >
                 </div>
-                <span class="dash-tick" title="Checked in"><adm-icon name="check-circle" [size]="17" /></span>
+                <span class="dash-tick" title="Checked in"
+                  ><adm-icon name="check-circle" [size]="17"
+                /></span>
               </li>
             }
           </ul>
@@ -218,7 +329,9 @@ import { TICKET_TYPES, ticketTypeMeta } from '../../../features/ticketing/models
         margin: 0 0 1rem;
         color: #23201a;
       }
-      .breakdown__row { margin-bottom: 1rem; }
+      .breakdown__row {
+        margin-bottom: 1rem;
+      }
       .breakdown__top {
         display: flex;
         justify-content: space-between;
@@ -226,9 +339,18 @@ import { TICKET_TYPES, ticketTypeMeta } from '../../../features/ticketing/models
         margin-bottom: 0.4rem;
         font-size: 0.86rem;
       }
-      .breakdown__name { font-weight: 600; color: #23201a; }
-      .breakdown__count { color: #8a8270; }
-      .recent { list-style: none; margin: 0; padding: 0; }
+      .breakdown__name {
+        font-weight: 600;
+        color: #23201a;
+      }
+      .breakdown__count {
+        color: #8a8270;
+      }
+      .recent {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
       .recent li {
         display: flex;
         align-items: center;
@@ -237,10 +359,23 @@ import { TICKET_TYPES, ticketTypeMeta } from '../../../features/ticketing/models
         padding: 0.6rem 0;
         border-bottom: 1px solid #efeade;
       }
-      .recent li:last-child { border-bottom: none; }
-      .recent__name { display: block; font-weight: 600; font-size: 0.9rem; color: #23201a; }
-      .recent__meta { display: block; font-size: 0.78rem; color: #8a8270; }
-      .dash-progress { margin-bottom: 1rem; }
+      .recent li:last-child {
+        border-bottom: none;
+      }
+      .recent__name {
+        display: block;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #23201a;
+      }
+      .recent__meta {
+        display: block;
+        font-size: 0.78rem;
+        color: #8a8270;
+      }
+      .dash-progress {
+        margin-bottom: 1rem;
+      }
       .dash-progress__head {
         display: flex;
         justify-content: space-between;
@@ -249,22 +384,55 @@ import { TICKET_TYPES, ticketTypeMeta } from '../../../features/ticketing/models
         flex-wrap: wrap;
         margin-bottom: 0.7rem;
       }
-      .dash-progress__val { font-size: 0.85rem; font-weight: 600; color: #6a6354; }
-      .adm-meter--tall { height: 12px; border-radius: 999px; }
-      .adm-meter__fill--green { background: #1a7f52; }
-      .dash-tick { color: #1a7f52; display: inline-flex; flex: 0 0 auto; }
-      .tsplit { margin-bottom: 1rem; }
+      .dash-progress__val {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #6a6354;
+      }
+      .adm-meter--tall {
+        height: 12px;
+        border-radius: 999px;
+      }
+      .adm-meter__fill--green {
+        background: #1a7f52;
+      }
+      .dash-tick {
+        color: #1a7f52;
+        display: inline-flex;
+        flex: 0 0 auto;
+      }
+      .tsplit {
+        margin-bottom: 1rem;
+      }
       .tsplit__grid {
         display: grid;
         grid-template-columns: 150px 1fr;
         gap: 1.6rem;
         align-items: center;
       }
-      .tsplit__donut { margin: 0; }
-      .tsplit__donut svg { width: 150px; height: 150px; display: block; }
-      .tsplit__cnum { font-family: var(--display); font-weight: 700; font-size: 24px; fill: #23201a; }
-      .tsplit__clbl { font-size: 11px; fill: #8a8270; letter-spacing: 0.04em; }
-      .tsplit__bars { display: grid; gap: 1.1rem; }
+      .tsplit__donut {
+        margin: 0;
+      }
+      .tsplit__donut svg {
+        width: 150px;
+        height: 150px;
+        display: block;
+      }
+      .tsplit__cnum {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 24px;
+        fill: #23201a;
+      }
+      .tsplit__clbl {
+        font-size: 11px;
+        fill: #8a8270;
+        letter-spacing: 0.04em;
+      }
+      .tsplit__bars {
+        display: grid;
+        gap: 1.1rem;
+      }
       .tsbar__head {
         display: flex;
         justify-content: space-between;
@@ -272,16 +440,45 @@ import { TICKET_TYPES, ticketTypeMeta } from '../../../features/ticketing/models
         gap: 0.5rem;
         margin-bottom: 0.4rem;
       }
-      .tsbar__key { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.88rem; font-weight: 600; color: #23201a; }
-      .tsbar__key i { width: 11px; height: 11px; border-radius: 3px; }
-      .tsbar__val { font-size: 0.82rem; color: #6a6354; }
-      .tsbar__track { height: 12px; border-radius: 999px; background: #efeade; overflow: hidden; }
-      .tsbar__fill { height: 100%; border-radius: 999px; min-width: 2px; transition: width 0.4s ease; }
+      .tsbar__key {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #23201a;
+      }
+      .tsbar__key i {
+        width: 11px;
+        height: 11px;
+        border-radius: 3px;
+      }
+      .tsbar__val {
+        font-size: 0.82rem;
+        color: #6a6354;
+      }
+      .tsbar__track {
+        height: 12px;
+        border-radius: 999px;
+        background: #efeade;
+        overflow: hidden;
+      }
+      .tsbar__fill {
+        height: 100%;
+        border-radius: 999px;
+        min-width: 2px;
+        transition: width 0.4s ease;
+      }
       @media (max-width: 560px) {
-        .tsplit__grid { grid-template-columns: 1fr; justify-items: center; }
+        .tsplit__grid {
+          grid-template-columns: 1fr;
+          justify-items: center;
+        }
       }
       @media (max-width: 860px) {
-        .dash-grid { grid-template-columns: 1fr; }
+        .dash-grid {
+          grid-template-columns: 1fr;
+        }
       }
     `,
   ],
@@ -333,7 +530,9 @@ export class DashboardComponent implements OnDestroy {
   });
 
   /** Seats still expected to walk through the door. */
-  stillToArrive = computed(() => Math.max(0, this.seats() - this.checkedInSeats()));
+  stillToArrive = computed(() =>
+    Math.max(0, this.seats() - this.checkedInSeats()),
+  );
 
   /** Check-in velocity — guests scanned in within the last 15 minutes. */
   arrivalsLast15 = computed(() => {
@@ -389,8 +588,12 @@ export class DashboardComponent implements OnDestroy {
 
   /** Singles vs Couples counts and percentages (Table tickets excluded). */
   ticketSplit = computed(() => {
-    const singles = this.list().filter((a) => a.ticketType === 'SINGLES').length;
-    const couples = this.list().filter((a) => a.ticketType === 'COUPLES').length;
+    const singles = this.list().filter(
+      (a) => a.ticketType === 'SINGLES',
+    ).length;
+    const couples = this.list().filter(
+      (a) => a.ticketType === 'COUPLES',
+    ).length;
     const total = singles + couples;
     const singlesPct = total ? Math.round((singles / total) * 100) : 0;
     return {
@@ -403,7 +606,9 @@ export class DashboardComponent implements OnDestroy {
     };
   });
 
-  /** Pre-computed donut geometry (r=45, viewBox 120) for the pie chart. */
+  /** Pre-computed donut geometry (r=45, viewBox 120) for the pie chart.
+   *
+   */
   donut = computed(() => {
     const { singles, total } = this.ticketSplit();
     const C = 2 * Math.PI * 45;
@@ -428,10 +633,16 @@ export class DashboardComponent implements OnDestroy {
   }
 
   shortDate(iso: string): string {
-    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    return new Date(iso).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+    });
   }
 
   checkinTime(iso: string): string {
-    return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    return new Date(iso).toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   }
 }
