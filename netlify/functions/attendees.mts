@@ -379,7 +379,9 @@ async function emailTicket(code: string, req: Request): Promise<Response> {
       ),
     });
   } catch (e) {
-    if (e instanceof EmailError) return json({ error: e.message }, 502);
+    // 400, not 502: a Cloudflare-fronted origin 502 gets swapped for a generic
+    // "Bad gateway" page, hiding this message. The client reads `error` on any non-2xx.
+    if (e instanceof EmailError) return json({ error: e.message }, 400);
     throw e;
   }
   return json({ ok: true, sentTo: attendee.email });
@@ -405,7 +407,7 @@ async function smsTicket(code: string, req: Request): Promise<Response> {
   try {
     await sendSms({ to: attendee.phone, message });
   } catch (e) {
-    if (e instanceof SmsError) return json({ error: e.message }, 502);
+    if (e instanceof SmsError) return json({ error: e.message }, 400);
     throw e;
   }
   return json({ ok: true, sentTo: attendee.phone });
@@ -456,7 +458,7 @@ async function smsBroadcast(req: Request): Promise<Response> {
   try {
     result = await sendBulkSms(numbers, message);
   } catch (e) {
-    if (e instanceof SmsError) return json({ error: e.message }, 502);
+    if (e instanceof SmsError) return json({ error: e.message }, 400);
     throw e;
   }
   return json({ sent: result.sent, failed: result.failed, noPhone });

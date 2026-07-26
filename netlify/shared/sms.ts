@@ -29,6 +29,30 @@ export function toInternational(raw: string): string {
   return d; // already international / non-NG
 }
 
+/**
+ * fetch with an abort timeout. A hung gateway call would otherwise run until
+ * the function itself times out and returns a platform 502; this turns it into
+ * a clean SmsError the caller can report.
+ */
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  ms = 8000,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (e) {
+    if (e instanceof Error && e.name === 'AbortError') {
+      throw new SmsError('The SMS gateway did not respond in time. Please try again.');
+    }
+    throw new SmsError(`SMS network error: ${e instanceof Error ? e.message : 'unknown'}`);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Resolve the active provider from settings, defaulting to Twilio. */
 async function activeProvider(): Promise<SmsProvider> {
   try {
@@ -91,14 +115,17 @@ async function twilioPost(cfg: TwilioConfig, to: string, message: string): Promi
     Body: message,
     [cfg.sender.key]: cfg.sender.value,
   });
-  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${cfg.sid}/Messages.json`, {
-    method: 'POST',
-    headers: {
-      Authorization: 'Basic ' + Buffer.from(`${cfg.sid}:${cfg.token}`).toString('base64'),
-      'Content-Type': 'application/x-www-form-urlencoded',
+  const res = await fetchWithTimeout(
+    `https://api.twilio.com/2010-04-01/Accounts/${cfg.sid}/Messages.json`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: 'Basic ' + Buffer.from(`${cfg.sid}:${cfg.token}`).toString('base64'),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: body.toString(),
     },
-    body: body.toString(),
-  });
+  );
   if (!res.ok) {
     const data = (await res.json().catch(() => null)) as { message?: string } | null;
     throw new SmsError(`SMS send failed: ${data?.message || `HTTP ${res.status}`}`);
@@ -151,7 +178,7 @@ function termiiConfig(): TermiiConfig {
 }
 
 async function termiiPost(url: string, payload: Record<string, unknown>): Promise<void> {
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
