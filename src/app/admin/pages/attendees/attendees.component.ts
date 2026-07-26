@@ -125,6 +125,11 @@ import {
     @if (canManage() && selected().size) {
       <div class="bulk-bar">
         <span class="bulk-bar__count">{{ selected().size }} selected</span>
+        @if (!showArchived()) {
+          <button class="adm-btn adm-btn--sm" (click)="openSms()" [disabled]="busy() || smsBusy()">
+            <adm-icon name="message" [size]="15" /> Send SMS
+          </button>
+        }
         <button class="adm-btn adm-btn--sm adm-btn--danger" (click)="bulkDelete()" [disabled]="busy()">
           <adm-icon name="trash" [size]="15" />
           {{ showArchived() ? 'Delete permanently' : 'Archive selected' }}
@@ -132,6 +137,43 @@ import {
         <button class="adm-btn adm-btn--sm adm-btn--ghost" (click)="clearSelection()" [disabled]="busy()">
           Clear
         </button>
+      </div>
+    }
+
+    @if (smsOpen()) {
+      <div class="sms-backdrop" (click)="closeSms()"></div>
+      <div class="sms-modal" role="dialog" aria-modal="true" aria-labelledby="sms-title">
+        <h3 id="sms-title">Send SMS to {{ selected().size }} guest{{ selected().size === 1 ? '' : 's' }}</h3>
+        <p class="sms-modal__hint">
+          One message goes to every selected guest with a phone number. Guests without a
+          number are skipped.
+        </p>
+        <textarea
+          class="sms-textarea"
+          [ngModel]="smsText()"
+          (ngModelChange)="smsText.set($event)"
+          maxlength="480"
+          rows="5"
+          placeholder="e.g. Reminder: A Night of Angels is this Saturday. Arrivals from 5:00 PM. See you there!"
+          [disabled]="smsBusy()"
+        ></textarea>
+        <div class="sms-meta">
+          <span>{{ smsText().length }}/480 chars</span>
+          <span>{{ smsSegments() }} SMS segment{{ smsSegments() === 1 ? '' : 's' }} each</span>
+        </div>
+        <div class="sms-actions">
+          <button class="adm-btn adm-btn--sm adm-btn--ghost" (click)="closeSms()" [disabled]="smsBusy()">
+            Cancel
+          </button>
+          <button
+            class="adm-btn adm-btn--sm adm-btn--primary"
+            (click)="sendBulkSms()"
+            [disabled]="smsBusy() || !smsText().trim()"
+          >
+            <adm-icon name="message" [size]="15" />
+            {{ smsBusy() ? 'Sending…' : 'Send message' }}
+          </button>
+        </div>
       </div>
     }
 
@@ -240,6 +282,14 @@ import {
                       [title]="a.email ? 'Email ticket to guest' : 'No email on file for this guest'"
                     >
                       <adm-icon name="mail" [size]="15" />
+                    </button>
+                    <button
+                      class="adm-btn adm-btn--sm"
+                      (click)="smsTicket(a)"
+                      [disabled]="sendingCode() === a.ticketCode || !a.phone"
+                      [title]="a.phone ? 'Text ticket link to guest' : 'No phone on file for this guest'"
+                    >
+                      <adm-icon name="message" [size]="15" />
                     </button>
                   }
                   <a
@@ -362,6 +412,65 @@ import {
       .adm-row--selected {
         background: rgba(176, 137, 29, 0.08);
       }
+      .sms-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 40;
+        background: rgba(11, 11, 10, 0.5);
+      }
+      .sms-modal {
+        position: fixed;
+        z-index: 41;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(94vw, 480px);
+        background: #fff;
+        border: 1px solid #e7e2d5;
+        border-radius: 14px;
+        box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.5);
+        padding: 1.3rem 1.4rem;
+      }
+      .sms-modal h3 {
+        margin: 0 0 0.3rem;
+        font-size: 1.1rem;
+        color: #23201a;
+      }
+      .sms-modal__hint {
+        margin: 0 0 0.9rem;
+        font-size: 0.82rem;
+        color: #8a8270;
+        line-height: 1.45;
+      }
+      .sms-textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #d9d3c4;
+        border-radius: 9px;
+        padding: 0.7rem 0.8rem;
+        font: inherit;
+        font-size: 0.92rem;
+        color: #23201a;
+        resize: vertical;
+      }
+      .sms-textarea:focus {
+        outline: none;
+        border-color: #b0891d;
+        box-shadow: 0 0 0 3px rgba(176, 137, 29, 0.15);
+      }
+      .sms-meta {
+        display: flex;
+        justify-content: space-between;
+        margin: 0.45rem 0.1rem 0;
+        font-size: 0.75rem;
+        color: #8a8270;
+      }
+      .sms-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        margin-top: 1.1rem;
+      }
       .exp {
         position: relative;
       }
@@ -442,6 +551,17 @@ export class AttendeesComponent implements OnDestroy {
   busy = signal(false);
   sendingCode = signal<string | null>(null);
   notice = signal<{ msg: string; ok: boolean } | null>(null);
+
+  /** Bulk SMS composer state. */
+  smsOpen = signal(false);
+  smsText = signal('');
+  smsBusy = signal(false);
+  /** Rough GSM segment estimate (160 chars, or 153 per part when concatenated). */
+  smsSegments = computed(() => {
+    const len = this.smsText().length;
+    if (len === 0) return 1;
+    return len <= 160 ? 1 : Math.ceil(len / 153);
+  });
 
   all = this.api.attendees;
   loading = this.api.loading;
@@ -573,6 +693,51 @@ export class AttendeesComponent implements OnDestroy {
       this.flash(e instanceof Error ? e.message : 'Could not send email', false);
     } finally {
       this.sendingCode.set(null);
+    }
+  }
+
+  async smsTicket(a: Attendee): Promise<void> {
+    if (this.sendingCode()) return;
+    this.sendingCode.set(a.ticketCode);
+    this.notice.set(null);
+    try {
+      const to = await this.api.smsTicket(a.ticketCode);
+      this.flash(`Ticket texted to ${to}`, true);
+    } catch (e) {
+      this.flash(e instanceof Error ? e.message : 'Could not send SMS', false);
+    } finally {
+      this.sendingCode.set(null);
+    }
+  }
+
+  openSms(): void {
+    if (!this.selected().size) return;
+    this.smsOpen.set(true);
+  }
+
+  closeSms(): void {
+    if (this.smsBusy()) return;
+    this.smsOpen.set(false);
+  }
+
+  /** Send the composed message to every selected guest with a phone number. */
+  async sendBulkSms(): Promise<void> {
+    const codes = [...this.selected()];
+    const message = this.smsText().trim();
+    if (!codes.length || !message || this.smsBusy()) return;
+    this.smsBusy.set(true);
+    try {
+      const r = await this.api.smsBroadcast(codes, message);
+      const parts = [`${r.sent} sent`];
+      if (r.noPhone) parts.push(`${r.noPhone} without a phone`);
+      if (r.failed) parts.push(`${r.failed} failed`);
+      this.flash(parts.join(', ') + '.', r.failed === 0);
+      this.smsOpen.set(false);
+      this.smsText.set('');
+    } catch (e) {
+      this.flash(e instanceof Error ? e.message : 'Could not send SMS', false);
+    } finally {
+      this.smsBusy.set(false);
     }
   }
 

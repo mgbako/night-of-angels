@@ -17,6 +17,7 @@ export type IconName =
   | 'chevron-left'
   | 'chevron-right'
   | 'mail'
+  | 'message'
   | 'phone'
   | 'shield'
   | 'whatsapp'
@@ -113,6 +114,9 @@ export type IconName =
         @case ('mail') {
           <rect x="3" y="5" width="18" height="14" rx="2" />
           <path d="M3 7l9 6 9-6" />
+        }
+        @case ('message') {
+          <path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" />
         }
         @case ('phone') {
           <path d="M5 4h4l2 5-3 2a12 12 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" />

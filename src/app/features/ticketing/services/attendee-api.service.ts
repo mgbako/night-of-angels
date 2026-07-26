@@ -299,6 +299,42 @@ export class AttendeeApiService {
     return (body as { sentTo?: string }).sentTo ?? ticketCode;
   }
 
+  /** Text the guest their ticket link. Returns the number it was sent to. */
+  async smsTicket(ticketCode: string): Promise<string> {
+    const res = await fetch(`${API}/${encodeURIComponent(ticketCode)}/sms`, {
+      method: 'POST',
+      headers: this.authHeaders(),
+    });
+    this.guard(res);
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiError(res.status, (body as { error?: string }).error || 'SMS failed');
+    return (body as { sentTo?: string }).sentTo ?? ticketCode;
+  }
+
+  /**
+   * Send one custom message to many guests at once. Returns how many were
+   * reached and how many had no usable phone number.
+   */
+  async smsBroadcast(
+    ticketCodes: string[],
+    message: string,
+  ): Promise<{ sent: number; failed: number; noPhone: number }> {
+    const res = await fetch(`${API}/sms-broadcast`, {
+      method: 'POST',
+      headers: this.authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ codes: ticketCodes, message }),
+    });
+    this.guard(res);
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      sent?: number;
+      failed?: number;
+      noPhone?: number;
+    };
+    if (!res.ok) throw new ApiError(res.status, body.error || 'Broadcast failed');
+    return { sent: body.sent ?? 0, failed: body.failed ?? 0, noPhone: body.noPhone ?? 0 };
+  }
+
   private async msg(res: Response): Promise<string> {
     try {
       return ((await res.json()) as { error?: string }).error ?? '';

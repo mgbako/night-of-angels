@@ -2,6 +2,7 @@ import type { Context } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { AuthError, canManageAttendees, requireOwner, requirePermission } from '../shared/auth';
 import { EmailError, sendEmail, ticketEmailHtml } from '../shared/email';
+import { SmsError, sendBulkSms, sendSms, toInternational } from '../shared/sms';
 
 const TICKET_LABELS: Record<TicketType, string> = {
   SINGLES: 'Singles',
@@ -39,9 +40,11 @@ export const config = {
   path: [
     '/api/attendees',
     '/api/attendees/bulk-delete',
+    '/api/attendees/sms-broadcast',
     '/api/attendees/:code',
     '/api/attendees/:code/check-in',
     '/api/attendees/:code/email',
+    '/api/attendees/:code/sms',
   ],
 };
 
@@ -109,7 +112,9 @@ export default async (req: Request, context: Context): Promise<Response> => {
   const pathname = new URL(req.url).pathname;
   const isCheckin = pathname.endsWith('/check-in');
   const isEmail = pathname.endsWith('/email');
+  const isSms = pathname.endsWith('/sms');
   const isBulk = pathname.endsWith('/bulk-delete');
+  const isBroadcast = pathname.endsWith('/sms-broadcast');
 
   try {
     // Bulk archive / permanent delete — one read-modify-write so it can't race.
@@ -118,11 +123,26 @@ export default async (req: Request, context: Context): Promise<Response> => {
       return json({ error: 'Method not allowed' }, 405);
     }
 
+    // Custom SMS to many guests at once (broadcast).
+    if (isBroadcast) {
+      if (req.method === 'POST') return await smsBroadcast(req);
+      return json({ error: 'Method not allowed' }, 405);
+    }
+
     // Email the guest their ticket (ticketing action)
     if (isEmail) {
       if (req.method === 'POST') {
         requirePermission(req, 'tickets');
         return await emailTicket(code, req);
+      }
+      return json({ error: 'Method not allowed' }, 405);
+    }
+
+    // Text the guest their ticket link (ticketing action)
+    if (isSms) {
+      if (req.method === 'POST') {
+        requirePermission(req, 'tickets');
+        return await smsTicket(code, req);
       }
       return json({ error: 'Method not allowed' }, 405);
     }
@@ -363,4 +383,80 @@ async function emailTicket(code: string, req: Request): Promise<Response> {
     throw e;
   }
   return json({ ok: true, sentTo: attendee.email });
+}
+
+const EVENT_WHEN = 'Sat 24 Oct 2026';
+
+async function smsTicket(code: string, req: Request): Promise<Response> {
+  const attendee = (await readAll()).find(
+    (a) => !a.deletedAt && a.ticketCode.toLowerCase() === code.toLowerCase(),
+  );
+  if (!attendee) return json({ error: 'Ticket not found' }, 404);
+  if (!toInternational(attendee.phone)) {
+    return json({ error: 'This guest has no valid phone number' }, 400);
+  }
+
+  const base = process.env['URL'] || new URL(req.url).origin;
+  const url = `${base}/tickets/${attendee.ticketCode}`;
+  const first = attendee.name.split(/\s+/)[0] || 'there';
+  const message =
+    `Hi ${first}, your ${TICKET_LABELS[attendee.ticketType]} ticket for ` +
+    `A Night of Angels (${EVENT_WHEN}) is ready: ${url}`;
+  try {
+    await sendSms({ to: attendee.phone, message });
+  } catch (e) {
+    if (e instanceof SmsError) return json({ error: e.message }, 502);
+    throw e;
+  }
+  return json({ ok: true, sentTo: attendee.phone });
+}
+
+/**
+ * Send one custom message to many guests in a single Termii bulk request.
+ * Body: { codes: string[], message: string }. Reports how many were reachable,
+ * and how many had no usable phone number.
+ */
+async function smsBroadcast(req: Request): Promise<Response> {
+  const actor = requirePermission(req, 'attendees');
+  if (!canManageAttendees(actor.role)) {
+    throw new AuthError(403, 'You do not have access to this action');
+  }
+  const body = (await req.json().catch(() => null)) as
+    | { codes?: unknown; message?: unknown }
+    | null;
+  const message = String(body?.message ?? '').trim();
+  const codes = Array.isArray(body?.codes)
+    ? body!.codes.map((c) => String(c).trim().toLowerCase()).filter(Boolean)
+    : [];
+  if (!message) return json({ error: 'Message is required' }, 400);
+  if (message.length > 480) return json({ error: 'Message is too long (max 480 characters)' }, 400);
+  if (!codes.length) return json({ error: 'No recipients selected' }, 400);
+
+  const set = new Set(codes);
+  const recipients = (await readAll()).filter(
+    (a) => !a.deletedAt && set.has(a.ticketCode.toLowerCase()),
+  );
+
+  const numbers: string[] = [];
+  const seen = new Set<string>();
+  let noPhone = 0;
+  for (const a of recipients) {
+    const intl = toInternational(a.phone);
+    if (!intl) {
+      noPhone++;
+      continue;
+    }
+    if (seen.has(intl)) continue; // de-dupe (e.g. couples sharing a number)
+    seen.add(intl);
+    numbers.push(intl);
+  }
+
+  if (!numbers.length) return json({ sent: 0, failed: 0, noPhone });
+  try {
+    await sendBulkSms(numbers, message);
+  } catch (e) {
+    if (e instanceof SmsError) return json({ error: e.message }, 502);
+    throw e;
+  }
+  return json({ sent: numbers.length, failed: 0, noPhone });
 }
