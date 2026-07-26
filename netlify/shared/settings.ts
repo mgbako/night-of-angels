@@ -11,6 +11,9 @@
  */
 import { getStore } from '@netlify/blobs';
 
+/** Which SMS gateway the back office sends through. Twilio is the default. */
+export type SmsProvider = 'twilio' | 'termii';
+
 export interface EventSettings {
   earlyBirdEnds: string | null;
   ticketSalesEnd: string | null;
@@ -19,6 +22,8 @@ export interface EventSettings {
   maintenance: boolean;
   maintenanceTitle: string;
   maintenanceMessage: string;
+  /** Active SMS gateway — switchable from the back office. */
+  smsProvider: SmsProvider;
 }
 
 export const DEFAULT_MAINTENANCE_TITLE = 'Coming Soon';
@@ -32,6 +37,7 @@ export const DEFAULT_SETTINGS: EventSettings = {
   maintenance: false,
   maintenanceTitle: DEFAULT_MAINTENANCE_TITLE,
   maintenanceMessage: DEFAULT_MAINTENANCE_MESSAGE,
+  smsProvider: 'twilio',
 };
 
 const STORE = 'settings';
@@ -52,7 +58,13 @@ export async function readSettings(): Promise<EventSettings> {
     maintenance: d.maintenance === true,
     maintenanceTitle: normalizeText(d.maintenanceTitle, DEFAULT_MAINTENANCE_TITLE, 120),
     maintenanceMessage: normalizeText(d.maintenanceMessage, DEFAULT_MAINTENANCE_MESSAGE, 600),
+    smsProvider: normalizeProvider(d.smsProvider),
   };
+}
+
+/** Coerce any stored value to a valid provider, defaulting to Twilio. */
+export function normalizeProvider(value: unknown): SmsProvider {
+  return value === 'termii' ? 'termii' : 'twilio';
 }
 
 export async function writeSettings(s: EventSettings): Promise<void> {

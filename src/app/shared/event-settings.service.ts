@@ -1,6 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { AuthService } from '../admin/services/auth.service';
 
+export type SmsProvider = 'twilio' | 'termii';
+
 export interface EventSettings {
   earlyBirdEnds: string | null;
   ticketSalesEnd: string | null;
@@ -8,6 +10,7 @@ export interface EventSettings {
   maintenance: boolean;
   maintenanceTitle: string;
   maintenanceMessage: string;
+  smsProvider: SmsProvider;
 }
 
 export const DEFAULT_MAINTENANCE_TITLE = 'Coming Soon';
@@ -21,6 +24,7 @@ const EMPTY: EventSettings = {
   maintenance: false,
   maintenanceTitle: DEFAULT_MAINTENANCE_TITLE,
   maintenanceMessage: DEFAULT_MAINTENANCE_MESSAGE,
+  smsProvider: 'twilio',
 };
 
 /**
@@ -83,6 +87,7 @@ export class EventSettingsService {
       maintenance: d.maintenance === true,
       maintenanceTitle: d.maintenanceTitle?.trim() || DEFAULT_MAINTENANCE_TITLE,
       maintenanceMessage: d.maintenanceMessage?.trim() || DEFAULT_MAINTENANCE_MESSAGE,
+      smsProvider: d.smsProvider === 'termii' ? 'termii' : 'twilio',
     };
   }
 

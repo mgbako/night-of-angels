@@ -112,6 +112,40 @@ import { EventSettingsService } from '../../../shared/event-settings.service';
             </div>
           }
 
+          <div class="set-divider"></div>
+
+          <div class="adm-field">
+            <label>SMS provider</label>
+            <div class="set-seg" role="radiogroup" aria-label="SMS provider">
+              <button
+                type="button"
+                class="set-seg__btn"
+                [class.set-seg__btn--on]="smsProvider === 'twilio'"
+                role="radio"
+                [attr.aria-checked]="smsProvider === 'twilio'"
+                (click)="smsProvider = 'twilio'"
+              >
+                <adm-icon name="message" [size]="16" /> Twilio
+                <em>Default</em>
+              </button>
+              <button
+                type="button"
+                class="set-seg__btn"
+                [class.set-seg__btn--on]="smsProvider === 'termii'"
+                role="radio"
+                [attr.aria-checked]="smsProvider === 'termii'"
+                (click)="smsProvider = 'termii'"
+              >
+                <adm-icon name="message" [size]="16" /> Termii
+              </button>
+            </div>
+            <span class="adm-hint">
+              Which gateway the ticket-SMS and broadcast buttons send through. Twilio is
+              global; Termii is Nigeria-focused. Set the chosen provider's API keys in
+              Netlify environment variables — see the deploy notes.
+            </span>
+          </div>
+
           @if (error()) { <p class="adm-error">{{ error() }}</p> }
 
           <div class="set-actions">
@@ -171,6 +205,39 @@ import { EventSettingsService } from '../../../shared/event-settings.service';
         resize: vertical;
       }
       .adm-form textarea:focus { outline: none; border-color: var(--adm-gold, #c9a227); }
+      .set-seg {
+        display: inline-flex;
+        gap: 0.4rem;
+        padding: 0.25rem;
+        border: 1px solid var(--adm-line, #e7e2d5);
+        border-radius: 10px;
+        background: var(--adm-surface, #fff);
+      }
+      .set-seg__btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.5rem 0.9rem;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--adm-muted, #8a8270);
+        font: inherit;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .set-seg__btn em {
+        font-style: normal;
+        font-size: 0.62rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        opacity: 0.75;
+      }
+      .set-seg__btn--on {
+        background: var(--adm-gold, #c9a227);
+        color: #17140f;
+      }
     `,
   ],
 })
@@ -188,6 +255,7 @@ export class SettingsComponent {
   maintenance = false;
   maintenanceTitle = '';
   maintenanceMessage = '';
+  smsProvider: 'twilio' | 'termii' = 'twilio';
 
   constructor() {
     afterNextRender(() => this.load());
@@ -203,6 +271,7 @@ export class SettingsComponent {
       this.maintenance = s.maintenance;
       this.maintenanceTitle = s.maintenanceTitle;
       this.maintenanceMessage = s.maintenanceMessage;
+      this.smsProvider = s.smsProvider;
     } catch (e) {
       this.error.set(e instanceof Error ? e.message : 'Could not load settings');
     } finally {
@@ -221,6 +290,7 @@ export class SettingsComponent {
         maintenance: this.maintenance,
         maintenanceTitle: this.maintenanceTitle.trim(),
         maintenanceMessage: this.maintenanceMessage.trim(),
+        smsProvider: this.smsProvider,
       });
       // Reflect any server-side normalisation (e.g. defaults applied to blanks).
       this.maintenanceTitle = this.svc.settings().maintenanceTitle;

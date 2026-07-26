@@ -5,6 +5,7 @@ import {
   DEFAULT_MAINTENANCE_TITLE,
   EventSettings,
   normalizeDate,
+  normalizeProvider,
   normalizeText,
   readSettings,
   writeSettings,
@@ -47,6 +48,7 @@ export default async (req: Request, _context: Context): Promise<Response> => {
         maintenance: body.maintenance === true,
         maintenanceTitle: normalizeText(body.maintenanceTitle, DEFAULT_MAINTENANCE_TITLE, 120),
         maintenanceMessage: normalizeText(body.maintenanceMessage, DEFAULT_MAINTENANCE_MESSAGE, 600),
+        smsProvider: normalizeProvider(body.smsProvider),
       };
       await writeSettings(settings);
       return json(settings);
