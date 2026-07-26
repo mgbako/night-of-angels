@@ -452,11 +452,12 @@ async function smsBroadcast(req: Request): Promise<Response> {
   }
 
   if (!numbers.length) return json({ sent: 0, failed: 0, noPhone });
+  let result: { sent: number; failed: number };
   try {
-    await sendBulkSms(numbers, message);
+    result = await sendBulkSms(numbers, message);
   } catch (e) {
     if (e instanceof SmsError) return json({ error: e.message }, 502);
     throw e;
   }
-  return json({ sent: numbers.length, failed: 0, noPhone });
+  return json({ sent: result.sent, failed: result.failed, noPhone });
 }
