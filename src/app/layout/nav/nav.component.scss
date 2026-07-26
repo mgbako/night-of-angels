@@ -105,6 +105,22 @@
   }
 }
 
+/* Show the icon for the theme you'd switch TO, driven by [data-theme] on <html>
+   so the correct one paints immediately (no hydration flash). Scoped under
+   .theme-toggle so these win over the `.theme-toggle svg { display:block }` rule. */
+.theme-toggle .theme-toggle__sun {
+  display: none;
+}
+.theme-toggle .theme-toggle__moon {
+  display: block;
+}
+:host-context([data-theme='dark']) .theme-toggle .theme-toggle__sun {
+  display: block;
+}
+:host-context([data-theme='dark']) .theme-toggle .theme-toggle__moon {
+  display: none;
+}
+
 /* hamburger */
 .hamburger {
   display: none;
