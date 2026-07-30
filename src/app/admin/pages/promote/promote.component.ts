@@ -335,7 +335,7 @@ export class PromoteComponent {
       this.text(ctx, seatsLine.toUpperCase(), W / 2, 596, '500 22px Jost, Arial, sans-serif', 3);
       ctx.fillStyle = text;
       this.text(ctx, 'SCAN TO RESERVE', W / 2, 648, '600 26px Jost, Arial, sans-serif', 3);
-      plate = 364;
+      plate = 340;
       py = 660;
     }
 
@@ -376,7 +376,7 @@ export class PromoteComponent {
 
     // Link footer.
     ctx.fillStyle = soft;
-    this.text(ctx, this.displayLink(), W / 2, H - 52, '400 22px Jost, Arial, sans-serif', 1);
+    this.text(ctx, this.displayLink(), W / 2, H - 80, '400 22px Jost, Arial, sans-serif', 1);
 
     return canvas;
   }
