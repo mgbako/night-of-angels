@@ -17,6 +17,8 @@ export interface Partner {
   /** Official website. Optional — logos link out only when set. */
   url?: string;
   tier: PartnerTier;
+  /** When false, the partner is hidden from the public site (kept in admin). */
+  enabled: boolean;
 }
 
 export const PARTNER_TIERS: PartnerTier[] = ['title', 'platinum', 'gold', 'partner'];
@@ -30,6 +32,7 @@ export const DEFAULT_PARTNERS: Partner[] = [
     role: 'Title Sponsor & Official Payment Partner',
     url: 'https://www.africhange.com',
     tier: 'title',
+    enabled: true,
   },
   {
     id: 'nigerian-breweries',
@@ -38,6 +41,7 @@ export const DEFAULT_PARTNERS: Partner[] = [
     role: 'Official Beverage Partner',
     url: 'https://nbplc.com',
     tier: 'gold',
+    enabled: true,
   },
   {
     id: 'declan',
@@ -45,6 +49,7 @@ export const DEFAULT_PARTNERS: Partner[] = [
     logo: 'partners/declan.svg',
     role: 'Official Wine Partner',
     tier: 'gold',
+    enabled: true,
   },
 ];
 
@@ -80,5 +85,6 @@ export function coerce(p: Partial<Partner>): Partner {
     role: String(p.role ?? '').trim().slice(0, 160),
     ...(url ? { url: url.slice(0, 500) } : {}),
     tier,
+    enabled: p.enabled !== false, // default on
   };
 }

@@ -103,7 +103,11 @@ interface TierOption {
     } @else {
       <div class="sp-list">
         @for (p of partners(); track p.id; let i = $index) {
-          <div class="sp-row" [class.sp-row--title]="p.tier === 'title'">
+          <div
+            class="sp-row"
+            [class.sp-row--title]="p.tier === 'title'"
+            [class.sp-row--off]="p.enabled === false"
+          >
             <div class="sp-row__order">
               <button
                 class="adm-btn adm-btn--sm adm-btn--ghost"
@@ -120,7 +124,10 @@ interface TierOption {
             </div>
             <div class="sp-row__logo"><img [src]="src(p.logo)" [alt]="p.name" /></div>
             <div class="sp-row__meta">
-              <strong>{{ p.name }}</strong>
+              <strong>
+                {{ p.name }}
+                @if (p.enabled === false) { <span class="sp-hidden-badge">Hidden</span> }
+              </strong>
               <span class="sp-row__role">{{ p.role }}</span>
               @if (p.url) {
                 <a class="sp-row__url" [href]="p.url" target="_blank" rel="noopener">
@@ -132,6 +139,18 @@ interface TierOption {
             </div>
             <span class="sp-tier sp-tier--{{ p.tier }}">{{ tierLabel(p.tier) }}</span>
             <div class="sp-row__actions">
+              <button
+                class="sp-toggle"
+                [class.sp-toggle--on]="p.enabled !== false"
+                role="switch"
+                [attr.aria-checked]="p.enabled !== false"
+                [attr.aria-label]="(p.enabled !== false ? 'Hide ' : 'Show ') + p.name + ' on the site'"
+                [title]="p.enabled !== false ? 'Shown on site — click to hide' : 'Hidden — click to show'"
+                (click)="toggleEnabled(p)"
+                [disabled]="busy()"
+              >
+                <span class="sp-toggle__knob"></span>
+              </button>
               <button class="adm-btn adm-btn--sm" (click)="openEdit(p)" [disabled]="busy()">
                 Edit
               </button>
@@ -236,6 +255,47 @@ interface TierOption {
       .sp-tier--gold { color: #7a5f12; background: rgba(201, 162, 39, 0.18); }
       .sp-tier--partner { color: #55506a; background: rgba(94, 53, 217, 0.1); }
 
+      .sp-row--off { opacity: 0.55; }
+      .sp-row--off .sp-row__logo { filter: grayscale(1); }
+      .sp-hidden-badge {
+        font-size: 0.6rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        font-weight: 700;
+        color: #8a8270;
+        background: #ece7db;
+        border-radius: 999px;
+        padding: 0.12rem 0.45rem;
+        margin-left: 0.4rem;
+        vertical-align: middle;
+      }
+      .sp-toggle {
+        width: 40px;
+        height: 23px;
+        border-radius: 999px;
+        border: 0;
+        background: #cfc9ba;
+        position: relative;
+        cursor: pointer;
+        padding: 0;
+        transition: background 0.18s ease;
+        flex: none;
+      }
+      .sp-toggle:disabled { cursor: progress; opacity: 0.7; }
+      .sp-toggle__knob {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+        transition: transform 0.18s ease;
+      }
+      .sp-toggle--on { background: #1a7f52; }
+      .sp-toggle--on .sp-toggle__knob { transform: translateX(17px); }
+
       @media (max-width: 720px) {
         .sp-grid { grid-template-columns: 1fr; }
         .sp-row { flex-wrap: wrap; }
@@ -277,7 +337,7 @@ export class PartnersAdminComponent {
   }
 
   openAdd(): void {
-    this.draft = { name: '', logo: '', role: '', url: '', tier: 'partner' };
+    this.draft = { name: '', logo: '', role: '', url: '', tier: 'partner', enabled: true };
     this.editingId.set(null);
     this.error.set(null);
     this.formOpen.set(true);
@@ -321,6 +381,7 @@ export class PartnersAdminComponent {
       role: (this.draft.role ?? '').trim(),
       url: (this.draft.url ?? '').trim() || undefined,
       tier: (this.draft.tier ?? 'partner') as PartnerTier,
+      enabled: this.draft.enabled !== false,
     };
     this.busy.set(true);
     this.error.set(null);
@@ -331,6 +392,20 @@ export class PartnersAdminComponent {
       this.flash(id ? 'Sponsor updated.' : 'Sponsor added.', true);
     } catch (e) {
       this.error.set(e instanceof Error ? e.message : 'Could not save sponsor');
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async toggleEnabled(p: Partner): Promise<void> {
+    if (this.busy()) return;
+    const next = p.enabled === false;
+    this.busy.set(true);
+    try {
+      await this.svc.setEnabled(p.id, next);
+      this.flash(next ? `${p.name} is now shown on the site.` : `${p.name} is now hidden.`, true);
+    } catch (e) {
+      this.flash(e instanceof Error ? e.message : 'Could not update', false);
     } finally {
       this.busy.set(false);
     }

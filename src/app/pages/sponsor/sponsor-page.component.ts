@@ -298,7 +298,7 @@ export class SponsorPageComponent implements OnInit {
   readonly stats = SPONSOR_STATS;
   readonly tiers = SPONSOR_TIERS;
   readonly categories = SPONSOR_CATEGORIES;
-  readonly partners = this.partnersSvc.partners;
+  readonly partners = this.partnersSvc.visible;
   src = partnerLogoSrc;
   readonly impact = IMPACT_POINTS;
   readonly deadline = SPONSOR_DEADLINE;

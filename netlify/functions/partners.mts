@@ -42,7 +42,14 @@ export default async (req: Request, context: Context): Promise<Response> => {
 
     // Collection
     if (!id) {
-      if (req.method === 'GET') return json(await readPartners()); // public
+      if (req.method === 'GET') {
+        // ?all=1 returns disabled partners too (back office); public gets enabled only.
+        if (new URL(req.url).searchParams.get('all') === '1') {
+          requirePermission(req, 'sponsors');
+          return json(await readPartners());
+        }
+        return json((await readPartners()).filter((p) => p.enabled !== false));
+      }
       if (req.method === 'POST') {
         requirePermission(req, 'sponsors');
         return await create(req);

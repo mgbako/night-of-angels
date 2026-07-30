@@ -13,11 +13,14 @@ import { DEFAULT_PARTNERS, Partner } from '../config/sponsor.config';
 export class PartnersService {
   readonly partners = signal<Partner[]>(DEFAULT_PARTNERS);
 
-  /** The headline title sponsor, if one is set. */
-  readonly titleSponsor = computed(() => this.partners().find((p) => p.tier === 'title') ?? null);
+  /** Only the enabled partners — what the public site should ever show. */
+  readonly visible = computed(() => this.partners().filter((p) => p.enabled !== false));
+
+  /** The headline title sponsor, if one is enabled. */
+  readonly titleSponsor = computed(() => this.visible().find((p) => p.tier === 'title') ?? null);
 
   /** Everyone except the title sponsor — shown in the supporting logo row. */
-  readonly supporting = computed(() => this.partners().filter((p) => p.tier !== 'title'));
+  readonly supporting = computed(() => this.visible().filter((p) => p.tier !== 'title'));
 
   private loaded = false;
 

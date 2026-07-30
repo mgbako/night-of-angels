@@ -44,6 +44,8 @@ export interface Partner {
   role: string;
   url?: string;
   tier: PartnerTier;
+  /** When false, hidden from the public site (still shown in the back office). */
+  enabled: boolean;
 }
 
 export interface ImpactPoint {
@@ -149,6 +151,7 @@ export const DEFAULT_PARTNERS: Partner[] = [
     role: 'Title Sponsor & Official Payment Partner',
     url: 'https://www.africhange.com',
     tier: 'title',
+    enabled: true,
   },
   {
     id: 'nigerian-breweries',
@@ -157,6 +160,7 @@ export const DEFAULT_PARTNERS: Partner[] = [
     role: 'Official Beverage Partner',
     url: 'https://nbplc.com',
     tier: 'gold',
+    enabled: true,
   },
   {
     id: 'declan',
@@ -164,6 +168,7 @@ export const DEFAULT_PARTNERS: Partner[] = [
     logo: 'partners/declan.svg',
     role: 'Official Wine Partner',
     tier: 'gold',
+    enabled: true,
   },
 ];
 

@@ -37,7 +37,11 @@ export class PartnerAdminService {
     this.loading.set(true);
     this.loadError.set(false);
     try {
-      const res = await fetch(API, { headers: { Accept: 'application/json' } });
+      // ?all=1 includes disabled partners so they can be managed.
+      const res = await fetch(`${API}?all=1`, {
+        headers: this.headers({ Accept: 'application/json' }),
+      });
+      this.guard(res);
       if (!res.ok) throw new Error('load failed');
       this.partners.set((await res.json()) as Partner[]);
     } catch {
@@ -45,6 +49,11 @@ export class PartnerAdminService {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  /** Enable/disable a partner (show/hide on the public site). */
+  async setEnabled(id: string, enabled: boolean): Promise<void> {
+    await this.update(id, { enabled });
   }
 
   async create(input: Omit<Partner, 'id'>): Promise<void> {
