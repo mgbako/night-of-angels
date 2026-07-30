@@ -360,13 +360,23 @@ export class PromoteComponent {
     ctx.fillStyle = gold;
     this.text(ctx, EVENT_ARRIVAL_NOTE.toUpperCase(), W / 2, qrEnd + 92, '500 22px Jost, Arial, sans-serif', 4);
 
-    // Title sponsor lockup.
-    const sponsor = await this.loadImage('/sponsors/fcmb.svg').catch(() => null);
+    // Title sponsor lockup (AfriChange).
+    const sponsor = await this.loadImage('/partners/africhange.png').catch(() => null);
     if (sponsor) {
       ctx.fillStyle = soft;
       this.text(ctx, 'TITLE SPONSOR', W / 2, qrEnd + 140, '600 18px Jost, Arial, sans-serif', 5);
-      const ls = 60;
-      ctx.drawImage(sponsor, (W - ls) / 2, qrEnd + 152, ls, ls);
+      // Keep the logo's aspect ratio, and sit it on a white chip so its own
+      // white background looks intentional on both the light and dark posters.
+      const lh = 58;
+      const ratio = sponsor.naturalWidth / sponsor.naturalHeight || 4;
+      const lw = lh * ratio;
+      const padX = 30;
+      const padY = 18;
+      const chipY = qrEnd + 158;
+      ctx.fillStyle = '#ffffff';
+      this.roundRect(ctx, (W - lw) / 2 - padX, chipY, lw + padX * 2, lh + padY * 2, 14);
+      ctx.fill();
+      ctx.drawImage(sponsor, (W - lw) / 2, chipY + padY, lw, lh);
     }
 
     // Link footer.
