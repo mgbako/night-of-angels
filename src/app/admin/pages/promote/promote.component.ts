@@ -321,7 +321,7 @@ export class PromoteComponent {
     if (kind === 'reserve') {
       ctx.fillStyle = text;
       this.text(ctx, 'SCAN TO RESERVE YOUR SEAT', W / 2, 500, '600 30px Jost, Arial, sans-serif', 3);
-      plate = 500;
+      plate = 450;
       py = 540;
     } else {
       const meta = ticketTypeMeta(kind);
@@ -335,7 +335,7 @@ export class PromoteComponent {
       this.text(ctx, seatsLine.toUpperCase(), W / 2, 596, '500 22px Jost, Arial, sans-serif', 3);
       ctx.fillStyle = text;
       this.text(ctx, 'SCAN TO RESERVE', W / 2, 648, '600 26px Jost, Arial, sans-serif', 3);
-      plate = 404;
+      plate = 364;
       py = 660;
     }
 
@@ -366,12 +366,12 @@ export class PromoteComponent {
     const sponsor = await this.loadImage(sponsorSrc).catch(() => null);
     if (sponsor) {
       ctx.fillStyle = soft;
-      this.text(ctx, 'TITLE SPONSOR', W / 2, qrEnd + 128, '600 18px Jost, Arial, sans-serif', 5);
+      this.text(ctx, 'TITLE SPONSOR', W / 2, qrEnd + 140, '600 18px Jost, Arial, sans-serif', 5);
       // Preserve the logo's aspect ratio; sized to sit clear of the link footer.
-      const lh = 46;
+      const lh = 68;
       const ratio = sponsor.naturalWidth / sponsor.naturalHeight || 4;
       const lw = lh * ratio;
-      ctx.drawImage(sponsor, (W - lw) / 2, qrEnd + 146, lw, lh);
+      ctx.drawImage(sponsor, (W - lw) / 2, qrEnd + 158, lw, lh);
     }
 
     // Link footer.
