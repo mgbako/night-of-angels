@@ -45,7 +45,7 @@
   transition: transform 0.3s var(--ease);
 
   img {
-    height: 74px;
+    height: 104px;
     width: auto;
     max-width: 100%;
     object-fit: contain;
@@ -148,13 +148,13 @@ a.title-sponsor__logo:hover {
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 2.2rem;
+  gap: 2.6rem;
 
   a {
     display: inline-flex;
   }
   img {
-    height: 56px;
+    height: 80px;
     width: auto;
     object-fit: contain;
     opacity: 0.9;
