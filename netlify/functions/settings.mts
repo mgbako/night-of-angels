@@ -1,5 +1,6 @@
 import type { Context } from '@netlify/functions';
 import { AuthError, requirePermission } from '../shared/auth';
+import { diff, recordAudit } from '../shared/audit';
 import {
   DEFAULT_MAINTENANCE_MESSAGE,
   DEFAULT_MAINTENANCE_TITLE,
@@ -39,8 +40,9 @@ export default async (req: Request, _context: Context): Promise<Response> => {
       return json(await readSettings());
     }
     if (req.method === 'POST') {
-      requirePermission(req, 'settings');
+      const actor = requirePermission(req, 'settings');
       const body = (await req.json().catch(() => ({}))) as Partial<EventSettings>;
+      const before = await readSettings();
       const settings: EventSettings = {
         earlyBirdEnds: normalizeDate(body.earlyBirdEnds),
         ticketSalesEnd: normalizeDate(body.ticketSalesEnd),
@@ -51,6 +53,21 @@ export default async (req: Request, _context: Context): Promise<Response> => {
         smsProvider: normalizeProvider(body.smsProvider),
       };
       await writeSettings(settings);
+      const changes = diff(
+        before as unknown as Record<string, unknown>,
+        settings as unknown as Record<string, unknown>,
+      );
+      let action = 'settings.updated';
+      if (before.smsProvider !== settings.smsProvider) action = 'settings.sms_provider_changed';
+      else if (before.maintenance !== settings.maintenance) action = 'settings.maintenance_toggled';
+      await recordAudit({
+        req,
+        actor,
+        action,
+        severity: 'warning',
+        target: { type: 'settings', id: 'event', label: 'Event settings' },
+        changes,
+      });
       return json(settings);
     }
     return json({ error: 'Method not allowed' }, 405);

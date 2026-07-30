@@ -14,7 +14,8 @@ export type Permission =
   | 'checkin'
   | 'team'
   | 'settings'
-  | 'sponsors';
+  | 'sponsors'
+  | 'audit';
 
 export const ROLES: Role[] = ['owner', 'manager', 'coordinator', 'usher'];
 
@@ -43,6 +44,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'team',
     'settings',
     'sponsors',
+    'audit',
   ],
   manager: ['dashboard', 'attendees', 'reservations', 'register', 'tickets', 'checkin', 'sponsors'],
   coordinator: ['attendees', 'reservations', 'register', 'tickets', 'checkin'],

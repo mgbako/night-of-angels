@@ -1,9 +1,10 @@
 import type { Context } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { randomUUID } from 'node:crypto';
-import { AuthError, requireOwner, requirePermission } from '../shared/auth';
+import { AuthError, TokenPayload, requireOwner, requirePermission } from '../shared/auth';
 import { addAttendee, TicketType } from '../shared/attendees';
 import { readSettings, reservationsOpen } from '../shared/settings';
+import { recordAudit } from '../shared/audit';
 
 /**
  * Self-service reservations with proof of payment.
@@ -108,22 +109,22 @@ export default async (req: Request, context: Context): Promise<Response> => {
       }
       // Approve (auth)
       if (path.endsWith('/approve') && req.method === 'POST') {
-        requirePermission(req, 'reservations');
-        return await approve(id, req);
+        const actor = requirePermission(req, 'reservations');
+        return await approve(id, req, actor);
       }
       // Restore an archived reservation (owner only)
       if (path.endsWith('/restore') && req.method === 'POST') {
-        requireOwner(req);
-        return await restore(id);
+        const actor = requireOwner(req);
+        return await restore(id, req, actor);
       }
       // Reject / delete (auth) — ?permanent=1 hard-deletes + drops the proof (owner only).
       if (req.method === 'DELETE') {
         if (new URL(req.url).searchParams.get('permanent') === '1') {
-          requireOwner(req);
-          return await remove(id, true);
+          const actor = requireOwner(req);
+          return await remove(id, true, req, actor);
         }
-        requirePermission(req, 'reservations');
-        return await remove(id, false);
+        const actor = requirePermission(req, 'reservations');
+        return await remove(id, false, req, actor);
       }
     }
 
@@ -197,6 +198,13 @@ async function create(req: Request): Promise<Response> {
   };
   const list = await readReservations();
   await writeReservations([reservation, ...list]);
+  await recordAudit({
+    req,
+    actor: null,
+    action: 'reservation.submitted',
+    target: { type: 'reservation', id: reservation.id, label: reservation.name },
+    metadata: { ticketType: reservation.ticketType },
+  });
   return json({ ok: true }, 201);
 }
 
@@ -215,7 +223,7 @@ async function getProof(id: string): Promise<Response> {
   });
 }
 
-async function approve(id: string, req: Request): Promise<Response> {
+async function approve(id: string, req: Request, actor: TokenPayload): Promise<Response> {
   const { ticketType } = (await req.json().catch(() => ({}))) as { ticketType?: TicketType };
   if (!ticketType || !TICKET_TYPES.includes(ticketType)) {
     return json({ error: 'A valid ticket type is required' }, 400);
@@ -242,13 +250,27 @@ async function approve(id: string, req: Request): Promise<Response> {
 
   list[idx] = { ...reservation, status: 'approved', ticketCode: attendee.ticketCode };
   await writeReservations(list);
+  await recordAudit({
+    req,
+    actor,
+    action: 'reservation.approved',
+    severity: 'warning',
+    target: { type: 'reservation', id, label: reservation.name },
+    metadata: { ticketType, ticketCode: attendee.ticketCode },
+  });
   return json({ ok: true, attendee });
 }
 
-async function remove(id: string, permanent: boolean): Promise<Response> {
+async function remove(
+  id: string,
+  permanent: boolean,
+  req: Request,
+  actor: TokenPayload,
+): Promise<Response> {
   const list = await readReservations();
   const idx = list.findIndex((r) => r.id === id);
   if (idx === -1) return json({ error: 'Reservation not found' }, 404);
+  const victim = list[idx];
 
   if (permanent) {
     // Hard delete also drops the uploaded proof file.
@@ -258,14 +280,27 @@ async function remove(id: string, permanent: boolean): Promise<Response> {
     list[idx] = { ...list[idx], deletedAt: new Date().toISOString() };
     await writeReservations(list);
   }
+  await recordAudit({
+    req,
+    actor,
+    action: permanent ? 'reservation.deleted' : 'reservation.rejected',
+    severity: 'warning',
+    target: { type: 'reservation', id, label: victim.name },
+  });
   return json({ ok: true });
 }
 
-async function restore(id: string): Promise<Response> {
+async function restore(id: string, req: Request, actor: TokenPayload): Promise<Response> {
   const list = await readReservations();
   const idx = list.findIndex((r) => r.id === id);
   if (idx === -1) return json({ error: 'Reservation not found' }, 404);
   list[idx] = { ...list[idx], deletedAt: null };
   await writeReservations(list);
+  await recordAudit({
+    req,
+    actor,
+    action: 'reservation.restored',
+    target: { type: 'reservation', id, label: list[idx].name },
+  });
   return json({ ok: true });
 }

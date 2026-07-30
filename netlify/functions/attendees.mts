@@ -1,8 +1,15 @@
 import type { Context } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
-import { AuthError, canManageAttendees, requireOwner, requirePermission } from '../shared/auth';
+import {
+  AuthError,
+  TokenPayload,
+  canManageAttendees,
+  requireOwner,
+  requirePermission,
+} from '../shared/auth';
 import { EmailError, sendEmail, ticketEmailHtml } from '../shared/email';
 import { SmsError, sendBulkSms, sendSms, toInternational } from '../shared/sms';
+import { recordAudit } from '../shared/audit';
 
 const TICKET_LABELS: Record<TicketType, string> = {
   SINGLES: 'Singles',
@@ -132,8 +139,8 @@ export default async (req: Request, context: Context): Promise<Response> => {
     // Email the guest their ticket (ticketing action)
     if (isEmail) {
       if (req.method === 'POST') {
-        requirePermission(req, 'tickets');
-        return await emailTicket(code, req);
+        const actor = requirePermission(req, 'tickets');
+        return await emailTicket(code, req, actor);
       }
       return json({ error: 'Method not allowed' }, 405);
     }
@@ -141,8 +148,8 @@ export default async (req: Request, context: Context): Promise<Response> => {
     // Text the guest their ticket link (ticketing action)
     if (isSms) {
       if (req.method === 'POST') {
-        requirePermission(req, 'tickets');
-        return await smsTicket(code, req);
+        const actor = requirePermission(req, 'tickets');
+        return await smsTicket(code, req, actor);
       }
       return json({ error: 'Method not allowed' }, 405);
     }
@@ -159,8 +166,8 @@ export default async (req: Request, context: Context): Promise<Response> => {
         return json((await readAll()).filter((a) => !a.deletedAt));
       }
       if (req.method === 'POST') {
-        requirePermission(req, 'register');
-        return await register(req);
+        const actor = requirePermission(req, 'register');
+        return await register(req, actor);
       }
       return json({ error: 'Method not allowed' }, 405);
     }
@@ -168,8 +175,8 @@ export default async (req: Request, context: Context): Promise<Response> => {
     // Check-in: /api/attendees/:code/check-in — requires the check-in permission.
     if (isCheckin) {
       if (req.method === 'POST') {
-        requirePermission(req, 'checkin');
-        return await checkIn(code);
+        const actor = requirePermission(req, 'checkin');
+        return await checkIn(code, req, actor);
       }
       return json({ error: 'Method not allowed' }, 405);
     }
@@ -179,12 +186,12 @@ export default async (req: Request, context: Context): Promise<Response> => {
     if (req.method === 'DELETE') {
       // ?permanent=1 hard-deletes (owner only); otherwise soft-delete (archive).
       if (new URL(req.url).searchParams.get('permanent') === '1') {
-        requireOwner(req);
-        return await removeOne(code, true);
+        const actor = requireOwner(req);
+        return await removeOne(code, true, req, actor);
       }
       const actor = requirePermission(req, 'attendees');
       if (!canManageAttendees(actor.role)) throw new AuthError(403, 'You do not have access to this action');
-      return await removeOne(code, false);
+      return await removeOne(code, false, req, actor);
     }
     if (req.method === 'PATCH') return await patchOne(code, req);
     return json({ error: 'Method not allowed' }, 405);
@@ -195,7 +202,7 @@ export default async (req: Request, context: Context): Promise<Response> => {
   }
 };
 
-async function register(req: Request): Promise<Response> {
+async function register(req: Request, actor: TokenPayload): Promise<Response> {
   const body = (await req.json().catch(() => null)) as Partial<Attendee> | null;
   if (!body?.name || !body?.phone || !body?.ticketType) {
     return json({ error: 'Missing required fields' }, 400);
@@ -226,6 +233,13 @@ async function register(req: Request): Promise<Response> {
     ...(tableNumber ? { tableNumber } : {}),
   };
   await writeAll([attendee, ...list]);
+  await recordAudit({
+    req,
+    actor,
+    action: 'attendee.registered',
+    target: { type: 'attendee', id: attendee.id, label: attendee.name },
+    metadata: { ticketType: attendee.ticketType, ticketCode: attendee.ticketCode },
+  });
   return json(attendee, 201);
 }
 
@@ -237,7 +251,7 @@ async function getOne(code: string): Promise<Response> {
   return found ? json(found) : json({ error: 'Ticket not found' }, 404);
 }
 
-async function checkIn(code: string): Promise<Response> {
+async function checkIn(code: string, req: Request, actor: TokenPayload): Promise<Response> {
   const list = await readAll();
   const idx = list.findIndex(
     (a) => !a.deletedAt && a.ticketCode.toLowerCase() === code.toLowerCase(),
@@ -248,6 +262,13 @@ async function checkIn(code: string): Promise<Response> {
   }
   list[idx] = { ...list[idx], checkedIn: true, checkedInAt: new Date().toISOString() };
   await writeAll(list);
+  await recordAudit({
+    req,
+    actor,
+    action: 'attendee.checked_in',
+    target: { type: 'attendee', id: list[idx].id, label: list[idx].name },
+    metadata: { ticketCode: list[idx].ticketCode },
+  });
   return json(list[idx]);
 }
 
@@ -263,9 +284,17 @@ async function patchOne(code: string, req: Request): Promise<Response> {
 
   // Restore an archived attendee — super admin (owner) only.
   if (body?.restore === true) {
-    requireOwner(req);
+    const owner = requireOwner(req);
     list[idx] = { ...list[idx], deletedAt: null };
     await writeAll(list);
+    await recordAudit({
+      req,
+      actor: owner,
+      action: 'attendee.restored',
+      severity: 'warning',
+      target: { type: 'attendee', id: list[idx].id, label: list[idx].name },
+      metadata: { ticketCode: list[idx].ticketCode },
+    });
     return json(list[idx]);
   }
 
@@ -275,12 +304,23 @@ async function patchOne(code: string, req: Request): Promise<Response> {
     throw new AuthError(403, 'You do not have access to this action');
   }
   if (list[idx].deletedAt) return json({ error: 'Ticket not found' }, 404);
+  const target = { type: 'attendee', id: list[idx].id, label: list[idx].name };
   if (typeof body?.checkedIn === 'boolean') {
+    const from = list[idx].checkedIn;
     list[idx] = {
       ...list[idx],
       checkedIn: body.checkedIn,
       checkedInAt: body.checkedIn ? list[idx].checkedInAt ?? new Date().toISOString() : null,
     };
+    await recordAudit({
+      req,
+      actor,
+      action: 'attendee.checkin_overridden',
+      severity: 'warning',
+      target,
+      changes: { checkedIn: { from, to: body.checkedIn } },
+      metadata: { ticketCode: list[idx].ticketCode },
+    });
   }
   if (typeof body?.tableNumber === 'string') {
     const tableNumber = body.tableNumber.trim();
@@ -290,7 +330,16 @@ async function patchOne(code: string, req: Request): Promise<Response> {
         return json({ error: `Table ${tableNumber} is full (seats ${TABLE_CAPACITY})` }, 409);
       }
     }
+    const from = list[idx].tableNumber ?? null;
     list[idx] = { ...list[idx], tableNumber: tableNumber || undefined };
+    await recordAudit({
+      req,
+      actor,
+      action: 'attendee.table_assigned',
+      target,
+      changes: { tableNumber: { from, to: tableNumber || null } },
+      metadata: { ticketCode: list[idx].ticketCode },
+    });
   }
   await writeAll(list);
   return json(list[idx]);
@@ -311,10 +360,11 @@ async function bulkRemove(req: Request): Promise<Response> {
   const permanent = body?.permanent === true;
   if (!codes.length) return json({ error: 'No ticket codes provided' }, 400);
 
+  let actor: TokenPayload;
   if (permanent) {
-    requireOwner(req);
+    actor = requireOwner(req);
   } else {
-    const actor = requirePermission(req, 'attendees');
+    actor = requirePermission(req, 'attendees');
     if (!canManageAttendees(actor.role)) throw new AuthError(403, 'You do not have access to this action');
   }
 
@@ -340,13 +390,27 @@ async function bulkRemove(req: Request): Promise<Response> {
     });
     if (removed) await writeAll(next);
   }
+  await recordAudit({
+    req,
+    actor,
+    action: permanent ? 'attendee.bulk_deleted' : 'attendee.bulk_archived',
+    severity: permanent ? 'critical' : 'warning',
+    target: null,
+    metadata: { requested: codes.length, removed },
+  });
   return json({ removed });
 }
 
-async function removeOne(code: string, permanent: boolean): Promise<Response> {
+async function removeOne(
+  code: string,
+  permanent: boolean,
+  req: Request,
+  actor: TokenPayload,
+): Promise<Response> {
   const list = await readAll();
   const idx = list.findIndex((a) => a.ticketCode.toLowerCase() === code.toLowerCase());
   if (idx === -1) return json({ error: 'Ticket not found' }, 404);
+  const victim = list[idx];
   if (permanent) {
     await writeAll(list.filter((_, i) => i !== idx));
   } else {
@@ -355,10 +419,18 @@ async function removeOne(code: string, permanent: boolean): Promise<Response> {
       await writeAll(list);
     }
   }
+  await recordAudit({
+    req,
+    actor,
+    action: permanent ? 'attendee.deleted' : 'attendee.archived',
+    severity: permanent ? 'critical' : 'warning',
+    target: { type: 'attendee', id: victim.id, label: victim.name },
+    metadata: { ticketCode: victim.ticketCode },
+  });
   return json({ ok: true });
 }
 
-async function emailTicket(code: string, req: Request): Promise<Response> {
+async function emailTicket(code: string, req: Request, actor: TokenPayload): Promise<Response> {
   const attendee = (await readAll()).find(
     (a) => !a.deletedAt && a.ticketCode.toLowerCase() === code.toLowerCase(),
   );
@@ -384,12 +456,19 @@ async function emailTicket(code: string, req: Request): Promise<Response> {
     if (e instanceof EmailError) return json({ error: e.message }, 400);
     throw e;
   }
+  await recordAudit({
+    req,
+    actor,
+    action: 'ticket.emailed',
+    target: { type: 'attendee', id: attendee.id, label: attendee.name },
+    metadata: { ticketCode: attendee.ticketCode, to: attendee.email },
+  });
   return json({ ok: true, sentTo: attendee.email });
 }
 
 const EVENT_WHEN = 'Sat 24 Oct 2026';
 
-async function smsTicket(code: string, req: Request): Promise<Response> {
+async function smsTicket(code: string, req: Request, actor: TokenPayload): Promise<Response> {
   const attendee = (await readAll()).find(
     (a) => !a.deletedAt && a.ticketCode.toLowerCase() === code.toLowerCase(),
   );
@@ -410,6 +489,13 @@ async function smsTicket(code: string, req: Request): Promise<Response> {
     if (e instanceof SmsError) return json({ error: e.message }, 400);
     throw e;
   }
+  await recordAudit({
+    req,
+    actor,
+    action: 'ticket.smsed',
+    target: { type: 'attendee', id: attendee.id, label: attendee.name },
+    metadata: { ticketCode: attendee.ticketCode, to: attendee.phone },
+  });
   return json({ ok: true, sentTo: attendee.phone });
 }
 
@@ -461,5 +547,13 @@ async function smsBroadcast(req: Request): Promise<Response> {
     if (e instanceof SmsError) return json({ error: e.message }, 400);
     throw e;
   }
+  await recordAudit({
+    req,
+    actor,
+    action: 'sms.broadcast_sent',
+    severity: 'warning',
+    target: null,
+    metadata: { recipients: numbers.length, sent: result.sent, failed: result.failed, noPhone },
+  });
   return json({ sent: result.sent, failed: result.failed, noPhone });
 }

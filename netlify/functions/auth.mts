@@ -3,6 +3,7 @@ import {
   AuthError,
   ROLES,
   Role,
+  TokenPayload,
   consumeResetToken,
   createResetToken,
   ensureSeedUser,
@@ -22,6 +23,7 @@ import {
   writeUsers,
 } from '../shared/auth';
 import { resetEmailHtml, sendEmail } from '../shared/email';
+import { recordAudit } from '../shared/audit';
 
 /**
  * Auth API (self-hosted).
@@ -76,39 +78,39 @@ export default async (req: Request, context: Context): Promise<Response> => {
 
     if (path === '/api/auth/change-password' && req.method === 'POST') {
       const actor = requireAuth(req);
-      return await changePassword(req, actor.sub);
+      return await changePassword(req, actor);
     }
 
     if (path === '/api/auth/users') {
       // Managing the team is owner-only (the 'team' permission).
-      requirePermission(req, 'team');
+      const teamActor = requirePermission(req, 'team');
       if (req.method === 'GET') {
         const archived = new URL(req.url).searchParams.get('archived') === '1';
         const users = (await readUsers()).filter((u) => (archived ? u.deletedAt : !u.deletedAt));
         return json(users.map(toSafe));
       }
-      if (req.method === 'POST') return await createUser(req);
+      if (req.method === 'POST') return await createUser(req, teamActor);
     }
 
     if (userId) {
       if (path.endsWith('/restore') && req.method === 'POST') {
-        requireOwner(req);
-        return await restoreUser(userId);
+        const owner = requireOwner(req);
+        return await restoreUser(userId, req, owner);
       }
       const actor = requirePermission(req, 'team');
       if (path.endsWith('/password') && req.method === 'POST') {
-        return await setUserPassword(userId, req);
+        return await setUserPassword(userId, req, actor);
       }
       if (path.endsWith('/role') && req.method === 'POST') {
-        return await updateUserRole(userId, req, actor.sub);
+        return await updateUserRole(userId, req, actor);
       }
       if (req.method === 'DELETE') {
         // ?permanent=1 hard-deletes the account (owner only); otherwise deactivate.
         if (new URL(req.url).searchParams.get('permanent') === '1') {
           requireOwner(req);
-          return await deleteUser(userId, actor.sub, true);
+          return await deleteUser(userId, req, actor, true);
         }
-        return await deleteUser(userId, actor.sub, false);
+        return await deleteUser(userId, req, actor, false);
       }
     }
 
@@ -133,8 +135,22 @@ async function login(req: Request): Promise<Response> {
 
   // Same response whether user is missing, deactivated, or password is wrong.
   if (!user || user.deletedAt || !verifyPassword(password, user.passwordHash)) {
+    await recordAudit({
+      req,
+      actor: null,
+      action: 'auth.login.failure',
+      severity: 'warning',
+      outcome: 'failure',
+      target: { type: 'user', id: user?.id ?? null, label: email.trim().toLowerCase() },
+    });
     return json({ error: 'Incorrect email or password' }, 401);
   }
+  await recordAudit({
+    req,
+    actor: { id: user.id, name: user.name, email: user.email, role: normalizeRole(user.role) },
+    action: 'auth.login.success',
+    target: { type: 'user', id: user.id, label: user.email },
+  });
   return json({ token: signToken(user), user: toSafe(user) });
 }
 
@@ -151,7 +167,7 @@ function me(req: Request): Response {
   });
 }
 
-async function createUser(req: Request): Promise<Response> {
+async function createUser(req: Request, actor: TokenPayload): Promise<Response> {
   const body = (await req.json().catch(() => ({}))) as {
     name?: string;
     email?: string;
@@ -174,10 +190,19 @@ async function createUser(req: Request): Promise<Response> {
   }
   const user = newUser({ name: body.name, email, password: body.password, role: body.role as Role });
   await writeUsers([...users, user]);
+  await recordAudit({
+    req,
+    actor,
+    action: 'team.user.created',
+    severity: 'warning',
+    target: { type: 'user', id: user.id, label: user.email },
+    metadata: { role: user.role },
+  });
   return json(toSafe(user), 201);
 }
 
-async function updateUserRole(id: string, req: Request, actorId: string): Promise<Response> {
+async function updateUserRole(id: string, req: Request, actor: TokenPayload): Promise<Response> {
+  const actorId = actor.sub;
   const { role } = (await req.json().catch(() => ({}))) as { role?: string };
   if (!role || !ROLES.includes(role as Role)) {
     return json({ error: 'A valid role is required' }, 400);
@@ -200,10 +225,24 @@ async function updateUserRole(id: string, req: Request, actorId: string): Promis
   }
 
   await setRole(id, role as Role);
+  await recordAudit({
+    req,
+    actor,
+    action: 'team.user.role_changed',
+    severity: 'critical',
+    target: { type: 'user', id, label: target.email },
+    changes: { role: { from: normalizeRole(target.role), to: role } },
+  });
   return json({ ok: true, user: toSafe({ ...target, role: role as Role }) });
 }
 
-async function deleteUser(id: string, actorId: string, permanent: boolean): Promise<Response> {
+async function deleteUser(
+  id: string,
+  req: Request,
+  actor: TokenPayload,
+  permanent: boolean,
+): Promise<Response> {
+  const actorId = actor.sub;
   const users = await readUsers();
   const target = users.find((u) => u.id === id);
   if (!target) return json({ error: 'User not found' }, 404);
@@ -224,15 +263,31 @@ async function deleteUser(id: string, actorId: string, permanent: boolean): Prom
   } else if (!target.deletedAt) {
     await setDeleted(id, true);
   }
+  await recordAudit({
+    req,
+    actor,
+    action: permanent ? 'team.user.deleted' : 'team.user.deactivated',
+    severity: 'critical',
+    target: { type: 'user', id, label: target.email },
+  });
   return json({ ok: true });
 }
 
-async function restoreUser(id: string): Promise<Response> {
+async function restoreUser(id: string, req: Request, actor: TokenPayload): Promise<Response> {
   const ok = await setDeleted(id, false);
-  return ok ? json({ ok: true }) : json({ error: 'User not found' }, 404);
+  if (!ok) return json({ error: 'User not found' }, 404);
+  await recordAudit({
+    req,
+    actor,
+    action: 'team.user.reactivated',
+    severity: 'warning',
+    target: { type: 'user', id, label: null },
+  });
+  return json({ ok: true });
 }
 
-async function changePassword(req: Request, actorId: string): Promise<Response> {
+async function changePassword(req: Request, actor: TokenPayload): Promise<Response> {
+  const actorId = actor.sub;
   const { currentPassword, newPassword } = (await req.json().catch(() => ({}))) as {
     currentPassword?: string;
     newPassword?: string;
@@ -248,16 +303,31 @@ async function changePassword(req: Request, actorId: string): Promise<Response> 
     return json({ error: 'Your current password is incorrect' }, 400);
   }
   await setPassword(actorId, newPassword);
+  await recordAudit({
+    req,
+    actor,
+    action: 'auth.password.changed',
+    severity: 'warning',
+    target: { type: 'user', id: actorId, label: actor.email },
+  });
   return json({ ok: true });
 }
 
-async function setUserPassword(id: string, req: Request): Promise<Response> {
+async function setUserPassword(id: string, req: Request, actor: TokenPayload): Promise<Response> {
   const { password } = (await req.json().catch(() => ({}))) as { password?: string };
   if (!password || password.length < 8) {
     return json({ error: 'Password must be at least 8 characters' }, 400);
   }
   const ok = await setPassword(id, password);
-  return ok ? json({ ok: true }) : json({ error: 'User not found' }, 404);
+  if (!ok) return json({ error: 'User not found' }, 404);
+  await recordAudit({
+    req,
+    actor,
+    action: 'team.user.password_reset',
+    severity: 'warning',
+    target: { type: 'user', id, label: null },
+  });
+  return json({ ok: true });
 }
 
 async function forgot(req: Request): Promise<Response> {
@@ -279,6 +349,12 @@ async function forgot(req: Request): Promise<Response> {
     } catch (e) {
       console.error('forgot-password email error', e);
     }
+    await recordAudit({
+      req,
+      actor: null,
+      action: 'auth.password.reset_requested',
+      target: { type: 'user', id: user.id, label: user.email },
+    });
   }
   return json({ ok: true });
 }
@@ -294,5 +370,12 @@ async function reset(req: Request): Promise<Response> {
   const userId = await consumeResetToken(token);
   if (!userId) return json({ error: 'This reset link is invalid or has expired' }, 400);
   await setPassword(userId, password);
+  await recordAudit({
+    req,
+    actor: null,
+    action: 'auth.password.reset_completed',
+    severity: 'warning',
+    target: { type: 'user', id: userId, label: null },
+  });
   return json({ ok: true });
 }
