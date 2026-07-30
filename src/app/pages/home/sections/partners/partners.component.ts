@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, afterNextRender, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { CURRENT_PARTNERS } from '../../../../config/sponsor.config';
+import { PartnersService } from '../../../../shared/partners.service';
+import { partnerLogoSrc } from '../../../../config/sponsor.config';
 
 interface Tier {
   mark: string;
@@ -26,10 +27,35 @@ interface CategoryPill {
           <p>
             Each year a small number of brands are invited to partner with A Night
             of Angels — woven into the room rather than placed beside it.
-            Sponsorship spans four tiers, and a few select categories remain open
-            for the coming edition.
+            Sponsorship spans several tiers, and a few select categories remain
+            open for the coming edition.
           </p>
         </div>
+
+        @if (titleSponsor(); as t) {
+          <div class="title-sponsor">
+            <span class="title-sponsor__label">Title Sponsor</span>
+            @if (t.url) {
+              <a
+                class="title-sponsor__logo"
+                [href]="t.url"
+                target="_blank"
+                rel="noopener"
+                [attr.aria-label]="t.name + ' — visit website'"
+              >
+                <img [src]="src(t.logo)" [alt]="t.name" loading="lazy" />
+              </a>
+            } @else {
+              <span class="title-sponsor__logo">
+                <img [src]="src(t.logo)" [alt]="t.name" loading="lazy" />
+              </span>
+            }
+            <p class="title-sponsor__role">{{ t.role }}</p>
+            <p class="title-sponsor__thanks">
+              With gratitude to {{ t.name }} for helping make the evening unforgettable.
+            </p>
+          </div>
+        }
 
         <div class="tiers">
           @for (tier of tiers; track tier.name) {
@@ -47,19 +73,30 @@ interface CategoryPill {
           }
         </div>
 
-        <div class="partners__current">
-          <span class="partners__current-label">In good company</span>
-          <div class="partners__logos">
-            @for (p of partners; track p.name) {
-              <img [src]="p.logo" [alt]="p.name" loading="lazy" />
-            }
+        @if (supporting().length) {
+          <div class="partners__current">
+            <span class="partners__current-label">In good company</span>
+            <div class="partners__logos">
+              @for (p of supporting(); track p.id) {
+                @if (p.url) {
+                  <a
+                    [href]="p.url"
+                    target="_blank"
+                    rel="noopener"
+                    [attr.aria-label]="p.name + ' — visit website'"
+                  >
+                    <img [src]="src(p.logo)" [alt]="p.name" loading="lazy" />
+                  </a>
+                } @else {
+                  <img [src]="src(p.logo)" [alt]="p.name" loading="lazy" />
+                }
+              }
+            </div>
           </div>
-        </div>
+        }
 
         <div class="partners__cta">
-          <a routerLink="/sponsor" class="btn btn--ink"
-            >View Sponsorship Packages</a
-          >
+          <a routerLink="/sponsor" class="btn btn--ink">View Sponsorship Packages</a>
         </div>
       </div>
     </section>
@@ -67,7 +104,15 @@ interface CategoryPill {
   styleUrl: './partners.component.scss',
 })
 export class PartnersComponent {
-  partners = CURRENT_PARTNERS;
+  private partnersSvc = inject(PartnersService);
+
+  readonly titleSponsor = this.partnersSvc.titleSponsor;
+  readonly supporting = this.partnersSvc.supporting;
+  src = partnerLogoSrc;
+
+  constructor() {
+    afterNextRender(() => this.partnersSvc.load());
+  }
 
   tiers: Tier[] = [
     {
@@ -91,8 +136,7 @@ export class PartnersComponent {
   ];
 
   pills: CategoryPill[] = [
-    { label: 'Official Beverage Partner — Available', open: true },
-    { label: 'Title Sponsor — Available', open: true },
+    { label: 'Banking & Financial Services — Available', open: true },
     { label: 'Décor & Florals — In Conversation', open: false },
     { label: 'Photography Partner — In Conversation', open: false },
   ];

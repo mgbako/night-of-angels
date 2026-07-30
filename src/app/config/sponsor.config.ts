@@ -27,11 +27,23 @@ export interface Category {
   note?: string;
 }
 
+export type PartnerTier = 'title' | 'platinum' | 'gold' | 'partner';
+
+/** Resolve a stored logo value to a usable src (absolute path, URL or data URI). */
+export function partnerLogoSrc(logo: string): string {
+  if (/^(https?:)?\/\//.test(logo) || logo.startsWith('/') || logo.startsWith('data:')) {
+    return logo;
+  }
+  return '/' + logo.replace(/^\/+/, '');
+}
+
 export interface Partner {
+  id: string;
   name: string;
   logo: string;
   role: string;
   url?: string;
+  tier: PartnerTier;
 }
 
 export interface ImpactPoint {
@@ -115,25 +127,43 @@ export const SPONSOR_TIERS: SponsorTier[] = [
 ];
 
 export const SPONSOR_CATEGORIES: Category[] = [
+  { label: 'Title Sponsor', status: 'confirmed', note: 'AfriChange' },
   { label: 'Official Wine Partner', status: 'confirmed', note: 'DECLAN de España' },
   { label: 'Official Beverage Partner', status: 'confirmed', note: 'Nigerian Breweries' },
-  { label: 'Title Sponsor', status: 'available' },
   { label: 'Banking & Financial Services', status: 'available' },
   { label: 'Décor & Florals', status: 'talking' },
   { label: 'Photography & Film', status: 'talking' },
 ];
 
-// Confirmed partners — social proof. Replace logos in /public/partners.
-export const CURRENT_PARTNERS: Partner[] = [
+/**
+ * Confirmed partners — the seed/prerender defaults. At runtime the live list is
+ * loaded from /api/partners (managed in the back office); this is what renders
+ * during static prerender and as an offline fallback. Keep in sync with the
+ * server seed in netlify/shared/partners.ts.
+ */
+export const DEFAULT_PARTNERS: Partner[] = [
   {
+    id: 'africhange',
+    name: 'AfriChange',
+    logo: 'partners/africhange.png',
+    role: 'Title Sponsor & Official Payment Partner',
+    url: 'https://www.africhange.com',
+    tier: 'title',
+  },
+  {
+    id: 'nigerian-breweries',
     name: 'Nigerian Breweries',
     logo: 'partners/nigerian-breweries.svg',
     role: 'Official Beverage Partner',
+    url: 'https://nbplc.com',
+    tier: 'gold',
   },
   {
+    id: 'declan',
     name: 'DECLAN de España',
     logo: 'partners/declan.svg',
     role: 'Official Wine Partner',
+    tier: 'gold',
   },
 ];
 

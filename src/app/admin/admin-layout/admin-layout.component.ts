@@ -147,6 +147,7 @@ export class AdminLayoutComponent {
     { path: '/admin/tickets', label: 'Tickets', icon: 'ticket', exact: false, perm: 'tickets' },
     { path: '/admin/tables', label: 'Tables', icon: 'tables', exact: false, perm: 'attendees' },
     { path: '/admin/promote', label: 'Promote', icon: 'qr', exact: false, perm: 'reservations' },
+    { path: '/admin/partners', label: 'Sponsors', icon: 'sponsor', exact: false, perm: 'sponsors' },
     { path: '/admin/team', label: 'Team', icon: 'shield', exact: false, perm: 'team' },
     { path: '/admin/settings', label: 'Settings', icon: 'settings', exact: false, perm: 'settings' },
   ];
@@ -164,6 +165,7 @@ export class AdminLayoutComponent {
     '/admin/tickets': 'Ticketing',
     '/admin/tables': 'Tables',
     '/admin/promote': 'Promote & Share',
+    '/admin/partners': 'Sponsors',
     '/admin/team': 'Team',
     '/admin/settings': 'Settings',
     '/admin/account': 'Account',

@@ -73,6 +73,13 @@ export const ADMIN_ROUTES: Routes = [
         title: 'Promote — Back Office',
       },
       {
+        path: 'partners',
+        canActivate: [permissionGuard('sponsors')],
+        loadComponent: () =>
+          import('./pages/partners/partners.component').then((m) => m.PartnersAdminComponent),
+        title: 'Sponsors — Back Office',
+      },
+      {
         path: 'team',
         canActivate: [permissionGuard('team')],
         loadComponent: () =>

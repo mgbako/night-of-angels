@@ -3,6 +3,7 @@ import {
   Inject,
   OnInit,
   PLATFORM_ID,
+  afterNextRender,
   inject,
   signal,
 } from '@angular/core';
@@ -11,13 +12,14 @@ import { CrestComponent } from '../../shared/crest/crest.component';
 import { RevealDirective } from '../../shared/reveal.directive';
 import { PARTNERSHIPS_EMAIL } from '../../config/event.config';
 import { SeoService } from '../../shared/seo.service';
+import { PartnersService } from '../../shared/partners.service';
 import {
-  CURRENT_PARTNERS,
   IMPACT_POINTS,
   SPONSOR_CATEGORIES,
   SPONSOR_DEADLINE,
   SPONSOR_STATS,
   SPONSOR_TIERS,
+  partnerLogoSrc,
 } from '../../config/sponsor.config';
 
 type FormStatus = 'idle' | 'sending' | 'sent' | 'error';
@@ -77,9 +79,23 @@ type FormStatus = 'idle' | 'sending' | 'sent' | 'error';
             <p>Proudly supported by brands who believe in the evening.</p>
           </div>
           <div class="partners-wall">
-            @for (p of partners; track p.name) {
-              <figure class="partner">
-                <img [src]="p.logo" [alt]="p.name" loading="lazy" />
+            @for (p of partners(); track p.id) {
+              <figure class="partner" [class.partner--title]="p.tier === 'title'">
+                @if (p.tier === 'title') {
+                  <span class="partner__flag">Title Sponsor</span>
+                }
+                @if (p.url) {
+                  <a
+                    [href]="p.url"
+                    target="_blank"
+                    rel="noopener"
+                    [attr.aria-label]="p.name + ' — visit website'"
+                  >
+                    <img [src]="src(p.logo)" [alt]="p.name" loading="lazy" />
+                  </a>
+                } @else {
+                  <img [src]="src(p.logo)" [alt]="p.name" loading="lazy" />
+                }
                 <figcaption>{{ p.role }}</figcaption>
               </figure>
             }
@@ -261,9 +277,11 @@ type FormStatus = 'idle' | 'sending' | 'sent' | 'error';
 export class SponsorPageComponent implements OnInit {
   private isBrowser: boolean;
   private seo = inject(SeoService);
+  private partnersSvc = inject(PartnersService);
 
   constructor(@Inject(PLATFORM_ID) platformId: object) {
     this.isBrowser = isPlatformBrowser(platformId);
+    afterNextRender(() => this.partnersSvc.load());
   }
 
   ngOnInit(): void {
@@ -280,7 +298,8 @@ export class SponsorPageComponent implements OnInit {
   readonly stats = SPONSOR_STATS;
   readonly tiers = SPONSOR_TIERS;
   readonly categories = SPONSOR_CATEGORIES;
-  readonly partners = CURRENT_PARTNERS;
+  readonly partners = this.partnersSvc.partners;
+  src = partnerLogoSrc;
   readonly impact = IMPACT_POINTS;
   readonly deadline = SPONSOR_DEADLINE;
   readonly partnershipsEmail = PARTNERSHIPS_EMAIL;

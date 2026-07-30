@@ -125,6 +125,41 @@
     text-transform: uppercase;
     color: #9a7d1f;
   }
+
+  a {
+    display: inline-flex;
+    transition: transform 0.3s ease;
+  }
+  a:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* Title sponsor — highlighted within the wall */
+.partner--title {
+  position: relative;
+  grid-column: 1 / -1;
+  border-color: rgba(94, 53, 217, 0.28);
+  border-top: 3px solid #5e35d9;
+  box-shadow: 0 20px 46px -26px rgba(63, 36, 145, 0.55);
+
+  img {
+    height: 88px;
+  }
+  figcaption {
+    color: #5e35d9;
+    font-weight: 600;
+  }
+}
+.partner__flag {
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #fff;
+  background: #5e35d9;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
 }
 
 /* ---------- Tiers ---------- */

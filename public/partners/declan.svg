@@ -1,10 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 130" width="260" height="130" role="img" aria-label="DECLAN de España">
-  <g fill="none" stroke="#23201a" stroke-width="2">
-    <!-- interlocked D / monogram seal -->
-    <circle cx="130" cy="30" r="20"/>
-    <path d="M122 20 v20 h6 a10 10 0 0 0 0 -20 z"/>
-    <path d="M132 20 v20 h6 a10 10 0 0 0 0 -20 z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 160" width="300" height="160" role="img" aria-label="DECLAN — Full of Goodness">
+  <defs>
+    <linearGradient id="declanGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e7c976"/>
+      <stop offset="0.5" stop-color="#c39a3e"/>
+      <stop offset="1" stop-color="#9c7420"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Interlocked DD monogram -->
+  <g fill="none" stroke="url(#declanGold)" stroke-width="7">
+    <path d="M150 26 v56 h14 a28 28 0 0 0 0 -56 z"/>
+    <path d="M150 26 v56 h-14 a28 28 0 0 1 0 -56 z"/>
   </g>
-  <text x="130" y="86" text-anchor="middle" font-family="Georgia, 'Cormorant Garamond', serif" font-weight="600" font-size="34" letter-spacing="3" fill="#23201a">DECLAN</text>
-  <text x="130" y="108" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="16" letter-spacing="1" fill="#9a7d1f">de España</text>
+  <!-- little serif flourish over the monogram -->
+  <path d="M139 22 q11 -10 22 0" fill="none" stroke="url(#declanGold)" stroke-width="2.4" stroke-linecap="round"/>
+
+  <!-- Wordmark -->
+  <text x="150" y="128" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="46" letter-spacing="4" fill="#1a1613">DECLAN</text>
+  <!-- Tagline -->
+  <text x="150" y="150" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="14" letter-spacing="2.5" fill="#8a1c1c">FULL OF GOODNESS!</text>
 </svg>

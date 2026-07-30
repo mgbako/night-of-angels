@@ -25,6 +25,7 @@ export type IconName =
   | 'external'
   | 'settings'
   | 'tables'
+  | 'sponsor'
   | 'qr';
 
 /**
@@ -144,6 +145,11 @@ export type IconName =
           <circle cx="16.5" cy="7.5" r="3.5" />
           <circle cx="7.5" cy="16.5" r="3.5" />
           <circle cx="16.5" cy="16.5" r="3.5" />
+        }
+        @case ('sponsor') {
+          <circle cx="12" cy="9" r="5.5" />
+          <path d="M9.5 9l1.7 1.7L15 7.4" />
+          <path d="M8.5 13.5L7 21l5-2.4L17 21l-1.5-7.5" />
         }
         @case ('qr') {
           <rect x="3" y="3" width="7" height="7" rx="1" />
