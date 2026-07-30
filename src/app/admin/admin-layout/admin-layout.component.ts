@@ -150,6 +150,7 @@ export class AdminLayoutComponent {
     { path: '/admin/partners', label: 'Sponsors', icon: 'sponsor', exact: false, perm: 'sponsors' },
     { path: '/admin/team', label: 'Team', icon: 'shield', exact: false, perm: 'team' },
     { path: '/admin/settings', label: 'Settings', icon: 'settings', exact: false, perm: 'settings' },
+    { path: '/admin/audit', label: 'Audit Log', icon: 'audit', exact: false, perm: 'audit' },
   ];
 
   /** Only the modules the signed-in user's role can open. */
@@ -168,6 +169,7 @@ export class AdminLayoutComponent {
     '/admin/partners': 'Sponsors',
     '/admin/team': 'Team',
     '/admin/settings': 'Settings',
+    '/admin/audit': 'Audit Log',
     '/admin/account': 'Account',
   };
 

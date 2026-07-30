@@ -72,12 +72,15 @@ export default async (req: Request, _ctx: Context): Promise<Response> => {
       if (ev && matches(ev, filters)) events.push(ev);
     }
 
-    await recordAudit({
-      req,
-      actor,
-      action: 'audit.viewed',
-      metadata: { ...filters, returned: events.length },
-    });
+    // Log the view once per fresh query, not on each "load more" page.
+    if (!cursor) {
+      await recordAudit({
+        req,
+        actor,
+        action: 'audit.viewed',
+        metadata: { ...filters, returned: events.length },
+      });
+    }
 
     return json({ events, cursor: events.length === limit ? next : null });
   } catch (err) {

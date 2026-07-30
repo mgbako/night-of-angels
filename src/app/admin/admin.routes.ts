@@ -94,6 +94,13 @@ export const ADMIN_ROUTES: Routes = [
         title: 'Settings — Back Office',
       },
       {
+        path: 'audit',
+        canActivate: [permissionGuard('audit')],
+        loadComponent: () =>
+          import('./pages/audit/audit.component').then((m) => m.AuditComponent),
+        title: 'Audit Log — Back Office',
+      },
+      {
         path: 'account',
         loadComponent: () =>
           import('./pages/account/account.component').then((m) => m.AccountComponent),

@@ -26,6 +26,7 @@ export type IconName =
   | 'settings'
   | 'tables'
   | 'sponsor'
+  | 'audit'
   | 'qr';
 
 /**
@@ -150,6 +151,11 @@ export type IconName =
           <circle cx="12" cy="9" r="5.5" />
           <path d="M9.5 9l1.7 1.7L15 7.4" />
           <path d="M8.5 13.5L7 21l5-2.4L17 21l-1.5-7.5" />
+        }
+        @case ('audit') {
+          <path d="M8 3h6l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+          <path d="M14 3v4h4" />
+          <path d="M9 12h6M9 15h6M9 18h3" />
         }
         @case ('qr') {
           <rect x="3" y="3" width="7" height="7" rx="1" />
