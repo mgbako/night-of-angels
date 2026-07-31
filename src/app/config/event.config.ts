@@ -3,6 +3,15 @@
  * Everything here is a PLACEHOLDER.
  */
 
+// Canonical event naming + attribution, reused across the site, poster,
+// emails and metadata so the wording stays consistent everywhere.
+export const EVENT_NAME = 'A Night of Angels';
+export const EVENT_EDITION = 'Harvest Dinner 2026';
+export const EVENT_ORGANIZER = 'Saints Peter and Paul Catholic Church, Oke-Afa';
+export const EVENT_ORGANIZER_SHORT = 'Saints Peter & Paul Catholic Church, Oke-Afa';
+/** Full attribution line, e.g. for footers and metadata. */
+export const EVENT_BYLINE = `${EVENT_NAME} · ${EVENT_EDITION} · by ${EVENT_ORGANIZER}`;
+
 // PLACEHOLDER event date — swap in the real date once announced.
 // Format: YYYY-MM-DDTHH:MM:SS (local time).
 export const EVENT_DATE = new Date('2026-10-24T17:00:00');

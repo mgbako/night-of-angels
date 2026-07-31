@@ -8,7 +8,11 @@ import {
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminIconComponent } from '../../shared/admin-icon.component';
-import { EVENT_DATE, EVENT_ARRIVAL_NOTE } from '../../../config/event.config';
+import {
+  EVENT_ARRIVAL_NOTE,
+  EVENT_DATE,
+  EVENT_ORGANIZER_SHORT,
+} from '../../../config/event.config';
 import {
   TICKET_TYPES,
   TicketType,
@@ -308,11 +312,19 @@ export class PromoteComponent {
       ctx.drawImage(logo, (W - s) / 2, 92, s, s);
     }
 
-    // Title + subtitle.
+    // Title + subtitle + organiser attribution.
     ctx.fillStyle = gold;
-    this.text(ctx, 'A NIGHT OF ANGELS', W / 2, 372, '600 62px "Cormorant Garamond", Georgia, serif', 2);
+    this.text(ctx, 'A NIGHT OF ANGELS', W / 2, 366, '600 62px "Cormorant Garamond", Georgia, serif', 2);
     ctx.fillStyle = soft;
-    this.text(ctx, 'HARVEST DINNER 2026', W / 2, 420, '500 24px Jost, Arial, sans-serif', 6);
+    this.text(ctx, 'HARVEST DINNER 2026', W / 2, 412, '500 24px Jost, Arial, sans-serif', 6);
+    this.text(
+      ctx,
+      EVENT_ORGANIZER_SHORT.toUpperCase(),
+      W / 2,
+      444,
+      '500 18px Jost, Arial, sans-serif',
+      2,
+    );
 
     // Body: either a general reserve call, or a specific ticket tier.
     const kind = this.kind();

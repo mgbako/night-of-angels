@@ -51,6 +51,11 @@
   font-size: 0.9rem;
   max-width: 36ch;
 }
+.footer__byline {
+  color: var(--gold-soft);
+  font-size: 0.82rem !important;
+  margin-top: 0.6rem;
+}
 .footer h4 {
   font-family: var(--body);
   font-weight: 500;

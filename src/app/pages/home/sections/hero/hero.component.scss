@@ -102,7 +102,14 @@
   font-weight: 500;
   font-size: clamp(1.25rem, 3.4vw, 1.9rem);
   color: var(--gold-soft);
-  margin: 0 0 1.6rem;
+  margin: 0 0 0.8rem;
+}
+.byline {
+  font-size: clamp(0.72rem, 1.9vw, 0.84rem);
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  margin: 0 auto 1.6rem;
+  max-width: 34rem;
 }
 .meta {
   font-size: 0.78rem;

@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LogoComponent } from '../../shared/logo/logo.component';
 import {
+  EVENT_EDITION,
+  EVENT_ORGANIZER,
   INSTAGRAM_HANDLE,
   INSTAGRAM_URL,
   PARTNERSHIPS_EMAIL,
@@ -38,6 +40,7 @@ import {
               An all-white luxury dinner experience in Lagos, Nigeria. By
               invitation and ticket.
             </p>
+            <p class="footer__byline">{{ edition }} · by {{ organizer }}.</p>
           </div>
 
           <div>
@@ -70,7 +73,8 @@ import {
         </div>
 
         <p class="copyright">
-          © 2026 A Night of Angels · Lagos, Nigeria · All Rights Reserved
+          © 2026 A Night of Angels · Harvest Dinner 2026 · Saints Peter and Paul
+          Catholic Church, Oke-Afa · Lagos, Nigeria · All Rights Reserved
         </p>
       </div>
     </section>
@@ -78,6 +82,8 @@ import {
   styleUrl: './rsvp-footer.component.scss',
 })
 export class RsvpFooterComponent {
+  edition = EVENT_EDITION;
+  organizer = EVENT_ORGANIZER;
   rsvpEmail = RSVP_EMAIL;
   partnershipsEmail = PARTNERSHIPS_EMAIL;
   phoneDisplay = PHONE_DISPLAY;

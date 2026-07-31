@@ -7,7 +7,11 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { LogoComponent } from '../../../../shared/logo/logo.component';
-import { EVENT_DATE } from '../../../../config/event.config';
+import {
+  EVENT_DATE,
+  EVENT_EDITION,
+  EVENT_ORGANIZER_SHORT,
+} from '../../../../config/event.config';
 
 interface CountdownView {
   days: string;
@@ -32,6 +36,7 @@ interface CountdownView {
         <app-logo [size]="150" class="hero__logo" />
         <h1>A Night of Angels</h1>
         <p class="tagline">An All-White Luxury Dinner Experience</p>
+        <p class="byline">{{ edition }} · by {{ organizer }}</p>
         <p class="meta">
           <b>Lagos, Nigeria</b> · October 2026 · By Invitation &amp; Ticket
         </p>
@@ -83,6 +88,9 @@ export class HeroComponent implements OnInit, OnDestroy {
       minute: '2-digit',
       hour12: true,
     }).toUpperCase();
+
+  readonly edition = EVENT_EDITION;
+  readonly organizer = EVENT_ORGANIZER_SHORT;
 
   loaded = signal(false);
   cd = signal<CountdownView>({ days: '00', hours: '00', mins: '00', secs: '00' });
