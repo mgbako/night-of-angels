@@ -2,7 +2,7 @@ import type { Context } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { randomUUID } from 'node:crypto';
 import { AuthError, TokenPayload, requireOwner, requirePermission } from '../shared/auth';
-import { addAttendee, TicketType } from '../shared/attendees';
+import { addAttendee, DrinkPreference, Gender, SpecificDrink, TicketType } from '../shared/attendees';
 import { readSettings, reservationsOpen } from '../shared/settings';
 import { recordAudit } from '../shared/audit';
 
@@ -32,9 +32,15 @@ interface Reservation {
   phone: string;
   email: string;
   ticketType: TicketType;
+  gender?: Gender;
+  drinkPreference?: DrinkPreference;
+  specificDrink?: SpecificDrink;
   partnerName?: string;
   partnerPhone?: string;
   partnerEmail?: string;
+  partnerGender?: Gender;
+  partnerDrinkPreference?: DrinkPreference;
+  partnerSpecificDrink?: SpecificDrink;
   proofKey: string;
   proofType: string;
   proofName: string;
@@ -50,6 +56,18 @@ const PROOF_STORE = 'proofs';
 const MAX_BYTES = 4 * 1024 * 1024; // 4 MB
 const ALLOWED = ['image/jpeg', 'image/png', 'application/pdf'];
 const TICKET_TYPES: TicketType[] = ['SINGLES', 'COUPLES', 'TABLE'];
+const GENDERS: Gender[] = ['MALE', 'FEMALE'];
+const DRINK_PREFERENCES: DrinkPreference[] = ['ALCOHOLIC_WINE', 'NON_ALCOHOLIC_WINE'];
+const SPECIFIC_DRINKS: SpecificDrink[] = [
+  'SMIRNOFF',
+  'STAR_RADLER',
+  'MALT',
+  'HEINEKEN',
+  'STOUT',
+  'TROPHY',
+  'BOTTLE_WATER',
+  'KUMELIN',
+];
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -142,9 +160,15 @@ async function create(req: Request): Promise<Response> {
     phone?: string;
     email?: string;
     ticketType?: TicketType;
+    gender?: Gender;
+    drinkPreference?: DrinkPreference;
+    specificDrink?: SpecificDrink;
     partnerName?: string;
     partnerPhone?: string;
     partnerEmail?: string;
+    partnerGender?: Gender;
+    partnerDrinkPreference?: DrinkPreference;
+    partnerSpecificDrink?: SpecificDrink;
     proof?: { name?: string; type?: string; dataBase64?: string };
   } | null;
 
@@ -156,6 +180,15 @@ async function create(req: Request): Promise<Response> {
   }
   if (!body.ticketType || !TICKET_TYPES.includes(body.ticketType)) {
     return json({ error: 'A valid ticket type is required' }, 400);
+  }
+  if (!body.gender || !GENDERS.includes(body.gender)) {
+    return json({ error: 'A valid gender is required' }, 400);
+  }
+  if (!body.drinkPreference || !DRINK_PREFERENCES.includes(body.drinkPreference)) {
+    return json({ error: 'A valid drink preference is required' }, 400);
+  }
+  if (!body.specificDrink || !SPECIFIC_DRINKS.includes(body.specificDrink)) {
+    return json({ error: 'A valid preferred drink is required' }, 400);
   }
   const proof = body.proof;
   if (!proof?.dataBase64 || !proof.type) {
@@ -180,6 +213,17 @@ async function create(req: Request): Promise<Response> {
   const partnerName = isCouples ? (body.partnerName ?? '').trim() : '';
   const partnerPhone = isCouples ? (body.partnerPhone ?? '').trim() : '';
   const partnerEmail = isCouples ? (body.partnerEmail ?? '').trim() : '';
+  const partnerGender = isCouples && body.partnerGender && GENDERS.includes(body.partnerGender)
+    ? body.partnerGender
+    : undefined;
+  const partnerDrinkPreference =
+    isCouples && body.partnerDrinkPreference && DRINK_PREFERENCES.includes(body.partnerDrinkPreference)
+      ? body.partnerDrinkPreference
+      : undefined;
+  const partnerSpecificDrink =
+    isCouples && body.partnerSpecificDrink && SPECIFIC_DRINKS.includes(body.partnerSpecificDrink)
+      ? body.partnerSpecificDrink
+      : undefined;
 
   const reservation: Reservation = {
     id: randomUUID(),
@@ -187,9 +231,15 @@ async function create(req: Request): Promise<Response> {
     phone: String(body.phone).trim(),
     email: (body.email ?? '').trim(),
     ticketType: body.ticketType,
+    gender: body.gender,
+    drinkPreference: body.drinkPreference,
+    specificDrink: body.specificDrink,
     ...(partnerName ? { partnerName } : {}),
     ...(partnerPhone ? { partnerPhone } : {}),
     ...(partnerEmail ? { partnerEmail } : {}),
+    ...(partnerGender ? { partnerGender } : {}),
+    ...(partnerDrinkPreference ? { partnerDrinkPreference } : {}),
+    ...(partnerSpecificDrink ? { partnerSpecificDrink } : {}),
     proofKey,
     proofType: proof.type,
     proofName: proof.name ?? 'proof',
@@ -240,6 +290,12 @@ async function approve(id: string, req: Request, actor: TokenPayload): Promise<R
       email: reservation.email,
       phone: reservation.phone,
       ticketType,
+      gender: reservation.gender,
+      drinkPreference: reservation.drinkPreference,
+      specificDrink: reservation.specificDrink,
+      partnerGender: reservation.partnerGender,
+      partnerDrinkPreference: reservation.partnerDrinkPreference,
+      partnerSpecificDrink: reservation.partnerSpecificDrink,
     });
   } catch (e) {
     if (e instanceof Error && e.message === 'DUP_EMAIL') {

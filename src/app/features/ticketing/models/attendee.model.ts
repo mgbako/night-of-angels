@@ -5,6 +5,54 @@
 
 export type TicketType = 'SINGLES' | 'COUPLES' | 'TABLE';
 
+export type Gender = 'MALE' | 'FEMALE';
+
+export const GENDERS: { value: Gender; label: string }[] = [
+  { value: 'MALE', label: 'Male' },
+  { value: 'FEMALE', label: 'Female' },
+];
+
+export function genderLabel(g?: Gender | null): string {
+  return GENDERS.find((x) => x.value === g)?.label ?? '—';
+}
+
+export type DrinkPreference = 'ALCOHOLIC_WINE' | 'NON_ALCOHOLIC_WINE';
+
+export const DRINK_PREFERENCES: { value: DrinkPreference; label: string }[] = [
+  { value: 'ALCOHOLIC_WINE', label: 'Alcoholic Wine' },
+  { value: 'NON_ALCOHOLIC_WINE', label: 'Non-Alcoholic Wine' },
+];
+
+export function drinkLabel(d?: DrinkPreference | null): string {
+  return DRINK_PREFERENCES.find((x) => x.value === d)?.label ?? '—';
+}
+
+/** Specific drink options from the bar stock, for guests who want to pick a brand. */
+export type SpecificDrink =
+  | 'SMIRNOFF'
+  | 'STAR_RADLER'
+  | 'MALT'
+  | 'HEINEKEN'
+  | 'STOUT'
+  | 'TROPHY'
+  | 'BOTTLE_WATER'
+  | 'KUMELIN';
+
+export const SPECIFIC_DRINKS: { value: SpecificDrink; label: string }[] = [
+  { value: 'SMIRNOFF', label: 'Smirnoff' },
+  { value: 'STAR_RADLER', label: 'Star Radler' },
+  { value: 'MALT', label: 'Malt' },
+  { value: 'HEINEKEN', label: 'Heineken' },
+  { value: 'STOUT', label: 'Stout' },
+  { value: 'TROPHY', label: 'Trophy' },
+  { value: 'BOTTLE_WATER', label: 'Bottle Water' },
+  { value: 'KUMELIN', label: 'Kumelin' },
+];
+
+export function specificDrinkLabel(d?: SpecificDrink | null): string {
+  return SPECIFIC_DRINKS.find((x) => x.value === d)?.label ?? '—';
+}
+
 export interface TicketTypeMeta {
   value: TicketType;
   label: string;
@@ -88,6 +136,13 @@ export interface Attendee {
   createdAt: string; // ISO
   tableNumber?: string; // organizer-assigned table
   deletedAt?: string | null; // set when archived (soft-deleted)
+  gender?: Gender;
+  drinkPreference?: DrinkPreference;
+  specificDrink?: SpecificDrink;
+  /** Second guest's preferences — Couples tickets only. */
+  partnerGender?: Gender;
+  partnerDrinkPreference?: DrinkPreference;
+  partnerSpecificDrink?: SpecificDrink;
 }
 
 export interface RegisterDto {
@@ -96,4 +151,7 @@ export interface RegisterDto {
   phone: string;
   ticketType: TicketType;
   tableNumber?: string;
+  gender: Gender;
+  drinkPreference: DrinkPreference;
+  specificDrink: SpecificDrink;
 }

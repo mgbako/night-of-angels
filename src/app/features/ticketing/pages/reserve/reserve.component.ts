@@ -13,6 +13,12 @@ import { SeoService } from '../../../../shared/seo.service';
 import { ReservationApiService } from '../../services/reservation-api.service';
 import { ReservationDto } from '../../models/reservation.model';
 import {
+  DRINK_PREFERENCES,
+  DrinkPreference,
+  GENDERS,
+  Gender,
+  SPECIFIC_DRINKS,
+  SpecificDrink,
   TICKET_TYPES,
   TicketType,
   TicketTypeMeta,
@@ -100,6 +106,39 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
               @if (invalid('ticketType')) { <span class="err">Please choose a ticket type.</span> }
             </div>
 
+            <div class="rsv__field" [class.invalid]="invalid('gender')">
+              <label for="gender">Gender *</label>
+              <select id="gender" formControlName="gender">
+                <option value="" disabled>Select gender</option>
+                @for (g of genders; track g.value) {
+                  <option [value]="g.value">{{ g.label }}</option>
+                }
+              </select>
+              @if (invalid('gender')) { <span class="err">Please select a gender.</span> }
+            </div>
+
+            <div class="rsv__field" [class.invalid]="invalid('drinkPreference')">
+              <label for="drinkPreference">Drink preference *</label>
+              <select id="drinkPreference" formControlName="drinkPreference">
+                <option value="" disabled>Select a drink</option>
+                @for (d of drinkPreferences; track d.value) {
+                  <option [value]="d.value">{{ d.label }}</option>
+                }
+              </select>
+              @if (invalid('drinkPreference')) { <span class="err">Please select a drink preference.</span> }
+            </div>
+
+            <div class="rsv__field" [class.invalid]="invalid('specificDrink')">
+              <label for="specificDrink">Preferred drink *</label>
+              <select id="specificDrink" formControlName="specificDrink">
+                <option value="" disabled>Select a drink</option>
+                @for (d of specificDrinks; track d.value) {
+                  <option [value]="d.value">{{ d.label }}</option>
+                }
+              </select>
+              @if (invalid('specificDrink')) { <span class="err">Please select a preferred drink.</span> }
+            </div>
+
             @if (isCouples) {
               <div class="rsv__partner">
                 <span class="rsv__partner-title">
@@ -118,6 +157,33 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
                   <label for="partnerEmail">Partner’s email</label>
                   <input id="partnerEmail" type="email" formControlName="partnerEmail" autocomplete="email" />
                   @if (invalid('partnerEmail')) { <span class="err">Enter a valid email address.</span> }
+                </div>
+                <div class="rsv__field">
+                  <label for="partnerGender">Partner’s gender</label>
+                  <select id="partnerGender" formControlName="partnerGender">
+                    <option value="">Select gender</option>
+                    @for (g of genders; track g.value) {
+                      <option [value]="g.value">{{ g.label }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="rsv__field">
+                  <label for="partnerDrinkPreference">Partner’s drink preference</label>
+                  <select id="partnerDrinkPreference" formControlName="partnerDrinkPreference">
+                    <option value="">Select a drink</option>
+                    @for (d of drinkPreferences; track d.value) {
+                      <option [value]="d.value">{{ d.label }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="rsv__field">
+                  <label for="partnerSpecificDrink">Partner’s preferred drink</label>
+                  <select id="partnerSpecificDrink" formControlName="partnerSpecificDrink">
+                    <option value="">Select a drink</option>
+                    @for (d of specificDrinks; track d.value) {
+                      <option [value]="d.value">{{ d.label }}</option>
+                    }
+                  </select>
                 </div>
               </div>
             }
@@ -185,6 +251,9 @@ export class ReserveComponent implements OnInit {
   private seo = inject(SeoService);
 
   readonly ticketTypes = TICKET_TYPES;
+  readonly genders = GENDERS;
+  readonly drinkPreferences = DRINK_PREFERENCES;
+  readonly specificDrinks = SPECIFIC_DRINKS;
   readonly payment = PAYMENT;
 
   constructor() {
@@ -220,10 +289,16 @@ export class ReserveComponent implements OnInit {
     phone: ['', [Validators.required, phoneValidator]],
     email: ['', [Validators.email]],
     ticketType: ['' as TicketType | '', [Validators.required]],
+    gender: ['' as Gender | '', [Validators.required]],
+    drinkPreference: ['' as DrinkPreference | '', [Validators.required]],
+    specificDrink: ['' as SpecificDrink | '', [Validators.required]],
     // Second guest — only shown/collected for Couples, all optional.
     partnerName: [''],
     partnerPhone: ['', [phoneValidator]],
     partnerEmail: ['', [Validators.email]],
+    partnerGender: ['' as Gender | ''],
+    partnerDrinkPreference: ['' as DrinkPreference | ''],
+    partnerSpecificDrink: ['' as SpecificDrink | ''],
   });
 
   /** Whether the Couples ticket (and its optional second-guest fields) is selected. */
@@ -272,7 +347,14 @@ export class ReserveComponent implements OnInit {
     this.error.set(null);
     // Drop any second-guest input if the ticket isn't Couples (so hidden values can't block submit).
     if (!this.isCouples) {
-      this.form.patchValue({ partnerName: '', partnerPhone: '', partnerEmail: '' });
+      this.form.patchValue({
+        partnerName: '',
+        partnerPhone: '',
+        partnerEmail: '',
+        partnerGender: '',
+        partnerDrinkPreference: '',
+        partnerSpecificDrink: '',
+      });
     }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -284,13 +366,27 @@ export class ReserveComponent implements OnInit {
     }
     this.busy.set(true);
     try {
-      const { ticketType, partnerName, partnerPhone, partnerEmail, ...rest } =
-        this.form.getRawValue();
+      const {
+        ticketType,
+        gender,
+        drinkPreference,
+        specificDrink,
+        partnerName,
+        partnerPhone,
+        partnerEmail,
+        partnerGender,
+        partnerDrinkPreference,
+        partnerSpecificDrink,
+        ...rest
+      } = this.form.getRawValue();
       const dto: ReservationDto = {
         name: rest.name,
         phone: rest.phone,
         email: rest.email,
         ticketType: ticketType as TicketType,
+        gender: gender as Gender,
+        drinkPreference: drinkPreference as DrinkPreference,
+        specificDrink: specificDrink as SpecificDrink,
         proof: this.proof()!,
       };
       // Only send second-guest details for a Couples reservation, and only if provided.
@@ -298,6 +394,9 @@ export class ReserveComponent implements OnInit {
         if (partnerName.trim()) dto.partnerName = partnerName.trim();
         if (partnerPhone.trim()) dto.partnerPhone = partnerPhone.trim();
         if (partnerEmail.trim()) dto.partnerEmail = partnerEmail.trim();
+        if (partnerGender) dto.partnerGender = partnerGender as Gender;
+        if (partnerDrinkPreference) dto.partnerDrinkPreference = partnerDrinkPreference as DrinkPreference;
+        if (partnerSpecificDrink) dto.partnerSpecificDrink = partnerSpecificDrink as SpecificDrink;
       }
       await this.api.create(dto);
       this.submittedName.set(rest.name);

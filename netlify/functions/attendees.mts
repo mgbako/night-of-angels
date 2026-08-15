@@ -56,6 +56,29 @@ export const config = {
 };
 
 type TicketType = 'SINGLES' | 'COUPLES' | 'TABLE';
+type Gender = 'MALE' | 'FEMALE';
+type DrinkPreference = 'ALCOHOLIC_WINE' | 'NON_ALCOHOLIC_WINE';
+type SpecificDrink =
+  | 'SMIRNOFF'
+  | 'STAR_RADLER'
+  | 'MALT'
+  | 'HEINEKEN'
+  | 'STOUT'
+  | 'TROPHY'
+  | 'BOTTLE_WATER'
+  | 'KUMELIN';
+const GENDERS: Gender[] = ['MALE', 'FEMALE'];
+const DRINK_PREFERENCES: DrinkPreference[] = ['ALCOHOLIC_WINE', 'NON_ALCOHOLIC_WINE'];
+const SPECIFIC_DRINKS: SpecificDrink[] = [
+  'SMIRNOFF',
+  'STAR_RADLER',
+  'MALT',
+  'HEINEKEN',
+  'STOUT',
+  'TROPHY',
+  'BOTTLE_WATER',
+  'KUMELIN',
+];
 
 interface Attendee {
   id: string;
@@ -69,6 +92,12 @@ interface Attendee {
   createdAt: string;
   tableNumber?: string;
   deletedAt?: string | null;
+  gender?: Gender;
+  drinkPreference?: DrinkPreference;
+  specificDrink?: SpecificDrink;
+  partnerGender?: Gender;
+  partnerDrinkPreference?: DrinkPreference;
+  partnerSpecificDrink?: SpecificDrink;
 }
 
 const STORE = 'ticketing';
@@ -207,6 +236,15 @@ async function register(req: Request, actor: TokenPayload): Promise<Response> {
   if (!body?.name || !body?.phone || !body?.ticketType) {
     return json({ error: 'Missing required fields' }, 400);
   }
+  if (!body.gender || !GENDERS.includes(body.gender)) {
+    return json({ error: 'A valid gender is required' }, 400);
+  }
+  if (!body.drinkPreference || !DRINK_PREFERENCES.includes(body.drinkPreference)) {
+    return json({ error: 'A valid drink preference is required' }, 400);
+  }
+  if (!body.specificDrink || !SPECIFIC_DRINKS.includes(body.specificDrink)) {
+    return json({ error: 'A valid preferred drink is required' }, 400);
+  }
   const list = await readAll();
   // Email is optional. Only dedupe when one is supplied.
   const email = String(body.email ?? '').trim().toLowerCase();
@@ -231,6 +269,9 @@ async function register(req: Request, actor: TokenPayload): Promise<Response> {
     checkedInAt: null,
     createdAt: new Date().toISOString(),
     ...(tableNumber ? { tableNumber } : {}),
+    gender: body.gender,
+    drinkPreference: body.drinkPreference,
+    specificDrink: body.specificDrink,
   };
   await writeAll([attendee, ...list]);
   await recordAudit({

@@ -15,6 +15,12 @@ import {
 import { ticketShareUrl } from '../../../features/ticketing/share.util';
 import {
   Attendee,
+  DRINK_PREFERENCES,
+  DrinkPreference,
+  GENDERS,
+  Gender,
+  SPECIFIC_DRINKS,
+  SpecificDrink,
   TICKET_TYPES,
   TicketType,
   TicketTypeMeta,
@@ -105,6 +111,39 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
             </div>
           </div>
 
+          <div class="adm-field" [class.adm-field--invalid]="invalid('gender')">
+            <label for="r-gender">Gender</label>
+            <select id="r-gender" formControlName="gender">
+              <option value="" disabled>Select gender</option>
+              @for (g of genders; track g.value) {
+                <option [value]="g.value">{{ g.label }}</option>
+              }
+            </select>
+            @if (invalid('gender')) { <span class="adm-error">Please select a gender.</span> }
+          </div>
+
+          <div class="adm-field" [class.adm-field--invalid]="invalid('drinkPreference')">
+            <label for="r-drink">Drink preference</label>
+            <select id="r-drink" formControlName="drinkPreference">
+              <option value="" disabled>Select a drink</option>
+              @for (d of drinkPreferences; track d.value) {
+                <option [value]="d.value">{{ d.label }}</option>
+              }
+            </select>
+            @if (invalid('drinkPreference')) { <span class="adm-error">Please select a drink preference.</span> }
+          </div>
+
+          <div class="adm-field" [class.adm-field--invalid]="invalid('specificDrink')">
+            <label for="r-specific-drink">Preferred drink</label>
+            <select id="r-specific-drink" formControlName="specificDrink">
+              <option value="" disabled>Select a drink</option>
+              @for (d of specificDrinks; track d.value) {
+                <option [value]="d.value">{{ d.label }}</option>
+              }
+            </select>
+            @if (invalid('specificDrink')) { <span class="adm-error">Please select a preferred drink.</span> }
+          </div>
+
           <div class="adm-field">
             <label for="r-table">Table number <span style="opacity:.6">(optional)</span></label>
             <input id="r-table" type="text" formControlName="tableNumber" placeholder="e.g. 12 or VIP 3" />
@@ -156,6 +195,9 @@ export class RegisterComponent {
   private settings = inject(EventSettingsService);
 
   readonly ticketTypes = TICKET_TYPES;
+  readonly genders = GENDERS;
+  readonly drinkPreferences = DRINK_PREFERENCES;
+  readonly specificDrinks = SPECIFIC_DRINKS;
 
   constructor() {
     afterNextRender(() => this.settings.load());
@@ -178,6 +220,9 @@ export class RegisterComponent {
     phone: ['', [Validators.required, phoneValidator]],
     email: ['', [Validators.email]],
     ticketType: ['SINGLES' as TicketType, Validators.required],
+    gender: ['' as Gender | '', Validators.required],
+    drinkPreference: ['' as DrinkPreference | '', Validators.required],
+    specificDrink: ['' as SpecificDrink | '', Validators.required],
     tableNumber: [''],
   });
 
@@ -194,7 +239,13 @@ export class RegisterComponent {
     }
     this.submitting.set(true);
     try {
-      const attendee = await this.api.register(this.form.getRawValue());
+      const raw = this.form.getRawValue();
+      const attendee = await this.api.register({
+        ...raw,
+        gender: raw.gender as Gender,
+        specificDrink: raw.specificDrink as SpecificDrink,
+        drinkPreference: raw.drinkPreference as DrinkPreference,
+      });
       this.created.set(attendee);
     } catch (e) {
       this.error.set(
@@ -231,6 +282,15 @@ export class RegisterComponent {
   reset(): void {
     this.created.set(null);
     this.error.set(null);
-    this.form.reset({ name: '', phone: '', email: '', ticketType: 'SINGLES', tableNumber: '' });
+    this.form.reset({
+      name: '',
+      phone: '',
+      email: '',
+      ticketType: 'SINGLES',
+      gender: '',
+      drinkPreference: '',
+      specificDrink: '',
+      tableNumber: '',
+    });
   }
 }

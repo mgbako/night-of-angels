@@ -19,7 +19,10 @@ import {
   TABLE_CAPACITY,
   TICKET_TYPES,
   TicketType,
+  drinkLabel,
+  genderLabel,
   seatsFor,
+  specificDrinkLabel,
   tablePersons,
   ticketTypeMeta,
 } from '../../../features/ticketing/models/attendee.model';
@@ -196,6 +199,9 @@ import {
             <th>Full Name</th>
             <th>Email</th>
             <th>Ticket</th>
+            <th>Gender</th>
+            <th>Drink</th>
+            <th>Preferred</th>
             <th>Table</th>
             <th>Phone</th>
             <th>Code</th>
@@ -223,6 +229,9 @@ import {
                 {{ a.email }}
               </td>
               <td>{{ meta(a.ticketType).label }}</td>
+              <td>{{ genderLabel(a.gender) }}</td>
+              <td>{{ drinkLabel(a.drinkPreference) }}</td>
+              <td>{{ specificDrinkLabel(a.specificDrink) }}</td>
               <td>
                 @if (!showArchived() && canManage()) {
                   <button
@@ -325,7 +334,7 @@ import {
             </tr>
           } @empty {
             <tr>
-              <td [attr.colspan]="canManage() ? 9 : 8">
+              <td [attr.colspan]="canManage() ? 12 : 11">
                 @if (loading() && !all().length) {
                   <div class="adm-loading">
                     <div class="adm-spinner"></div>
@@ -537,6 +546,9 @@ export class AttendeesComponent implements OnDestroy {
 
   readonly ticketTypes = TICKET_TYPES;
   meta = ticketTypeMeta;
+  genderLabel = genderLabel;
+  drinkLabel = drinkLabel;
+  specificDrinkLabel = specificDrinkLabel;
 
   /** Ushers get a read-only view: hide register / email / check-in / delete. */
   canManage = () => this.auth.canManageAttendees();
@@ -856,6 +868,9 @@ export class AttendeesComponent implements OnDestroy {
     'Email',
     'Phone',
     'Ticket',
+    'Gender',
+    'Drink',
+    'Preferred Drink',
     'Table',
     'Code',
     'Checked In',
@@ -870,6 +885,9 @@ export class AttendeesComponent implements OnDestroy {
       a.email,
       a.phone,
       ticketTypeMeta(a.ticketType).label,
+      genderLabel(a.gender),
+      drinkLabel(a.drinkPreference),
+      specificDrinkLabel(a.specificDrink),
       a.tableNumber ?? '',
       a.ticketCode,
       a.checkedIn ? 'Yes' : 'No',
@@ -902,7 +920,7 @@ export class AttendeesComponent implements OnDestroy {
   private async exportExcel(): Promise<void> {
     const XLSX = await import('xlsx');
     const ws = XLSX.utils.aoa_to_sheet([this.columns, ...this.exportData()]);
-    ws['!cols'] = [24, 26, 16, 14, 10, 10, 11, 20, 20].map((w) => ({ wch: w }));
+    ws['!cols'] = [24, 26, 16, 14, 10, 14, 14, 10, 11, 11, 20, 20].map((w) => ({ wch: w }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Attendees');
     XLSX.writeFile(wb, this.fileName('xlsx'));
