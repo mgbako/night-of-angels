@@ -42,6 +42,24 @@ import { EventSettingsService } from '../../../shared/event-settings.service';
           </div>
 
           <div class="adm-field">
+            <label for="s-snooze">Early-bird popup reminder</label>
+            <input
+              id="s-snooze"
+              type="number"
+              min="1"
+              max="720"
+              step="1"
+              [(ngModel)]="earlyBirdSnoozeHours"
+              name="earlyBirdSnoozeHours"
+              class="set-snooze"
+            />
+            <span class="adm-hint">
+              Hours before the early-bird popup shows again to a visitor after they
+              dismiss it (1–720). Default 24.
+            </span>
+          </div>
+
+          <div class="adm-field">
             <label for="s-sales">Ticket sales end</label>
             <input
               id="s-sales"
@@ -163,6 +181,7 @@ import { EventSettingsService } from '../../../shared/event-settings.service';
   styles: [
     `
       .set-card { max-width: 560px; }
+      .set-snooze { max-width: 140px; }
       .set-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
       .adm-form input[type='date'] { color-scheme: light dark; cursor: pointer; }
       .set-divider {
@@ -256,6 +275,7 @@ export class SettingsComponent {
   maintenanceTitle = '';
   maintenanceMessage = '';
   smsProvider: 'twilio' | 'termii' = 'twilio';
+  earlyBirdSnoozeHours = 24;
 
   constructor() {
     afterNextRender(() => this.load());
@@ -272,6 +292,7 @@ export class SettingsComponent {
       this.maintenanceTitle = s.maintenanceTitle;
       this.maintenanceMessage = s.maintenanceMessage;
       this.smsProvider = s.smsProvider;
+      this.earlyBirdSnoozeHours = s.earlyBirdModalSnoozeHours;
     } catch (e) {
       this.error.set(e instanceof Error ? e.message : 'Could not load settings');
     } finally {
@@ -291,6 +312,7 @@ export class SettingsComponent {
         maintenanceTitle: this.maintenanceTitle.trim(),
         maintenanceMessage: this.maintenanceMessage.trim(),
         smsProvider: this.smsProvider,
+        earlyBirdModalSnoozeHours: this.earlyBirdSnoozeHours,
       });
       // Reflect any server-side normalisation (e.g. defaults applied to blanks).
       this.maintenanceTitle = this.svc.settings().maintenanceTitle;

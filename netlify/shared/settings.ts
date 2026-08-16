@@ -24,11 +24,17 @@ export interface EventSettings {
   maintenanceMessage: string;
   /** Active SMS gateway — switchable from the back office. */
   smsProvider: SmsProvider;
+  /** Hours before the early-bird popup reappears to a visitor after they dismiss it. */
+  earlyBirdModalSnoozeHours: number;
 }
 
 export const DEFAULT_MAINTENANCE_TITLE = 'Coming Soon';
 export const DEFAULT_MAINTENANCE_MESSAGE =
   'Something beautiful is on the way. A Night of Angels will be revealed shortly — please check back soon.';
+
+export const DEFAULT_EARLY_BIRD_SNOOZE_HOURS = 24;
+export const MIN_EARLY_BIRD_SNOOZE_HOURS = 1;
+export const MAX_EARLY_BIRD_SNOOZE_HOURS = 720; // 30 days
 
 export const DEFAULT_SETTINGS: EventSettings = {
   earlyBirdEnds: null,
@@ -38,6 +44,7 @@ export const DEFAULT_SETTINGS: EventSettings = {
   maintenanceTitle: DEFAULT_MAINTENANCE_TITLE,
   maintenanceMessage: DEFAULT_MAINTENANCE_MESSAGE,
   smsProvider: 'twilio',
+  earlyBirdModalSnoozeHours: DEFAULT_EARLY_BIRD_SNOOZE_HOURS,
 };
 
 const STORE = 'settings';
@@ -59,7 +66,15 @@ export async function readSettings(): Promise<EventSettings> {
     maintenanceTitle: normalizeText(d.maintenanceTitle, DEFAULT_MAINTENANCE_TITLE, 120),
     maintenanceMessage: normalizeText(d.maintenanceMessage, DEFAULT_MAINTENANCE_MESSAGE, 600),
     smsProvider: normalizeProvider(d.smsProvider),
+    earlyBirdModalSnoozeHours: normalizeSnoozeHours(d.earlyBirdModalSnoozeHours),
   };
+}
+
+/** Coerce to a whole number of hours within [1, 720], defaulting to 24 when invalid. */
+export function normalizeSnoozeHours(value: unknown): number {
+  const n = Math.round(Number(value));
+  if (!Number.isFinite(n)) return DEFAULT_EARLY_BIRD_SNOOZE_HOURS;
+  return Math.min(MAX_EARLY_BIRD_SNOOZE_HOURS, Math.max(MIN_EARLY_BIRD_SNOOZE_HOURS, n));
 }
 
 /** Coerce any stored value to a valid provider, defaulting to Twilio. */

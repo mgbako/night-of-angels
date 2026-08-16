@@ -23,7 +23,15 @@ interface CountdownView {
   secs: string;
 }
 
-/** Reappears once per browser session, and again if the organiser moves the deadline. */
+interface DismissRecord {
+  deadline: string;
+  dismissedAt: number;
+}
+
+/**
+ * Reappears once the organiser-set snooze window has elapsed since the visitor
+ * last dismissed it, and again straight away if the organiser moves the deadline.
+ */
 const DISMISS_KEY = 'noa_earlybird_dismissed';
 
 @Component({
@@ -91,7 +99,7 @@ export class EarlyBirdModalComponent implements OnDestroy {
     afterNextRender(() => this.settings.load());
 
     // Auto-open once, the first time we see an active early-bird deadline
-    // that hasn't already been dismissed this session.
+    // that isn't still within the organiser's snooze window.
     effect(() => {
       if (!this.isBrowser || this.opened) return;
       if (!this.settings.loaded() || !this.settings.isEarlyBird() || !this.settings.reservationsOpen()) {
@@ -99,10 +107,15 @@ export class EarlyBirdModalComponent implements OnDestroy {
       }
       const deadlineIso = this.settings.settings().earlyBirdEnds;
       if (!deadlineIso) return;
+      const snoozeMs = this.settings.settings().earlyBirdModalSnoozeHours * 3_600_000;
       try {
-        if (sessionStorage.getItem(DISMISS_KEY) === deadlineIso) return;
+        const raw = localStorage.getItem(DISMISS_KEY);
+        if (raw) {
+          const rec = JSON.parse(raw) as DismissRecord;
+          if (rec.deadline === deadlineIso && Date.now() - rec.dismissedAt < snoozeMs) return;
+        }
       } catch {
-        // Storage unavailable (private mode) — fall through and show it anyway.
+        // Storage unavailable or corrupt (private mode) — fall through and show it anyway.
       }
 
       this.opened = true;
@@ -143,9 +156,12 @@ export class EarlyBirdModalComponent implements OnDestroy {
     if (this.timer) clearInterval(this.timer);
     try {
       const deadlineIso = this.settings.settings().earlyBirdEnds;
-      if (deadlineIso) sessionStorage.setItem(DISMISS_KEY, deadlineIso);
+      if (deadlineIso) {
+        const record: DismissRecord = { deadline: deadlineIso, dismissedAt: Date.now() };
+        localStorage.setItem(DISMISS_KEY, JSON.stringify(record));
+      }
     } catch {
-      // Storage unavailable — nothing to persist, it just may show again.
+      // Storage unavailable — nothing to persist, it just may show again sooner.
     }
   }
 

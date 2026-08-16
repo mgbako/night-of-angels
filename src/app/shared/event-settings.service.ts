@@ -11,7 +11,11 @@ export interface EventSettings {
   maintenanceTitle: string;
   maintenanceMessage: string;
   smsProvider: SmsProvider;
+  /** Hours before the early-bird popup reappears to a visitor after they dismiss it. */
+  earlyBirdModalSnoozeHours: number;
 }
+
+export const DEFAULT_EARLY_BIRD_SNOOZE_HOURS = 24;
 
 export const DEFAULT_MAINTENANCE_TITLE = 'Coming Soon';
 export const DEFAULT_MAINTENANCE_MESSAGE =
@@ -25,6 +29,7 @@ const EMPTY: EventSettings = {
   maintenanceTitle: DEFAULT_MAINTENANCE_TITLE,
   maintenanceMessage: DEFAULT_MAINTENANCE_MESSAGE,
   smsProvider: 'twilio',
+  earlyBirdModalSnoozeHours: DEFAULT_EARLY_BIRD_SNOOZE_HOURS,
 };
 
 /**
@@ -88,6 +93,10 @@ export class EventSettingsService {
       maintenanceTitle: d.maintenanceTitle?.trim() || DEFAULT_MAINTENANCE_TITLE,
       maintenanceMessage: d.maintenanceMessage?.trim() || DEFAULT_MAINTENANCE_MESSAGE,
       smsProvider: d.smsProvider === 'termii' ? 'termii' : 'twilio',
+      earlyBirdModalSnoozeHours:
+        Number.isFinite(d.earlyBirdModalSnoozeHours) && d.earlyBirdModalSnoozeHours! > 0
+          ? d.earlyBirdModalSnoozeHours!
+          : DEFAULT_EARLY_BIRD_SNOOZE_HOURS,
     };
   }
 

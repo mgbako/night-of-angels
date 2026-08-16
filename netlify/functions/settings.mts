@@ -7,6 +7,7 @@ import {
   EventSettings,
   normalizeDate,
   normalizeProvider,
+  normalizeSnoozeHours,
   normalizeText,
   readSettings,
   writeSettings,
@@ -51,6 +52,7 @@ export default async (req: Request, _context: Context): Promise<Response> => {
         maintenanceTitle: normalizeText(body.maintenanceTitle, DEFAULT_MAINTENANCE_TITLE, 120),
         maintenanceMessage: normalizeText(body.maintenanceMessage, DEFAULT_MAINTENANCE_MESSAGE, 600),
         smsProvider: normalizeProvider(body.smsProvider),
+        earlyBirdModalSnoozeHours: normalizeSnoozeHours(body.earlyBirdModalSnoozeHours),
       };
       await writeSettings(settings);
       const changes = diff(
