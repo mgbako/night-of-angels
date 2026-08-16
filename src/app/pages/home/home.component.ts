@@ -9,6 +9,7 @@ import { TicketsComponent } from './sections/tickets/tickets.component';
 import { ProgrammeComponent } from './sections/programme/programme.component';
 import { PartnersComponent } from './sections/partners/partners.component';
 import { FaqComponent } from './sections/faq/faq.component';
+import { EarlyBirdModalComponent } from './sections/early-bird-modal/early-bird-modal.component';
 import { RevealDirective } from '../../shared/reveal.directive';
 
 @Component({
@@ -24,10 +25,12 @@ import { RevealDirective } from '../../shared/reveal.directive';
     ProgrammeComponent,
     PartnersComponent,
     FaqComponent,
+    EarlyBirdModalComponent,
     RevealDirective,
   ],
   template: `
     <main id="top">
+      <app-early-bird-modal />
       <app-hero />
       <app-partners appReveal />
       <app-impact appReveal />

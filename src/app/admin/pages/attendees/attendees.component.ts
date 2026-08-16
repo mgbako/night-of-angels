@@ -41,12 +41,17 @@ import {
         <p>{{ filtered().length }} of {{ (showArchived() ? archived() : all()).length }} shown</p>
       </div>
       <div style="display:flex; gap:.6rem; flex-wrap:wrap; align-items:center">
-        @if (live()) {
-          <span title="Check-ins update automatically"
-            style="display:inline-flex; align-items:center; gap:.4rem; padding:.3rem .6rem; border-radius:999px; background:rgba(26,127,82,.12); color:#1a7f52; font-size:.78rem; font-weight:600">
-            <span style="width:8px; height:8px; border-radius:50%; background:#1a7f52"></span> Live
-          </span>
-        }
+        <button
+          type="button"
+          class="live-toggle"
+          [class.live-toggle--on]="liveEnabled()"
+          (click)="toggleLive()"
+          [attr.aria-pressed]="liveEnabled()"
+          [title]="liveEnabled() ? 'Live updates on — click to pause' : 'Live updates paused — click to resume'"
+        >
+          <span class="live-toggle__dot"></span>
+          {{ liveEnabled() ? 'Live' : 'Live off' }}
+        </button>
         <div class="exp">
           <button
             class="adm-btn"
@@ -481,6 +486,37 @@ import {
   `,
   styles: [
     `
+      .live-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.3rem 0.7rem;
+        border-radius: 999px;
+        border: 1px solid var(--adm-line);
+        background: var(--adm-surface);
+        color: var(--adm-muted);
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s var(--ease);
+      }
+      .live-toggle:hover {
+        border-color: var(--adm-gold);
+      }
+      .live-toggle__dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--adm-muted);
+      }
+      .live-toggle--on {
+        background: rgba(26, 127, 82, 0.12);
+        border-color: transparent;
+        color: #1a7f52;
+      }
+      .live-toggle--on .live-toggle__dot {
+        background: #1a7f52;
+      }
       .adm-table .adm-name {
         display: block;
       }
@@ -789,6 +825,9 @@ export class AttendeesComponent implements OnDestroy {
   loadError = this.api.loadError;
   readonly live = this.api.live;
 
+  /** User-controlled toggle for near-real-time polling on this page. */
+  liveEnabled = signal(true);
+
   /** Bulk selection — set of selected ticket codes (persists across pages). */
   selected = signal<Set<string>>(new Set<string>());
   isSelected = (code: string) => this.selected().has(code);
@@ -813,7 +852,18 @@ export class AttendeesComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.api.stopLive();
+    if (this.liveEnabled()) this.api.stopLive();
+  }
+
+  /** Pause or resume near-real-time polling for this page only. */
+  toggleLive(): void {
+    if (this.liveEnabled()) {
+      this.api.stopLive();
+      this.liveEnabled.set(false);
+    } else {
+      this.api.startLive();
+      this.liveEnabled.set(true);
+    }
   }
 
   async toggleArchived(): Promise<void> {
