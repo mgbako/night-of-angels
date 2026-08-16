@@ -117,6 +117,28 @@ export function tableSummaries(list: Attendee[]): TableSummary[] {
     .sort((a, b) => a.table.localeCompare(b.table, undefined, { numeric: true }));
 }
 
+export interface GuestPreference {
+  gender?: Gender;
+  specificDrink?: SpecificDrink;
+}
+
+/**
+ * Expands attendee records into one entry per known individual guest — a
+ * Couples ticket contributes both the primary guest and, if captured, their
+ * partner. Table/Singles tickets only ever have the one captured guest.
+ */
+export function guestPreferences(list: Attendee[]): GuestPreference[] {
+  const out: GuestPreference[] = [];
+  for (const a of list) {
+    if (a.deletedAt) continue;
+    out.push({ gender: a.gender, specificDrink: a.specificDrink });
+    if (a.ticketType === 'COUPLES' && (a.partnerGender || a.partnerSpecificDrink)) {
+      out.push({ gender: a.partnerGender, specificDrink: a.partnerSpecificDrink });
+    }
+  }
+  return out;
+}
+
 export interface Attendee {
   id: string;
   name: string;

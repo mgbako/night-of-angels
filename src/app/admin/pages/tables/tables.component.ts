@@ -2,7 +2,11 @@ import { Component, afterNextRender, computed, inject } from '@angular/core';
 import { AdminIconComponent } from '../../shared/admin-icon.component';
 import { AttendeeApiService } from '../../../features/ticketing/services/attendee-api.service';
 import {
+  GENDERS,
+  SPECIFIC_DRINKS,
   TABLE_CAPACITY,
+  TableSummary,
+  guestPreferences,
   seatsFor,
   tableSummaries,
   ticketTypeMeta,
@@ -54,6 +58,30 @@ import {
                   {{ capacity - t.persons }} {{ capacity - t.persons === 1 ? 'seat' : 'seats' }} left
                 }
               </p>
+              @if (genderCounts(t).length || drinkCounts(t).length) {
+                <div class="tbl__stats">
+                  @if (genderCounts(t).length) {
+                    <div class="tbl__stat-row">
+                      <span class="tbl__stat-label">Gender</span>
+                      <span class="tbl__stat-chips">
+                        @for (g of genderCounts(t); track g.label) {
+                          <span class="tbl__chip">{{ g.label }} {{ g.count }}</span>
+                        }
+                      </span>
+                    </div>
+                  }
+                  @if (drinkCounts(t).length) {
+                    <div class="tbl__stat-row">
+                      <span class="tbl__stat-label">Drinks</span>
+                      <span class="tbl__stat-chips">
+                        @for (d of drinkCounts(t); track d.label) {
+                          <span class="tbl__chip">{{ d.label }} {{ d.count }}</span>
+                        }
+                      </span>
+                    </div>
+                  }
+                </div>
+              }
               <ul class="tbl__people">
                 @for (a of t.attendees; track a.id) {
                   <li>
@@ -100,6 +128,39 @@ import {
       .tbl--full .tbl__bar span { background: #3fae63; }
       .tbl__left { margin: 0 0 0.9rem; font-size: 0.8rem; color: #8a8270; }
       .tbl--full .tbl__left { color: #3fae63; font-weight: 600; }
+      .tbl__stats {
+        display: grid;
+        gap: 0.4rem;
+        margin-bottom: 0.9rem;
+        padding-bottom: 0.9rem;
+        border-bottom: 1px solid #efeade;
+      }
+      .tbl__stat-row {
+        display: flex;
+        align-items: baseline;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+      .tbl__stat-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #8a8270;
+        flex: 0 0 auto;
+      }
+      .tbl__stat-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+      }
+      .tbl__chip {
+        font-size: 0.74rem;
+        font-weight: 600;
+        color: #6a5a1f;
+        background: rgba(201, 162, 39, 0.14);
+        border-radius: 999px;
+        padding: 0.15rem 0.55rem;
+      }
       .tbl__people { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
       .tbl__people li {
         display: flex;
@@ -139,5 +200,25 @@ export class TablesComponent {
 
   reload(): void {
     this.api.refresh().catch(() => {});
+  }
+
+  /** Gender counts among a table's guests (Couples tickets count both guests). */
+  genderCounts(t: TableSummary): { label: string; count: number }[] {
+    const persons = guestPreferences(t.attendees);
+    return GENDERS.map((g) => ({
+      label: g.label,
+      count: persons.filter((p) => p.gender === g.value).length,
+    })).filter((r) => r.count > 0);
+  }
+
+  /** Preferred-drink counts among a table's guests (Couples tickets count both guests). */
+  drinkCounts(t: TableSummary): { label: string; count: number }[] {
+    const persons = guestPreferences(t.attendees);
+    return SPECIFIC_DRINKS.map((d) => ({
+      label: d.label,
+      count: persons.filter((p) => p.specificDrink === d.value).length,
+    }))
+      .filter((r) => r.count > 0)
+      .sort((a, b) => b.count - a.count);
   }
 }

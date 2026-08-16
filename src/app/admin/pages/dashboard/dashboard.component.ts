@@ -9,7 +9,10 @@ import { RouterLink } from '@angular/router';
 import { AdminIconComponent } from '../../shared/admin-icon.component';
 import { AttendeeApiService } from '../../../features/ticketing/services/attendee-api.service';
 import {
+  GENDERS,
+  SPECIFIC_DRINKS,
   TICKET_TYPES,
+  guestPreferences,
   ticketTypeMeta,
 } from '../../../features/ticketing/models/attendee.model';
 
@@ -314,6 +317,48 @@ import {
           <p class="adm-empty" style="padding:1.5rem 0">No check-ins yet.</p>
         }
       </div>
+
+      <!-- Gender breakdown -->
+      <div class="adm-card adm-card--pad">
+        <h3 class="dash-title">Gender</h3>
+        <div class="breakdown">
+          @for (row of genderBreakdown(); track row.value) {
+            <div class="breakdown__row">
+              <div class="breakdown__top">
+                <span class="breakdown__name">{{ row.label }}</span>
+                <span class="breakdown__count">{{ row.count }}</span>
+              </div>
+              <div class="adm-meter">
+                <div class="adm-meter__fill" [style.width.%]="row.share"></div>
+              </div>
+            </div>
+          }
+          @if (!guestCount()) {
+            <p class="adm-empty" style="padding:1.5rem 0">No guests yet.</p>
+          }
+        </div>
+      </div>
+
+      <!-- Preferred drink breakdown -->
+      <div class="adm-card adm-card--pad">
+        <h3 class="dash-title">Preferred drink</h3>
+        <div class="breakdown">
+          @for (row of drinkBreakdown(); track row.value) {
+            <div class="breakdown__row">
+              <div class="breakdown__top">
+                <span class="breakdown__name">{{ row.label }}</span>
+                <span class="breakdown__count">{{ row.count }}</span>
+              </div>
+              <div class="adm-meter">
+                <div class="adm-meter__fill" [style.width.%]="row.share"></div>
+              </div>
+            </div>
+          }
+          @if (!guestCount()) {
+            <p class="adm-empty" style="padding:1.5rem 0">No guests yet.</p>
+          }
+        </div>
+      </div>
     </div>
   `,
   styles: [
@@ -585,6 +630,37 @@ export class DashboardComponent implements OnDestroy {
       .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
       .slice(0, 6),
   );
+
+  /** Individual guest preferences — a Couples ticket counts as two guests. */
+  private persons = computed(() => guestPreferences(this.list()));
+  guestCount = computed(() => this.persons().length);
+
+  genderBreakdown = computed(() => {
+    const persons = this.persons();
+    const rows = GENDERS.map((g) => ({
+      value: g.value as string,
+      label: g.label,
+      count: persons.filter((p) => p.gender === g.value).length,
+    }));
+    const unset = persons.filter((p) => !p.gender).length;
+    if (unset) rows.push({ value: 'UNSET', label: 'Not set', count: unset });
+    const max = Math.max(...rows.map((r) => r.count), 1);
+    return rows.map((r) => ({ ...r, share: Math.round((r.count / max) * 100) }));
+  });
+
+  drinkBreakdown = computed(() => {
+    const persons = this.persons();
+    const rows = SPECIFIC_DRINKS.map((d) => ({
+      value: d.value as string,
+      label: d.label,
+      count: persons.filter((p) => p.specificDrink === d.value).length,
+    })).filter((r) => r.count > 0);
+    const unset = persons.filter((p) => !p.specificDrink).length;
+    if (unset) rows.push({ value: 'UNSET', label: 'Not set', count: unset });
+    rows.sort((a, b) => b.count - a.count);
+    const max = Math.max(...rows.map((r) => r.count), 1);
+    return rows.map((r) => ({ ...r, share: Math.round((r.count / max) * 100) }));
+  });
 
   /** Singles vs Couples counts and percentages (Table tickets excluded). */
   ticketSplit = computed(() => {
