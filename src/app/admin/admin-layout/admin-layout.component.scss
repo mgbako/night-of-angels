@@ -524,6 +524,29 @@
   font-size: 0.76rem;
   color: #c0553f;
 }
+.adm-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.adm-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--adm-line);
+  border-radius: 999px;
+  background: var(--adm-surface);
+  font-size: 0.84rem;
+  color: var(--adm-ink);
+  cursor: pointer;
+
+  input {
+    accent-color: var(--adm-gold);
+    width: 15px;
+    height: 15px;
+  }
+}
 .adm-radio-row {
   display: flex;
   flex-wrap: wrap;

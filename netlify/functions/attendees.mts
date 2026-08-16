@@ -95,9 +95,9 @@ interface Attendee {
   tableNumber?: string;
   deletedAt?: string | null;
   gender?: Gender;
-  specificDrink?: SpecificDrink;
+  specificDrinks?: SpecificDrink[];
   partnerGender?: Gender;
-  partnerSpecificDrink?: SpecificDrink;
+  partnerSpecificDrinks?: SpecificDrink[];
 }
 
 const STORE = 'ticketing';
@@ -239,9 +239,9 @@ async function register(req: Request, actor: TokenPayload): Promise<Response> {
   if (!body.gender || !GENDERS.includes(body.gender)) {
     return json({ error: 'A valid gender is required' }, 400);
   }
-  if (!body.specificDrink || !SPECIFIC_DRINKS.includes(body.specificDrink)) {
-    return json({ error: 'A valid preferred drink is required' }, 400);
-  }
+  const specificDrinks = Array.isArray(body.specificDrinks)
+    ? body.specificDrinks.filter((d) => SPECIFIC_DRINKS.includes(d))
+    : [];
   const list = await readAll();
   // Email is optional. Only dedupe when one is supplied.
   const email = String(body.email ?? '').trim().toLowerCase();
@@ -267,7 +267,7 @@ async function register(req: Request, actor: TokenPayload): Promise<Response> {
     createdAt: new Date().toISOString(),
     ...(tableNumber ? { tableNumber } : {}),
     gender: body.gender,
-    specificDrink: body.specificDrink,
+    ...(specificDrinks.length ? { specificDrinks } : {}),
   };
   await writeAll([attendee, ...list]);
   await recordAudit({
@@ -319,9 +319,9 @@ async function patchOne(code: string, req: Request): Promise<Response> {
     phone?: string;
     ticketType?: TicketType;
     gender?: Gender;
-    specificDrink?: SpecificDrink;
+    specificDrinks?: SpecificDrink[];
     partnerGender?: Gender | '';
-    partnerSpecificDrink?: SpecificDrink | '';
+    partnerSpecificDrinks?: SpecificDrink[];
   } | null;
   const list = await readAll();
   const idx = list.findIndex((a) => a.ticketCode.toLowerCase() === code.toLowerCase());
@@ -394,7 +394,7 @@ async function patchOne(code: string, req: Request): Promise<Response> {
     typeof body?.phone === 'string' ||
     typeof body?.ticketType === 'string' ||
     typeof body?.gender === 'string' ||
-    typeof body?.specificDrink === 'string';
+    Array.isArray(body?.specificDrinks);
   if (editingDetails) {
     const before = list[idx];
     const name = typeof body?.name === 'string' ? body.name.trim() : before.name;
@@ -402,16 +402,15 @@ async function patchOne(code: string, req: Request): Promise<Response> {
     const email = typeof body?.email === 'string' ? body.email.trim() : before.email;
     const ticketType = body?.ticketType ?? before.ticketType;
     const gender = body?.gender ?? before.gender;
-    const specificDrink = body?.specificDrink ?? before.specificDrink;
+    const specificDrinks = Array.isArray(body?.specificDrinks)
+      ? body.specificDrinks.filter((d) => SPECIFIC_DRINKS.includes(d))
+      : before.specificDrinks;
 
     if (!name) return json({ error: 'Full name is required' }, 400);
     if (!phone) return json({ error: 'Phone number is required' }, 400);
     if (!TICKET_LABELS[ticketType]) return json({ error: 'A valid ticket type is required' }, 400);
     if (!gender || !GENDERS.includes(gender)) {
       return json({ error: 'A valid gender is required' }, 400);
-    }
-    if (!specificDrink || !SPECIFIC_DRINKS.includes(specificDrink)) {
-      return json({ error: 'A valid preferred drink is required' }, 400);
     }
 
     const emailLower = email.toLowerCase();
@@ -438,10 +437,10 @@ async function patchOne(code: string, req: Request): Promise<Response> {
     const partnerGender = isCouples
       ? (typeof body?.partnerGender === 'string' ? body.partnerGender || undefined : before.partnerGender)
       : undefined;
-    const partnerSpecificDrink = isCouples
-      ? (typeof body?.partnerSpecificDrink === 'string'
-          ? body.partnerSpecificDrink || undefined
-          : before.partnerSpecificDrink)
+    const partnerSpecificDrinks = isCouples
+      ? (Array.isArray(body?.partnerSpecificDrinks)
+          ? body.partnerSpecificDrinks.filter((d) => SPECIFIC_DRINKS.includes(d))
+          : before.partnerSpecificDrinks)
       : undefined;
 
     list[idx] = {
@@ -451,9 +450,9 @@ async function patchOne(code: string, req: Request): Promise<Response> {
       phone,
       ticketType,
       gender,
-      specificDrink,
+      specificDrinks,
       partnerGender,
-      partnerSpecificDrink,
+      partnerSpecificDrinks,
     };
     await recordAudit({
       req,
@@ -466,7 +465,7 @@ async function patchOne(code: string, req: Request): Promise<Response> {
         phone: { from: before.phone, to: phone },
         ticketType: { from: before.ticketType, to: ticketType },
         gender: { from: before.gender ?? null, to: gender ?? null },
-        specificDrink: { from: before.specificDrink ?? null, to: specificDrink ?? null },
+        specificDrinks: { from: before.specificDrinks ?? null, to: specificDrinks ?? null },
       },
       metadata: { ticketCode: list[idx].ticketCode },
     });

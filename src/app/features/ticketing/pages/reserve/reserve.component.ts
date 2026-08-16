@@ -115,15 +115,20 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
               @if (invalid('gender')) { <span class="err">Please select a gender.</span> }
             </div>
 
-            <div class="rsv__field" [class.invalid]="invalid('specificDrink')">
-              <label for="specificDrink">Preferred drink *</label>
-              <select id="specificDrink" formControlName="specificDrink">
-                <option value="" disabled>Select a drink</option>
+            <div class="rsv__field">
+              <label>Preferred drink(s) <span class="opt">(optional)</span></label>
+              <div class="rsv__checks">
                 @for (d of specificDrinks; track d.value) {
-                  <option [value]="d.value">{{ d.label }}</option>
+                  <label class="rsv__check">
+                    <input
+                      type="checkbox"
+                      [checked]="isDrinkSelected('specificDrink', d.value)"
+                      (change)="toggleDrink('specificDrink', d.value, $any($event.target).checked)"
+                    />
+                    {{ d.label }}
+                  </label>
                 }
-              </select>
-              @if (invalid('specificDrink')) { <span class="err">Please select a preferred drink.</span> }
+              </div>
             </div>
 
             @if (isCouples) {
@@ -155,13 +160,19 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
                   </select>
                 </div>
                 <div class="rsv__field">
-                  <label for="partnerSpecificDrink">Partner’s preferred drink</label>
-                  <select id="partnerSpecificDrink" formControlName="partnerSpecificDrink">
-                    <option value="">Select a drink</option>
+                  <label>Partner’s preferred drink(s) <span class="opt">(optional)</span></label>
+                  <div class="rsv__checks">
                     @for (d of specificDrinks; track d.value) {
-                      <option [value]="d.value">{{ d.label }}</option>
+                      <label class="rsv__check">
+                        <input
+                          type="checkbox"
+                          [checked]="isDrinkSelected('partnerSpecificDrink', d.value)"
+                          (change)="toggleDrink('partnerSpecificDrink', d.value, $any($event.target).checked)"
+                        />
+                        {{ d.label }}
+                      </label>
                     }
-                  </select>
+                  </div>
                 </div>
               </div>
             }
@@ -267,14 +278,29 @@ export class ReserveComponent implements OnInit {
     email: ['', [Validators.email]],
     ticketType: ['' as TicketType | '', [Validators.required]],
     gender: ['' as Gender | '', [Validators.required]],
-    specificDrink: ['' as SpecificDrink | '', [Validators.required]],
+    specificDrink: [[] as SpecificDrink[]],
     // Second guest — only shown/collected for Couples, all optional.
     partnerName: [''],
     partnerPhone: ['', [phoneValidator]],
     partnerEmail: ['', [Validators.email]],
     partnerGender: ['' as Gender | ''],
-    partnerSpecificDrink: ['' as SpecificDrink | ''],
+    partnerSpecificDrink: [[] as SpecificDrink[]],
   });
+
+  /** Preferred-drink checkboxes are optional and multi-select. */
+  isDrinkSelected(controlName: 'specificDrink' | 'partnerSpecificDrink', value: SpecificDrink): boolean {
+    return this.form.controls[controlName].value.includes(value);
+  }
+
+  toggleDrink(
+    controlName: 'specificDrink' | 'partnerSpecificDrink',
+    value: SpecificDrink,
+    checked: boolean,
+  ): void {
+    const control = this.form.controls[controlName];
+    const current = control.value;
+    control.setValue(checked ? [...current, value] : current.filter((v) => v !== value));
+  }
 
   /** Whether the Couples ticket (and its optional second-guest fields) is selected. */
   get isCouples(): boolean {
@@ -327,7 +353,7 @@ export class ReserveComponent implements OnInit {
         partnerPhone: '',
         partnerEmail: '',
         partnerGender: '',
-        partnerSpecificDrink: '',
+        partnerSpecificDrink: [],
       });
     }
     if (this.form.invalid) {
@@ -357,7 +383,7 @@ export class ReserveComponent implements OnInit {
         email: rest.email,
         ticketType: ticketType as TicketType,
         gender: gender as Gender,
-        specificDrink: specificDrink as SpecificDrink,
+        ...(specificDrink.length ? { specificDrinks: specificDrink } : {}),
         proof: this.proof()!,
       };
       // Only send second-guest details for a Couples reservation, and only if provided.
@@ -366,7 +392,7 @@ export class ReserveComponent implements OnInit {
         if (partnerPhone.trim()) dto.partnerPhone = partnerPhone.trim();
         if (partnerEmail.trim()) dto.partnerEmail = partnerEmail.trim();
         if (partnerGender) dto.partnerGender = partnerGender as Gender;
-        if (partnerSpecificDrink) dto.partnerSpecificDrink = partnerSpecificDrink as SpecificDrink;
+        if (partnerSpecificDrink.length) dto.partnerSpecificDrinks = partnerSpecificDrink;
       }
       await this.api.create(dto);
       this.submittedName.set(rest.name);

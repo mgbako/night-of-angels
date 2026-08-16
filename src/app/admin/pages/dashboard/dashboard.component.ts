@@ -653,9 +653,9 @@ export class DashboardComponent implements OnDestroy {
     const rows = SPECIFIC_DRINKS.map((d) => ({
       value: d.value as string,
       label: d.label,
-      count: persons.filter((p) => p.specificDrink === d.value).length,
+      count: persons.filter((p) => p.specificDrinks?.includes(d.value)).length,
     })).filter((r) => r.count > 0);
-    const unset = persons.filter((p) => !p.specificDrink).length;
+    const unset = persons.filter((p) => !p.specificDrinks?.length).length;
     if (unset) rows.push({ value: 'UNSET', label: 'Not set', count: unset });
     rows.sort((a, b) => b.count - a.count);
     const max = Math.max(...rows.map((r) => r.count), 1);

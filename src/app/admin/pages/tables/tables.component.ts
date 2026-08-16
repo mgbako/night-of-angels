@@ -216,7 +216,7 @@ export class TablesComponent {
     const persons = guestPreferences(t.attendees);
     return SPECIFIC_DRINKS.map((d) => ({
       label: d.label,
-      count: persons.filter((p) => p.specificDrink === d.value).length,
+      count: persons.filter((p) => p.specificDrinks?.includes(d.value)).length,
     }))
       .filter((r) => r.count > 0)
       .sort((a, b) => b.count - a.count);

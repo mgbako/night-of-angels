@@ -33,12 +33,12 @@ interface Reservation {
   email: string;
   ticketType: TicketType;
   gender?: Gender;
-  specificDrink?: SpecificDrink;
+  specificDrinks?: SpecificDrink[];
   partnerName?: string;
   partnerPhone?: string;
   partnerEmail?: string;
   partnerGender?: Gender;
-  partnerSpecificDrink?: SpecificDrink;
+  partnerSpecificDrinks?: SpecificDrink[];
   proofKey: string;
   proofType: string;
   proofName: string;
@@ -160,12 +160,12 @@ async function create(req: Request): Promise<Response> {
     email?: string;
     ticketType?: TicketType;
     gender?: Gender;
-    specificDrink?: SpecificDrink;
+    specificDrinks?: SpecificDrink[];
     partnerName?: string;
     partnerPhone?: string;
     partnerEmail?: string;
     partnerGender?: Gender;
-    partnerSpecificDrink?: SpecificDrink;
+    partnerSpecificDrinks?: SpecificDrink[];
     proof?: { name?: string; type?: string; dataBase64?: string };
   } | null;
 
@@ -181,9 +181,9 @@ async function create(req: Request): Promise<Response> {
   if (!body.gender || !GENDERS.includes(body.gender)) {
     return json({ error: 'A valid gender is required' }, 400);
   }
-  if (!body.specificDrink || !SPECIFIC_DRINKS.includes(body.specificDrink)) {
-    return json({ error: 'A valid preferred drink is required' }, 400);
-  }
+  const specificDrinks = Array.isArray(body.specificDrinks)
+    ? body.specificDrinks.filter((d) => SPECIFIC_DRINKS.includes(d))
+    : [];
   const proof = body.proof;
   if (!proof?.dataBase64 || !proof.type) {
     return json({ error: 'Proof of payment is required' }, 400);
@@ -210,10 +210,10 @@ async function create(req: Request): Promise<Response> {
   const partnerGender = isCouples && body.partnerGender && GENDERS.includes(body.partnerGender)
     ? body.partnerGender
     : undefined;
-  const partnerSpecificDrink =
-    isCouples && body.partnerSpecificDrink && SPECIFIC_DRINKS.includes(body.partnerSpecificDrink)
-      ? body.partnerSpecificDrink
-      : undefined;
+  const partnerSpecificDrinks =
+    isCouples && Array.isArray(body.partnerSpecificDrinks)
+      ? body.partnerSpecificDrinks.filter((d) => SPECIFIC_DRINKS.includes(d))
+      : [];
 
   const reservation: Reservation = {
     id: randomUUID(),
@@ -222,12 +222,12 @@ async function create(req: Request): Promise<Response> {
     email: (body.email ?? '').trim(),
     ticketType: body.ticketType,
     gender: body.gender,
-    specificDrink: body.specificDrink,
+    ...(specificDrinks.length ? { specificDrinks } : {}),
     ...(partnerName ? { partnerName } : {}),
     ...(partnerPhone ? { partnerPhone } : {}),
     ...(partnerEmail ? { partnerEmail } : {}),
     ...(partnerGender ? { partnerGender } : {}),
-    ...(partnerSpecificDrink ? { partnerSpecificDrink } : {}),
+    ...(partnerSpecificDrinks.length ? { partnerSpecificDrinks } : {}),
     proofKey,
     proofType: proof.type,
     proofName: proof.name ?? 'proof',
@@ -279,9 +279,9 @@ async function approve(id: string, req: Request, actor: TokenPayload): Promise<R
       phone: reservation.phone,
       ticketType,
       gender: reservation.gender,
-      specificDrink: reservation.specificDrink,
+      specificDrinks: reservation.specificDrinks,
       partnerGender: reservation.partnerGender,
-      partnerSpecificDrink: reservation.partnerSpecificDrink,
+      partnerSpecificDrinks: reservation.partnerSpecificDrinks,
     });
   } catch (e) {
     if (e instanceof Error && e.message === 'DUP_EMAIL') {

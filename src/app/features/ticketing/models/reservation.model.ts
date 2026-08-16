@@ -11,13 +11,14 @@ export interface Reservation {
   ticketType?: TicketType;
   /** Optional for records created before this field existed. */
   gender?: Gender;
-  specificDrink?: SpecificDrink;
+  /** Optional, multi-select. */
+  specificDrinks?: SpecificDrink[];
   /** Second guest details, captured for Couples reservations. All optional. */
   partnerName?: string;
   partnerPhone?: string;
   partnerEmail?: string;
   partnerGender?: Gender;
-  partnerSpecificDrink?: SpecificDrink;
+  partnerSpecificDrinks?: SpecificDrink[];
   proofType: string;
   proofName: string;
   status: ReservationStatus;
@@ -32,12 +33,12 @@ export interface ReservationDto {
   email: string;
   ticketType: TicketType;
   gender: Gender;
-  specificDrink: SpecificDrink;
+  specificDrinks?: SpecificDrink[];
   partnerName?: string;
   partnerPhone?: string;
   partnerEmail?: string;
   partnerGender?: Gender;
-  partnerSpecificDrink?: SpecificDrink;
+  partnerSpecificDrinks?: SpecificDrink[];
   proof: { name: string; type: string; dataBase64: string };
 }
 

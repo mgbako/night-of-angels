@@ -115,6 +115,32 @@
   }
 }
 
+.rsv__checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.rsv__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.8rem;
+  background: var(--ink);
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  color: var(--text-on-ink);
+  font-size: 0.86rem;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+
+  input {
+    accent-color: var(--gold);
+    width: 15px;
+    height: 15px;
+  }
+}
+
 /* second guest (couples) */
 .rsv__partner {
   text-align: left;

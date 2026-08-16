@@ -14,7 +14,7 @@ import {
   TicketTypeMeta,
   effectivePrice,
   genderLabel,
-  specificDrinkLabel,
+  specificDrinksLabel,
   ticketTypeLabel,
 } from '../../../features/ticketing/models/attendee.model';
 import { EventSettingsService } from '../../../shared/event-settings.service';
@@ -75,10 +75,10 @@ import { AuthService } from '../../services/auth.service';
                 @if (r.ticketType) {
                   <span class="res__req">Requested: {{ typeLabel(r.ticketType) }}</span>
                 }
-                @if (r.gender || r.specificDrink) {
+                @if (r.gender || r.specificDrinks?.length) {
                   <span class="res__partner">
                     <adm-icon name="attendees" [size]="13" />
-                    {{ genderLabel(r.gender) }} · {{ specificDrinkLabel(r.specificDrink) }}
+                    {{ genderLabel(r.gender) }} · {{ specificDrinksLabel(r.specificDrinks) }}
                   </span>
                 }
                 @if (r.partnerName || r.partnerPhone || r.partnerEmail) {
@@ -86,8 +86,8 @@ import { AuthService } from '../../services/auth.service';
                     <adm-icon name="attendees" [size]="13" />
                     Second guest:
                     {{ r.partnerName || '—' }}@if (r.partnerPhone) { · {{ r.partnerPhone }} }@if (r.partnerEmail) { · {{ r.partnerEmail }} }
-                    @if (r.partnerGender || r.partnerSpecificDrink) {
-                      · {{ genderLabel(r.partnerGender) }} · {{ specificDrinkLabel(r.partnerSpecificDrink) }}
+                    @if (r.partnerGender || r.partnerSpecificDrinks?.length) {
+                      · {{ genderLabel(r.partnerGender) }} · {{ specificDrinksLabel(r.partnerSpecificDrinks) }}
                     }
                   </span>
                 }
@@ -255,7 +255,7 @@ export class ReservationsComponent {
   private sanitizer = inject(DomSanitizer);
   readonly ticketTypes = TICKET_TYPES;
   genderLabel = genderLabel;
-  specificDrinkLabel = specificDrinkLabel;
+  specificDrinksLabel = specificDrinksLabel;
 
   /** Proof lightbox state (null when closed). */
   proof = signal<{

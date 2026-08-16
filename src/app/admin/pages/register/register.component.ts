@@ -120,15 +120,20 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
             @if (invalid('gender')) { <span class="adm-error">Please select a gender.</span> }
           </div>
 
-          <div class="adm-field" [class.adm-field--invalid]="invalid('specificDrink')">
-            <label for="r-specific-drink">Preferred drink</label>
-            <select id="r-specific-drink" formControlName="specificDrink">
-              <option value="" disabled>Select a drink</option>
+          <div class="adm-field">
+            <label>Preferred drink(s) <span class="adm-muted-label">(optional)</span></label>
+            <div class="adm-checks">
               @for (d of specificDrinks; track d.value) {
-                <option [value]="d.value">{{ d.label }}</option>
+                <label class="adm-check">
+                  <input
+                    type="checkbox"
+                    [checked]="isDrinkSelected(d.value)"
+                    (change)="toggleDrink(d.value, $any($event.target).checked)"
+                  />
+                  {{ d.label }}
+                </label>
               }
-            </select>
-            @if (invalid('specificDrink')) { <span class="adm-error">Please select a preferred drink.</span> }
+            </div>
           </div>
 
           <div class="adm-field">
@@ -207,13 +212,24 @@ export class RegisterComponent {
     email: ['', [Validators.email]],
     ticketType: ['SINGLES' as TicketType, Validators.required],
     gender: ['' as Gender | '', Validators.required],
-    specificDrink: ['' as SpecificDrink | '', Validators.required],
+    specificDrink: [[] as SpecificDrink[]],
     tableNumber: [''],
   });
 
   invalid(name: string): boolean {
     const c = this.form.get(name);
     return !!c && c.invalid && (c.touched || c.dirty);
+  }
+
+  /** Preferred-drink checkboxes are optional and multi-select. */
+  isDrinkSelected(value: SpecificDrink): boolean {
+    return this.form.controls.specificDrink.value.includes(value);
+  }
+
+  toggleDrink(value: SpecificDrink, checked: boolean): void {
+    const control = this.form.controls.specificDrink;
+    const current = control.value;
+    control.setValue(checked ? [...current, value] : current.filter((v) => v !== value));
   }
 
   async submit(): Promise<void> {
@@ -224,11 +240,11 @@ export class RegisterComponent {
     }
     this.submitting.set(true);
     try {
-      const raw = this.form.getRawValue();
+      const { specificDrink, ...raw } = this.form.getRawValue();
       const attendee = await this.api.register({
         ...raw,
         gender: raw.gender as Gender,
-        specificDrink: raw.specificDrink as SpecificDrink,
+        specificDrinks: specificDrink,
       });
       this.created.set(attendee);
     } catch (e) {
@@ -272,7 +288,7 @@ export class RegisterComponent {
       email: '',
       ticketType: 'SINGLES',
       gender: '',
-      specificDrink: '',
+      specificDrink: [],
       tableNumber: '',
     });
   }

@@ -46,6 +46,12 @@ export function specificDrinkLabel(d?: SpecificDrink | null): string {
   return SPECIFIC_DRINKS.find((x) => x.value === d)?.label ?? '—';
 }
 
+/** Preferred drink(s) are optional and multi-select — join the chosen labels. */
+export function specificDrinksLabel(list?: SpecificDrink[] | null): string {
+  if (!list?.length) return '—';
+  return list.map((d) => specificDrinkLabel(d)).join(', ');
+}
+
 export interface TicketTypeMeta {
   value: TicketType;
   label: string;
@@ -119,7 +125,7 @@ export function tableSummaries(list: Attendee[]): TableSummary[] {
 
 export interface GuestPreference {
   gender?: Gender;
-  specificDrink?: SpecificDrink;
+  specificDrinks?: SpecificDrink[];
 }
 
 /**
@@ -131,9 +137,9 @@ export function guestPreferences(list: Attendee[]): GuestPreference[] {
   const out: GuestPreference[] = [];
   for (const a of list) {
     if (a.deletedAt) continue;
-    out.push({ gender: a.gender, specificDrink: a.specificDrink });
-    if (a.ticketType === 'COUPLES' && (a.partnerGender || a.partnerSpecificDrink)) {
-      out.push({ gender: a.partnerGender, specificDrink: a.partnerSpecificDrink });
+    out.push({ gender: a.gender, specificDrinks: a.specificDrinks });
+    if (a.ticketType === 'COUPLES' && (a.partnerGender || a.partnerSpecificDrinks?.length)) {
+      out.push({ gender: a.partnerGender, specificDrinks: a.partnerSpecificDrinks });
     }
   }
   return out;
@@ -152,10 +158,11 @@ export interface Attendee {
   tableNumber?: string; // organizer-assigned table
   deletedAt?: string | null; // set when archived (soft-deleted)
   gender?: Gender;
-  specificDrink?: SpecificDrink;
+  /** Optional, multi-select. */
+  specificDrinks?: SpecificDrink[];
   /** Second guest's preferences — Couples tickets only. */
   partnerGender?: Gender;
-  partnerSpecificDrink?: SpecificDrink;
+  partnerSpecificDrinks?: SpecificDrink[];
 }
 
 export interface RegisterDto {
@@ -165,7 +172,7 @@ export interface RegisterDto {
   ticketType: TicketType;
   tableNumber?: string;
   gender: Gender;
-  specificDrink: SpecificDrink;
+  specificDrinks?: SpecificDrink[];
 }
 
 /** Edit an existing attendee's own details — owner only. */
@@ -175,8 +182,8 @@ export interface EditAttendeeDto {
   phone: string;
   ticketType: TicketType;
   gender: Gender;
-  specificDrink: SpecificDrink;
+  specificDrinks?: SpecificDrink[];
   /** Second guest's preferences — Couples tickets only. */
   partnerGender?: Gender | '';
-  partnerSpecificDrink?: SpecificDrink | '';
+  partnerSpecificDrinks?: SpecificDrink[];
 }

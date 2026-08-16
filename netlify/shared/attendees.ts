@@ -36,10 +36,11 @@ export interface Attendee {
   /** Set when soft-deleted (archived). Absent/null = active. */
   deletedAt?: string | null;
   gender?: Gender;
-  specificDrink?: SpecificDrink;
+  /** Optional, multi-select. */
+  specificDrinks?: SpecificDrink[];
   /** Second guest's preferences — Couples tickets only. */
   partnerGender?: Gender;
-  partnerSpecificDrink?: SpecificDrink;
+  partnerSpecificDrinks?: SpecificDrink[];
 }
 
 const STORE = 'ticketing';
@@ -75,9 +76,9 @@ export async function addAttendee(input: {
   phone: string;
   ticketType: TicketType;
   gender?: Gender;
-  specificDrink?: SpecificDrink;
+  specificDrinks?: SpecificDrink[];
   partnerGender?: Gender;
-  partnerSpecificDrink?: SpecificDrink;
+  partnerSpecificDrinks?: SpecificDrink[];
 }): Promise<Attendee> {
   const list = await readAttendees();
   const email = input.email.trim().toLowerCase();
@@ -95,9 +96,9 @@ export async function addAttendee(input: {
     checkedInAt: null,
     createdAt: new Date().toISOString(),
     ...(input.gender ? { gender: input.gender } : {}),
-    ...(input.specificDrink ? { specificDrink: input.specificDrink } : {}),
+    ...(input.specificDrinks?.length ? { specificDrinks: input.specificDrinks } : {}),
     ...(input.partnerGender ? { partnerGender: input.partnerGender } : {}),
-    ...(input.partnerSpecificDrink ? { partnerSpecificDrink: input.partnerSpecificDrink } : {}),
+    ...(input.partnerSpecificDrinks?.length ? { partnerSpecificDrinks: input.partnerSpecificDrinks } : {}),
   };
   await writeAttendees([attendee, ...list]);
   return attendee;

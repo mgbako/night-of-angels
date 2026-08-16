@@ -25,7 +25,7 @@ import {
   TicketType,
   genderLabel,
   seatsFor,
-  specificDrinkLabel,
+  specificDrinksLabel,
   tablePersons,
   ticketTypeMeta,
 } from '../../../features/ticketing/models/attendee.model';
@@ -229,7 +229,7 @@ import {
                 <span class="adm-name">{{ meta(a.ticketType).label }}</span>
                 <span class="adm-sub"><span class="adm-code">{{ a.ticketCode }}</span></span>
               </td>
-              <td>{{ specificDrinkLabel(a.specificDrink) }}</td>
+              <td>{{ specificDrinksLabel(a.specificDrinks) }}</td>
               <td>
                 @if (!showArchived() && canManage()) {
                   <button
@@ -421,13 +421,20 @@ import {
           </select>
         </div>
         <div class="adm-field">
-          <label for="e-drink">Preferred drink</label>
-          <select id="e-drink" [(ngModel)]="editForm.specificDrink" [disabled]="editBusy()">
-            <option value="" disabled>Select a drink</option>
+          <label>Preferred drink(s) <span style="opacity:.6">(optional)</span></label>
+          <div class="adm-checks">
             @for (d of specificDrinks; track d.value) {
-              <option [value]="d.value">{{ d.label }}</option>
+              <label class="adm-check">
+                <input
+                  type="checkbox"
+                  [checked]="editForm.specificDrink.includes(d.value)"
+                  (change)="toggleEditDrink('specificDrink', d.value, $any($event.target).checked)"
+                  [disabled]="editBusy()"
+                />
+                {{ d.label }}
+              </label>
             }
-          </select>
+          </div>
         </div>
         @if (editForm.ticketType === 'COUPLES') {
           <div class="adm-field">
@@ -440,13 +447,20 @@ import {
             </select>
           </div>
           <div class="adm-field">
-            <label for="e-p-drink">Partner's preferred drink <span style="opacity:.6">(optional)</span></label>
-            <select id="e-p-drink" [(ngModel)]="editForm.partnerSpecificDrink" [disabled]="editBusy()">
-              <option value="">Select a drink</option>
+            <label>Partner's preferred drink(s) <span style="opacity:.6">(optional)</span></label>
+            <div class="adm-checks">
               @for (d of specificDrinks; track d.value) {
-                <option [value]="d.value">{{ d.label }}</option>
+                <label class="adm-check">
+                  <input
+                    type="checkbox"
+                    [checked]="editForm.partnerSpecificDrink.includes(d.value)"
+                    (change)="toggleEditDrink('partnerSpecificDrink', d.value, $any($event.target).checked)"
+                    [disabled]="editBusy()"
+                  />
+                  {{ d.label }}
+                </label>
               }
-            </select>
+            </div>
           </div>
         }
 
@@ -649,7 +663,7 @@ export class AttendeesComponent implements OnDestroy {
   readonly specificDrinks = SPECIFIC_DRINKS;
   meta = ticketTypeMeta;
   genderLabel = genderLabel;
-  specificDrinkLabel = specificDrinkLabel;
+  specificDrinksLabel = specificDrinksLabel;
 
   /** Ushers get a read-only view: hide register / email / check-in / delete. */
   canManage = () => this.auth.canManageAttendees();
@@ -687,9 +701,9 @@ export class AttendeesComponent implements OnDestroy {
     phone: string;
     ticketType: TicketType;
     gender: Gender | '';
-    specificDrink: SpecificDrink | '';
+    specificDrink: SpecificDrink[];
     partnerGender: Gender | '';
-    partnerSpecificDrink: SpecificDrink | '';
+    partnerSpecificDrink: SpecificDrink[];
   } = this.blankEditForm();
 
   private blankEditForm() {
@@ -699,9 +713,9 @@ export class AttendeesComponent implements OnDestroy {
       phone: '',
       ticketType: 'SINGLES' as TicketType,
       gender: '' as Gender | '',
-      specificDrink: '' as SpecificDrink | '',
+      specificDrink: [] as SpecificDrink[],
       partnerGender: '' as Gender | '',
-      partnerSpecificDrink: '' as SpecificDrink | '',
+      partnerSpecificDrink: [] as SpecificDrink[],
     };
   }
 
@@ -713,9 +727,9 @@ export class AttendeesComponent implements OnDestroy {
       phone: a.phone,
       ticketType: a.ticketType,
       gender: a.gender ?? '',
-      specificDrink: a.specificDrink ?? '',
+      specificDrink: a.specificDrinks ?? [],
       partnerGender: a.partnerGender ?? '',
-      partnerSpecificDrink: a.partnerSpecificDrink ?? '',
+      partnerSpecificDrink: a.partnerSpecificDrinks ?? [],
     };
     this.editError.set(null);
     this.editOpen.set(true);
@@ -727,11 +741,21 @@ export class AttendeesComponent implements OnDestroy {
     this.editTarget.set(null);
   }
 
+  /** Preferred-drink checkboxes in the edit modal are optional and multi-select. */
+  toggleEditDrink(
+    field: 'specificDrink' | 'partnerSpecificDrink',
+    value: SpecificDrink,
+    checked: boolean,
+  ): void {
+    const current = this.editForm[field];
+    this.editForm[field] = checked ? [...current, value] : current.filter((v) => v !== value);
+  }
+
   async saveEdit(): Promise<void> {
     const a = this.editTarget();
     if (!a) return;
     const f = this.editForm;
-    if (!f.name.trim() || !f.phone.trim() || !f.gender || !f.specificDrink) {
+    if (!f.name.trim() || !f.phone.trim() || !f.gender) {
       this.editError.set('Please fill in all required fields.');
       return;
     }
@@ -745,9 +769,9 @@ export class AttendeesComponent implements OnDestroy {
         phone: f.phone.trim(),
         ticketType: f.ticketType,
         gender: f.gender,
-        specificDrink: f.specificDrink,
+        specificDrinks: f.specificDrink,
         ...(f.ticketType === 'COUPLES'
-          ? { partnerGender: f.partnerGender, partnerSpecificDrink: f.partnerSpecificDrink }
+          ? { partnerGender: f.partnerGender, partnerSpecificDrinks: f.partnerSpecificDrink }
           : {}),
       });
       this.flash(`${name} updated.`, true);
@@ -1070,7 +1094,7 @@ export class AttendeesComponent implements OnDestroy {
       a.phone,
       ticketTypeMeta(a.ticketType).label,
       genderLabel(a.gender),
-      specificDrinkLabel(a.specificDrink),
+      specificDrinksLabel(a.specificDrinks),
       a.tableNumber ?? '',
       a.ticketCode,
       a.checkedIn ? 'Yes' : 'No',
