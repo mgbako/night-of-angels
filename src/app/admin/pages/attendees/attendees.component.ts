@@ -204,7 +204,6 @@ import {
             <th>Preferred Drink</th>
             <th>Table</th>
             <th>Phone</th>
-            <th>Code</th>
             <th>Check-in</th>
             <th style="text-align:right">Actions</th>
           </tr>
@@ -226,7 +225,10 @@ import {
                 <span class="adm-name">{{ a.name }}</span>
                 <span class="adm-sub">{{ genderLabel(a.gender) }}@if (a.email) { · {{ a.email }} }</span>
               </td>
-              <td>{{ meta(a.ticketType).label }}</td>
+              <td>
+                <span class="adm-name">{{ meta(a.ticketType).label }}</span>
+                <span class="adm-sub"><span class="adm-code">{{ a.ticketCode }}</span></span>
+              </td>
               <td>{{ specificDrinkLabel(a.specificDrink) }}</td>
               <td>
                 @if (!showArchived() && canManage()) {
@@ -243,9 +245,6 @@ import {
                 }
               </td>
               <td>{{ a.phone }}</td>
-              <td>
-                <span class="adm-code">{{ a.ticketCode }}</span>
-              </td>
               <td>
                 @if (a.checkedIn) {
                   <span class="adm-badge adm-badge--in"
@@ -338,7 +337,7 @@ import {
             </tr>
           } @empty {
             <tr>
-              <td [attr.colspan]="canManage() ? 9 : 8">
+              <td [attr.colspan]="canManage() ? 8 : 7">
                 @if (loading() && !all().length) {
                   <div class="adm-loading">
                     <div class="adm-spinner"></div>
