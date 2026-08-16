@@ -16,6 +16,10 @@ import { AuthService } from '../../services/auth.service';
 import { ticketShareUrl } from '../../../features/ticketing/share.util';
 import {
   Attendee,
+  GENDERS,
+  Gender,
+  SPECIFIC_DRINKS,
+  SpecificDrink,
   TABLE_CAPACITY,
   TICKET_TYPES,
   TicketType,
@@ -309,6 +313,14 @@ import {
                   @if (canManage()) {
                     <button
                       class="adm-btn adm-btn--sm"
+                      (click)="openEdit(a)"
+                      [disabled]="busy()"
+                      title="Edit attendee"
+                    >
+                      <adm-icon name="edit" [size]="15" />
+                    </button>
+                    <button
+                      class="adm-btn adm-btn--sm"
                       (click)="toggle(a)"
                       [title]="a.checkedIn ? 'Undo check-in' : 'Check in'"
                     >
@@ -379,6 +391,85 @@ import {
         </div>
       </div>
     }
+
+    @if (editOpen()) {
+      <div class="sms-backdrop" (click)="closeEdit()"></div>
+      <div class="sms-modal edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+        <h3 id="edit-title">Edit {{ editTarget()?.name }}</h3>
+
+        <div class="adm-field">
+          <label for="e-name">Full name</label>
+          <input id="e-name" type="text" [(ngModel)]="editForm.name" [disabled]="editBusy()" />
+        </div>
+        <div class="adm-field">
+          <label for="e-phone">Phone number</label>
+          <input id="e-phone" type="tel" [(ngModel)]="editForm.phone" [disabled]="editBusy()" />
+        </div>
+        <div class="adm-field">
+          <label for="e-email">Email <span style="opacity:.6">(optional)</span></label>
+          <input id="e-email" type="email" [(ngModel)]="editForm.email" [disabled]="editBusy()" />
+        </div>
+        <div class="adm-field">
+          <label for="e-ticket">Ticket type</label>
+          <select id="e-ticket" [(ngModel)]="editForm.ticketType" [disabled]="editBusy()">
+            @for (t of ticketTypes; track t.value) {
+              <option [value]="t.value">{{ t.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="adm-field">
+          <label for="e-gender">Gender</label>
+          <select id="e-gender" [(ngModel)]="editForm.gender" [disabled]="editBusy()">
+            <option value="" disabled>Select gender</option>
+            @for (g of genders; track g.value) {
+              <option [value]="g.value">{{ g.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="adm-field">
+          <label for="e-drink">Preferred drink</label>
+          <select id="e-drink" [(ngModel)]="editForm.specificDrink" [disabled]="editBusy()">
+            <option value="" disabled>Select a drink</option>
+            @for (d of specificDrinks; track d.value) {
+              <option [value]="d.value">{{ d.label }}</option>
+            }
+          </select>
+        </div>
+        @if (editForm.ticketType === 'COUPLES') {
+          <div class="adm-field">
+            <label for="e-p-gender">Partner's gender <span style="opacity:.6">(optional)</span></label>
+            <select id="e-p-gender" [(ngModel)]="editForm.partnerGender" [disabled]="editBusy()">
+              <option value="">Select gender</option>
+              @for (g of genders; track g.value) {
+                <option [value]="g.value">{{ g.label }}</option>
+              }
+            </select>
+          </div>
+          <div class="adm-field">
+            <label for="e-p-drink">Partner's preferred drink <span style="opacity:.6">(optional)</span></label>
+            <select id="e-p-drink" [(ngModel)]="editForm.partnerSpecificDrink" [disabled]="editBusy()">
+              <option value="">Select a drink</option>
+              @for (d of specificDrinks; track d.value) {
+                <option [value]="d.value">{{ d.label }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        @if (editError()) {
+          <p class="adm-error" style="font-size:.85rem" role="alert">{{ editError() }}</p>
+        }
+
+        <div class="sms-actions">
+          <button class="adm-btn adm-btn--sm adm-btn--ghost" (click)="closeEdit()" [disabled]="editBusy()">
+            Cancel
+          </button>
+          <button class="adm-btn adm-btn--sm adm-btn--primary" (click)="saveEdit()" [disabled]="editBusy()">
+            {{ editBusy() ? 'Saving…' : 'Save changes' }}
+          </button>
+        </div>
+      </div>
+    }
   `,
   styles: [
     `
@@ -441,6 +532,16 @@ import {
         margin: 0 0 0.3rem;
         font-size: 1.1rem;
         color: #23201a;
+      }
+      .edit-modal {
+        max-height: 88vh;
+        overflow-y: auto;
+      }
+      .edit-modal h3 {
+        margin-bottom: 0.9rem;
+      }
+      .edit-modal .adm-field {
+        margin-bottom: 0.8rem;
       }
       .sms-modal__hint {
         margin: 0 0 0.9rem;
@@ -542,6 +643,8 @@ export class AttendeesComponent implements OnDestroy {
   private isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   readonly ticketTypes = TICKET_TYPES;
+  readonly genders = GENDERS;
+  readonly specificDrinks = SPECIFIC_DRINKS;
   meta = ticketTypeMeta;
   genderLabel = genderLabel;
   specificDrinkLabel = specificDrinkLabel;
@@ -570,6 +673,90 @@ export class AttendeesComponent implements OnDestroy {
     if (len === 0) return 1;
     return len <= 160 ? 1 : Math.ceil(len / 153);
   });
+
+  /** Edit-attendee modal state — owner only. */
+  editOpen = signal(false);
+  editTarget = signal<Attendee | null>(null);
+  editBusy = signal(false);
+  editError = signal<string | null>(null);
+  editForm: {
+    name: string;
+    email: string;
+    phone: string;
+    ticketType: TicketType;
+    gender: Gender | '';
+    specificDrink: SpecificDrink | '';
+    partnerGender: Gender | '';
+    partnerSpecificDrink: SpecificDrink | '';
+  } = this.blankEditForm();
+
+  private blankEditForm() {
+    return {
+      name: '',
+      email: '',
+      phone: '',
+      ticketType: 'SINGLES' as TicketType,
+      gender: '' as Gender | '',
+      specificDrink: '' as SpecificDrink | '',
+      partnerGender: '' as Gender | '',
+      partnerSpecificDrink: '' as SpecificDrink | '',
+    };
+  }
+
+  openEdit(a: Attendee): void {
+    this.editTarget.set(a);
+    this.editForm = {
+      name: a.name,
+      email: a.email,
+      phone: a.phone,
+      ticketType: a.ticketType,
+      gender: a.gender ?? '',
+      specificDrink: a.specificDrink ?? '',
+      partnerGender: a.partnerGender ?? '',
+      partnerSpecificDrink: a.partnerSpecificDrink ?? '',
+    };
+    this.editError.set(null);
+    this.editOpen.set(true);
+  }
+
+  closeEdit(): void {
+    if (this.editBusy()) return;
+    this.editOpen.set(false);
+    this.editTarget.set(null);
+  }
+
+  async saveEdit(): Promise<void> {
+    const a = this.editTarget();
+    if (!a) return;
+    const f = this.editForm;
+    if (!f.name.trim() || !f.phone.trim() || !f.gender || !f.specificDrink) {
+      this.editError.set('Please fill in all required fields.');
+      return;
+    }
+    this.editBusy.set(true);
+    this.editError.set(null);
+    try {
+      const name = f.name.trim();
+      await this.api.updateDetails(a.ticketCode, {
+        name,
+        email: f.email.trim(),
+        phone: f.phone.trim(),
+        ticketType: f.ticketType,
+        gender: f.gender,
+        specificDrink: f.specificDrink,
+        ...(f.ticketType === 'COUPLES'
+          ? { partnerGender: f.partnerGender, partnerSpecificDrink: f.partnerSpecificDrink }
+          : {}),
+      });
+      this.flash(`${name} updated.`, true);
+      this.editOpen.set(false);
+      this.editTarget.set(null);
+    } catch (e) {
+      this.editError.set(e instanceof Error ? e.message : 'Could not update attendee');
+    } finally {
+      this.editBusy.set(false);
+    }
+  }
 
   all = this.api.attendees;
   loading = this.api.loading;

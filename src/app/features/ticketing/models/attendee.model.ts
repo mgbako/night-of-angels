@@ -145,3 +145,16 @@ export interface RegisterDto {
   gender: Gender;
   specificDrink: SpecificDrink;
 }
+
+/** Edit an existing attendee's own details — owner only. */
+export interface EditAttendeeDto {
+  name: string;
+  email: string;
+  phone: string;
+  ticketType: TicketType;
+  gender: Gender;
+  specificDrink: SpecificDrink;
+  /** Second guest's preferences — Couples tickets only. */
+  partnerGender?: Gender | '';
+  partnerSpecificDrink?: SpecificDrink | '';
+}

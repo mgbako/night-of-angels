@@ -36,7 +36,7 @@ function tablePersons(list: Attendee[], table: string, excludeId?: string): numb
  *   POST   /api/attendees                     -> register (409 duplicate email)
  *   GET    /api/attendees/:code               -> one by ticketCode (404)
  *   DELETE /api/attendees/:code               -> remove
- *   PATCH  /api/attendees/:code               -> { checkedIn } organizer override
+ *   PATCH  /api/attendees/:code               -> checkedIn / tableNumber / details edit (owner only)
  *   POST   /api/attendees/:code/check-in      -> check in (404 / 409 already)
  *
  * NOTE: endpoints are currently open (no auth). The list endpoint exposes
@@ -314,6 +314,14 @@ async function patchOne(code: string, req: Request): Promise<Response> {
     checkedIn?: boolean;
     restore?: boolean;
     tableNumber?: string;
+    name?: string;
+    email?: string;
+    phone?: string;
+    ticketType?: TicketType;
+    gender?: Gender;
+    specificDrink?: SpecificDrink;
+    partnerGender?: Gender | '';
+    partnerSpecificDrink?: SpecificDrink | '';
   } | null;
   const list = await readAll();
   const idx = list.findIndex((a) => a.ticketCode.toLowerCase() === code.toLowerCase());
@@ -335,7 +343,7 @@ async function patchOne(code: string, req: Request): Promise<Response> {
     return json(list[idx]);
   }
 
-  // Otherwise a check-in override — needs manage rights, and only on active records.
+  // Everything else — needs manage rights (owner only), and only on active records.
   const actor = requirePermission(req, 'attendees');
   if (!canManageAttendees(actor.role)) {
     throw new AuthError(403, 'You do not have access to this action');
@@ -378,6 +386,92 @@ async function patchOne(code: string, req: Request): Promise<Response> {
       metadata: { ticketCode: list[idx].ticketCode },
     });
   }
+
+  // Edit the guest's own details (name, contact, ticket type, gender, drink).
+  const editingDetails =
+    typeof body?.name === 'string' ||
+    typeof body?.email === 'string' ||
+    typeof body?.phone === 'string' ||
+    typeof body?.ticketType === 'string' ||
+    typeof body?.gender === 'string' ||
+    typeof body?.specificDrink === 'string';
+  if (editingDetails) {
+    const before = list[idx];
+    const name = typeof body?.name === 'string' ? body.name.trim() : before.name;
+    const phone = typeof body?.phone === 'string' ? body.phone.trim() : before.phone;
+    const email = typeof body?.email === 'string' ? body.email.trim() : before.email;
+    const ticketType = body?.ticketType ?? before.ticketType;
+    const gender = body?.gender ?? before.gender;
+    const specificDrink = body?.specificDrink ?? before.specificDrink;
+
+    if (!name) return json({ error: 'Full name is required' }, 400);
+    if (!phone) return json({ error: 'Phone number is required' }, 400);
+    if (!TICKET_LABELS[ticketType]) return json({ error: 'A valid ticket type is required' }, 400);
+    if (!gender || !GENDERS.includes(gender)) {
+      return json({ error: 'A valid gender is required' }, 400);
+    }
+    if (!specificDrink || !SPECIFIC_DRINKS.includes(specificDrink)) {
+      return json({ error: 'A valid preferred drink is required' }, 400);
+    }
+
+    const emailLower = email.toLowerCase();
+    if (
+      emailLower &&
+      list.some((a, i) => i !== idx && !a.deletedAt && a.email.toLowerCase() === emailLower)
+    ) {
+      return json({ error: 'An attendee with this email already exists' }, 409);
+    }
+
+    const tableNumber = (list[idx].tableNumber ?? '').trim();
+    if (tableNumber && ticketType !== before.ticketType) {
+      const persons = tablePersons(list, tableNumber, before.id) + SEATS[ticketType];
+      if (persons > TABLE_CAPACITY) {
+        return json(
+          { error: `Table ${tableNumber} is full for a ${TICKET_LABELS[ticketType]} ticket (seats ${TABLE_CAPACITY})` },
+          409,
+        );
+      }
+    }
+
+    // Second-guest preferences only make sense for Couples tickets.
+    const isCouples = ticketType === 'COUPLES';
+    const partnerGender = isCouples
+      ? (typeof body?.partnerGender === 'string' ? body.partnerGender || undefined : before.partnerGender)
+      : undefined;
+    const partnerSpecificDrink = isCouples
+      ? (typeof body?.partnerSpecificDrink === 'string'
+          ? body.partnerSpecificDrink || undefined
+          : before.partnerSpecificDrink)
+      : undefined;
+
+    list[idx] = {
+      ...list[idx],
+      name,
+      email,
+      phone,
+      ticketType,
+      gender,
+      specificDrink,
+      partnerGender,
+      partnerSpecificDrink,
+    };
+    await recordAudit({
+      req,
+      actor,
+      action: 'attendee.details_updated',
+      target,
+      changes: {
+        name: { from: before.name, to: name },
+        email: { from: before.email, to: email },
+        phone: { from: before.phone, to: phone },
+        ticketType: { from: before.ticketType, to: ticketType },
+        gender: { from: before.gender ?? null, to: gender ?? null },
+        specificDrink: { from: before.specificDrink ?? null, to: specificDrink ?? null },
+      },
+      metadata: { ticketCode: list[idx].ticketCode },
+    });
+  }
+
   await writeAll(list);
   return json(list[idx]);
 }

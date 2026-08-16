@@ -2,7 +2,7 @@ import { Inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../admin/services/auth.service';
-import { Attendee, RegisterDto } from '../models/attendee.model';
+import { Attendee, EditAttendeeDto, RegisterDto } from '../models/attendee.model';
 
 const API = '/api/attendees';
 
@@ -199,6 +199,23 @@ export class AttendeeApiService {
     });
     this.guard(res);
     if (!res.ok) throw new ApiError(res.status, 'Update failed');
+    const attendee = (await res.json()) as Attendee;
+    await this.refresh();
+    return attendee;
+  }
+
+  /** Edit an existing attendee's own details — owner only. */
+  async updateDetails(ticketCode: string, dto: EditAttendeeDto): Promise<Attendee> {
+    const res = await fetch(`${API}/${encodeURIComponent(ticketCode)}`, {
+      method: 'PATCH',
+      headers: this.authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(dto),
+    });
+    this.guard(res);
+    if (res.status === 409) {
+      throw new ApiError(409, (await this.msg(res)) || 'An attendee with this email already exists');
+    }
+    if (!res.ok) throw new ApiError(res.status, (await this.msg(res)) || 'Could not update attendee');
     const attendee = (await res.json()) as Attendee;
     await this.refresh();
     return attendee;

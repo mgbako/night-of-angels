@@ -12,6 +12,7 @@ export type IconName =
   | 'download'
   | 'check'
   | 'check-circle'
+  | 'edit'
   | 'alert'
   | 'trash'
   | 'chevron-left'
@@ -97,6 +98,10 @@ export type IconName =
         @case ('check-circle') {
           <circle cx="12" cy="12" r="9" />
           <path d="M8 12l3 3 5-6" />
+        }
+        @case ('edit') {
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" />
         }
         @case ('alert') {
           <path d="M12 3l9 16H3z" />
