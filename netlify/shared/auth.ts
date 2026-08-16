@@ -67,10 +67,9 @@ export function hasPermission(role: string | undefined | null, perm: Permission)
   return ROLE_PERMISSIONS[normalizeRole(role)].includes(perm);
 }
 
-/** Ushers may view attendees but not mutate them. */
+/** Only the owner (super admin) may update existing attendee records. */
 export function canManageAttendees(role: string | undefined | null): boolean {
-  const r = normalizeRole(role);
-  return hasPermission(r, 'attendees') && r !== 'usher';
+  return normalizeRole(role) === 'owner';
 }
 
 export interface User {

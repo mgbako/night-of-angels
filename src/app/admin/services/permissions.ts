@@ -27,9 +27,9 @@ export const ROLE_LABELS: Record<Role, string> = {
 };
 
 export const ROLE_DESCRIPTIONS: Record<Role, string> = {
-  owner: 'Full access, including managing the team.',
-  manager: 'Runs the event. Everything except managing users.',
-  coordinator: 'Attendees, reservations, register, tickets and check-in.',
+  owner: 'Full access, including managing the team and updating attendee records.',
+  manager: 'Runs the event. Everything except managing users and updating attendee records.',
+  coordinator: 'Reservations, register, tickets and check-in. Attendees are view-only.',
   usher: 'Door check-in and viewing attendees.',
 };
 
@@ -63,8 +63,7 @@ export function hasPermission(role: string | undefined | null, perm: Permission)
   return ROLE_PERMISSIONS[normalizeRole(role)].includes(perm);
 }
 
-/** Ushers may view attendees but not mutate them. */
+/** Only the owner (super admin) may update existing attendee records. */
 export function canManageAttendees(role: string | undefined | null): boolean {
-  const r = normalizeRole(role);
-  return hasPermission(r, 'attendees') && r !== 'usher';
+  return normalizeRole(role) === 'owner';
 }

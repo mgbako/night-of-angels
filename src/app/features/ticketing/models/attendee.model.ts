@@ -16,19 +16,10 @@ export function genderLabel(g?: Gender | null): string {
   return GENDERS.find((x) => x.value === g)?.label ?? '—';
 }
 
-export type DrinkPreference = 'ALCOHOLIC_WINE' | 'NON_ALCOHOLIC_WINE';
-
-export const DRINK_PREFERENCES: { value: DrinkPreference; label: string }[] = [
-  { value: 'ALCOHOLIC_WINE', label: 'Alcoholic Wine' },
-  { value: 'NON_ALCOHOLIC_WINE', label: 'Non-Alcoholic Wine' },
-];
-
-export function drinkLabel(d?: DrinkPreference | null): string {
-  return DRINK_PREFERENCES.find((x) => x.value === d)?.label ?? '—';
-}
-
-/** Specific drink options from the bar stock, for guests who want to pick a brand. */
+/** Preferred drink — wine categories plus the specific bar stock. */
 export type SpecificDrink =
+  | 'ALCOHOLIC_WINE'
+  | 'NON_ALCOHOLIC_WINE'
   | 'SMIRNOFF'
   | 'STAR_RADLER'
   | 'MALT'
@@ -39,6 +30,8 @@ export type SpecificDrink =
   | 'KUMELIN';
 
 export const SPECIFIC_DRINKS: { value: SpecificDrink; label: string }[] = [
+  { value: 'ALCOHOLIC_WINE', label: 'Alcoholic Wine' },
+  { value: 'NON_ALCOHOLIC_WINE', label: 'Non-Alcoholic Wine' },
   { value: 'SMIRNOFF', label: 'Smirnoff' },
   { value: 'STAR_RADLER', label: 'Star Radler' },
   { value: 'MALT', label: 'Malt' },
@@ -137,11 +130,9 @@ export interface Attendee {
   tableNumber?: string; // organizer-assigned table
   deletedAt?: string | null; // set when archived (soft-deleted)
   gender?: Gender;
-  drinkPreference?: DrinkPreference;
   specificDrink?: SpecificDrink;
   /** Second guest's preferences — Couples tickets only. */
   partnerGender?: Gender;
-  partnerDrinkPreference?: DrinkPreference;
   partnerSpecificDrink?: SpecificDrink;
 }
 
@@ -152,6 +143,5 @@ export interface RegisterDto {
   ticketType: TicketType;
   tableNumber?: string;
   gender: Gender;
-  drinkPreference: DrinkPreference;
   specificDrink: SpecificDrink;
 }

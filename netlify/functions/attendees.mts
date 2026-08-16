@@ -57,8 +57,9 @@ export const config = {
 
 type TicketType = 'SINGLES' | 'COUPLES' | 'TABLE';
 type Gender = 'MALE' | 'FEMALE';
-type DrinkPreference = 'ALCOHOLIC_WINE' | 'NON_ALCOHOLIC_WINE';
 type SpecificDrink =
+  | 'ALCOHOLIC_WINE'
+  | 'NON_ALCOHOLIC_WINE'
   | 'SMIRNOFF'
   | 'STAR_RADLER'
   | 'MALT'
@@ -68,8 +69,9 @@ type SpecificDrink =
   | 'BOTTLE_WATER'
   | 'KUMELIN';
 const GENDERS: Gender[] = ['MALE', 'FEMALE'];
-const DRINK_PREFERENCES: DrinkPreference[] = ['ALCOHOLIC_WINE', 'NON_ALCOHOLIC_WINE'];
 const SPECIFIC_DRINKS: SpecificDrink[] = [
+  'ALCOHOLIC_WINE',
+  'NON_ALCOHOLIC_WINE',
   'SMIRNOFF',
   'STAR_RADLER',
   'MALT',
@@ -93,10 +95,8 @@ interface Attendee {
   tableNumber?: string;
   deletedAt?: string | null;
   gender?: Gender;
-  drinkPreference?: DrinkPreference;
   specificDrink?: SpecificDrink;
   partnerGender?: Gender;
-  partnerDrinkPreference?: DrinkPreference;
   partnerSpecificDrink?: SpecificDrink;
 }
 
@@ -239,9 +239,6 @@ async function register(req: Request, actor: TokenPayload): Promise<Response> {
   if (!body.gender || !GENDERS.includes(body.gender)) {
     return json({ error: 'A valid gender is required' }, 400);
   }
-  if (!body.drinkPreference || !DRINK_PREFERENCES.includes(body.drinkPreference)) {
-    return json({ error: 'A valid drink preference is required' }, 400);
-  }
   if (!body.specificDrink || !SPECIFIC_DRINKS.includes(body.specificDrink)) {
     return json({ error: 'A valid preferred drink is required' }, 400);
   }
@@ -270,7 +267,6 @@ async function register(req: Request, actor: TokenPayload): Promise<Response> {
     createdAt: new Date().toISOString(),
     ...(tableNumber ? { tableNumber } : {}),
     gender: body.gender,
-    drinkPreference: body.drinkPreference,
     specificDrink: body.specificDrink,
   };
   await writeAll([attendee, ...list]);

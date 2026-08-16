@@ -1,4 +1,4 @@
-import { DrinkPreference, Gender, SpecificDrink, TicketType } from './attendee.model';
+import { Gender, SpecificDrink, TicketType } from './attendee.model';
 
 export type ReservationStatus = 'pending' | 'approved' | 'rejected';
 
@@ -11,14 +11,12 @@ export interface Reservation {
   ticketType?: TicketType;
   /** Optional for records created before this field existed. */
   gender?: Gender;
-  drinkPreference?: DrinkPreference;
   specificDrink?: SpecificDrink;
   /** Second guest details, captured for Couples reservations. All optional. */
   partnerName?: string;
   partnerPhone?: string;
   partnerEmail?: string;
   partnerGender?: Gender;
-  partnerDrinkPreference?: DrinkPreference;
   partnerSpecificDrink?: SpecificDrink;
   proofType: string;
   proofName: string;
@@ -34,15 +32,13 @@ export interface ReservationDto {
   email: string;
   ticketType: TicketType;
   gender: Gender;
-  drinkPreference: DrinkPreference;
   specificDrink: SpecificDrink;
   partnerName?: string;
   partnerPhone?: string;
   partnerEmail?: string;
   partnerGender?: Gender;
-  partnerDrinkPreference?: DrinkPreference;
   partnerSpecificDrink?: SpecificDrink;
   proof: { name: string; type: string; dataBase64: string };
 }
 
-export type { TicketType, Gender, DrinkPreference, SpecificDrink };
+export type { TicketType, Gender, SpecificDrink };

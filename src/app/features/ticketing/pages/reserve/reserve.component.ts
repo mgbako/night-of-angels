@@ -13,8 +13,6 @@ import { SeoService } from '../../../../shared/seo.service';
 import { ReservationApiService } from '../../services/reservation-api.service';
 import { ReservationDto } from '../../models/reservation.model';
 import {
-  DRINK_PREFERENCES,
-  DrinkPreference,
   GENDERS,
   Gender,
   SPECIFIC_DRINKS,
@@ -117,17 +115,6 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
               @if (invalid('gender')) { <span class="err">Please select a gender.</span> }
             </div>
 
-            <div class="rsv__field" [class.invalid]="invalid('drinkPreference')">
-              <label for="drinkPreference">Drink preference *</label>
-              <select id="drinkPreference" formControlName="drinkPreference">
-                <option value="" disabled>Select a drink</option>
-                @for (d of drinkPreferences; track d.value) {
-                  <option [value]="d.value">{{ d.label }}</option>
-                }
-              </select>
-              @if (invalid('drinkPreference')) { <span class="err">Please select a drink preference.</span> }
-            </div>
-
             <div class="rsv__field" [class.invalid]="invalid('specificDrink')">
               <label for="specificDrink">Preferred drink *</label>
               <select id="specificDrink" formControlName="specificDrink">
@@ -164,15 +151,6 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
                     <option value="">Select gender</option>
                     @for (g of genders; track g.value) {
                       <option [value]="g.value">{{ g.label }}</option>
-                    }
-                  </select>
-                </div>
-                <div class="rsv__field">
-                  <label for="partnerDrinkPreference">Partner’s drink preference</label>
-                  <select id="partnerDrinkPreference" formControlName="partnerDrinkPreference">
-                    <option value="">Select a drink</option>
-                    @for (d of drinkPreferences; track d.value) {
-                      <option [value]="d.value">{{ d.label }}</option>
                     }
                   </select>
                 </div>
@@ -252,7 +230,6 @@ export class ReserveComponent implements OnInit {
 
   readonly ticketTypes = TICKET_TYPES;
   readonly genders = GENDERS;
-  readonly drinkPreferences = DRINK_PREFERENCES;
   readonly specificDrinks = SPECIFIC_DRINKS;
   readonly payment = PAYMENT;
 
@@ -290,14 +267,12 @@ export class ReserveComponent implements OnInit {
     email: ['', [Validators.email]],
     ticketType: ['' as TicketType | '', [Validators.required]],
     gender: ['' as Gender | '', [Validators.required]],
-    drinkPreference: ['' as DrinkPreference | '', [Validators.required]],
     specificDrink: ['' as SpecificDrink | '', [Validators.required]],
     // Second guest — only shown/collected for Couples, all optional.
     partnerName: [''],
     partnerPhone: ['', [phoneValidator]],
     partnerEmail: ['', [Validators.email]],
     partnerGender: ['' as Gender | ''],
-    partnerDrinkPreference: ['' as DrinkPreference | ''],
     partnerSpecificDrink: ['' as SpecificDrink | ''],
   });
 
@@ -352,7 +327,6 @@ export class ReserveComponent implements OnInit {
         partnerPhone: '',
         partnerEmail: '',
         partnerGender: '',
-        partnerDrinkPreference: '',
         partnerSpecificDrink: '',
       });
     }
@@ -369,13 +343,11 @@ export class ReserveComponent implements OnInit {
       const {
         ticketType,
         gender,
-        drinkPreference,
         specificDrink,
         partnerName,
         partnerPhone,
         partnerEmail,
         partnerGender,
-        partnerDrinkPreference,
         partnerSpecificDrink,
         ...rest
       } = this.form.getRawValue();
@@ -385,7 +357,6 @@ export class ReserveComponent implements OnInit {
         email: rest.email,
         ticketType: ticketType as TicketType,
         gender: gender as Gender,
-        drinkPreference: drinkPreference as DrinkPreference,
         specificDrink: specificDrink as SpecificDrink,
         proof: this.proof()!,
       };
@@ -395,7 +366,6 @@ export class ReserveComponent implements OnInit {
         if (partnerPhone.trim()) dto.partnerPhone = partnerPhone.trim();
         if (partnerEmail.trim()) dto.partnerEmail = partnerEmail.trim();
         if (partnerGender) dto.partnerGender = partnerGender as Gender;
-        if (partnerDrinkPreference) dto.partnerDrinkPreference = partnerDrinkPreference as DrinkPreference;
         if (partnerSpecificDrink) dto.partnerSpecificDrink = partnerSpecificDrink as SpecificDrink;
       }
       await this.api.create(dto);

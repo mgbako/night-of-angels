@@ -9,8 +9,9 @@ import { getStore } from '@netlify/blobs';
 export type TicketType = 'SINGLES' | 'COUPLES' | 'TABLE';
 
 export type Gender = 'MALE' | 'FEMALE';
-export type DrinkPreference = 'ALCOHOLIC_WINE' | 'NON_ALCOHOLIC_WINE';
 export type SpecificDrink =
+  | 'ALCOHOLIC_WINE'
+  | 'NON_ALCOHOLIC_WINE'
   | 'SMIRNOFF'
   | 'STAR_RADLER'
   | 'MALT'
@@ -35,11 +36,9 @@ export interface Attendee {
   /** Set when soft-deleted (archived). Absent/null = active. */
   deletedAt?: string | null;
   gender?: Gender;
-  drinkPreference?: DrinkPreference;
   specificDrink?: SpecificDrink;
   /** Second guest's preferences — Couples tickets only. */
   partnerGender?: Gender;
-  partnerDrinkPreference?: DrinkPreference;
   partnerSpecificDrink?: SpecificDrink;
 }
 
@@ -76,10 +75,8 @@ export async function addAttendee(input: {
   phone: string;
   ticketType: TicketType;
   gender?: Gender;
-  drinkPreference?: DrinkPreference;
   specificDrink?: SpecificDrink;
   partnerGender?: Gender;
-  partnerDrinkPreference?: DrinkPreference;
   partnerSpecificDrink?: SpecificDrink;
 }): Promise<Attendee> {
   const list = await readAttendees();
@@ -98,10 +95,8 @@ export async function addAttendee(input: {
     checkedInAt: null,
     createdAt: new Date().toISOString(),
     ...(input.gender ? { gender: input.gender } : {}),
-    ...(input.drinkPreference ? { drinkPreference: input.drinkPreference } : {}),
     ...(input.specificDrink ? { specificDrink: input.specificDrink } : {}),
     ...(input.partnerGender ? { partnerGender: input.partnerGender } : {}),
-    ...(input.partnerDrinkPreference ? { partnerDrinkPreference: input.partnerDrinkPreference } : {}),
     ...(input.partnerSpecificDrink ? { partnerSpecificDrink: input.partnerSpecificDrink } : {}),
   };
   await writeAttendees([attendee, ...list]);

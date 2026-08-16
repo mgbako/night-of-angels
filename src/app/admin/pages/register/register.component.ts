@@ -15,8 +15,6 @@ import {
 import { ticketShareUrl } from '../../../features/ticketing/share.util';
 import {
   Attendee,
-  DRINK_PREFERENCES,
-  DrinkPreference,
   GENDERS,
   Gender,
   SPECIFIC_DRINKS,
@@ -122,17 +120,6 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
             @if (invalid('gender')) { <span class="adm-error">Please select a gender.</span> }
           </div>
 
-          <div class="adm-field" [class.adm-field--invalid]="invalid('drinkPreference')">
-            <label for="r-drink">Drink preference</label>
-            <select id="r-drink" formControlName="drinkPreference">
-              <option value="" disabled>Select a drink</option>
-              @for (d of drinkPreferences; track d.value) {
-                <option [value]="d.value">{{ d.label }}</option>
-              }
-            </select>
-            @if (invalid('drinkPreference')) { <span class="adm-error">Please select a drink preference.</span> }
-          </div>
-
           <div class="adm-field" [class.adm-field--invalid]="invalid('specificDrink')">
             <label for="r-specific-drink">Preferred drink</label>
             <select id="r-specific-drink" formControlName="specificDrink">
@@ -196,7 +183,6 @@ export class RegisterComponent {
 
   readonly ticketTypes = TICKET_TYPES;
   readonly genders = GENDERS;
-  readonly drinkPreferences = DRINK_PREFERENCES;
   readonly specificDrinks = SPECIFIC_DRINKS;
 
   constructor() {
@@ -221,7 +207,6 @@ export class RegisterComponent {
     email: ['', [Validators.email]],
     ticketType: ['SINGLES' as TicketType, Validators.required],
     gender: ['' as Gender | '', Validators.required],
-    drinkPreference: ['' as DrinkPreference | '', Validators.required],
     specificDrink: ['' as SpecificDrink | '', Validators.required],
     tableNumber: [''],
   });
@@ -244,7 +229,6 @@ export class RegisterComponent {
         ...raw,
         gender: raw.gender as Gender,
         specificDrink: raw.specificDrink as SpecificDrink,
-        drinkPreference: raw.drinkPreference as DrinkPreference,
       });
       this.created.set(attendee);
     } catch (e) {
@@ -288,7 +272,6 @@ export class RegisterComponent {
       email: '',
       ticketType: 'SINGLES',
       gender: '',
-      drinkPreference: '',
       specificDrink: '',
       tableNumber: '',
     });

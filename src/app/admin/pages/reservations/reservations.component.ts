@@ -12,7 +12,6 @@ import {
   TICKET_TYPES,
   TicketType,
   TicketTypeMeta,
-  drinkLabel,
   effectivePrice,
   genderLabel,
   specificDrinkLabel,
@@ -76,10 +75,10 @@ import { AuthService } from '../../services/auth.service';
                 @if (r.ticketType) {
                   <span class="res__req">Requested: {{ typeLabel(r.ticketType) }}</span>
                 }
-                @if (r.gender || r.drinkPreference || r.specificDrink) {
+                @if (r.gender || r.specificDrink) {
                   <span class="res__partner">
                     <adm-icon name="attendees" [size]="13" />
-                    {{ genderLabel(r.gender) }} · {{ drinkLabel(r.drinkPreference) }} · {{ specificDrinkLabel(r.specificDrink) }}
+                    {{ genderLabel(r.gender) }} · {{ specificDrinkLabel(r.specificDrink) }}
                   </span>
                 }
                 @if (r.partnerName || r.partnerPhone || r.partnerEmail) {
@@ -87,8 +86,8 @@ import { AuthService } from '../../services/auth.service';
                     <adm-icon name="attendees" [size]="13" />
                     Second guest:
                     {{ r.partnerName || '—' }}@if (r.partnerPhone) { · {{ r.partnerPhone }} }@if (r.partnerEmail) { · {{ r.partnerEmail }} }
-                    @if (r.partnerGender || r.partnerDrinkPreference || r.partnerSpecificDrink) {
-                      · {{ genderLabel(r.partnerGender) }} · {{ drinkLabel(r.partnerDrinkPreference) }} · {{ specificDrinkLabel(r.partnerSpecificDrink) }}
+                    @if (r.partnerGender || r.partnerSpecificDrink) {
+                      · {{ genderLabel(r.partnerGender) }} · {{ specificDrinkLabel(r.partnerSpecificDrink) }}
                     }
                   </span>
                 }
@@ -256,7 +255,6 @@ export class ReservationsComponent {
   private sanitizer = inject(DomSanitizer);
   readonly ticketTypes = TICKET_TYPES;
   genderLabel = genderLabel;
-  drinkLabel = drinkLabel;
   specificDrinkLabel = specificDrinkLabel;
 
   /** Proof lightbox state (null when closed). */
