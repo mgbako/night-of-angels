@@ -8,6 +8,7 @@ import {
   createHash,
   createHmac,
   randomBytes,
+  randomInt,
   randomUUID,
   scryptSync,
   timingSafeEqual,
@@ -342,4 +343,76 @@ export async function consumeResetToken(token: string): Promise<string | null> {
   if (!rec) return null;
   await writeResets(list.filter((r) => r.tokenHash !== hash));
   return rec.userId;
+}
+
+// ---------- login OTP (second factor, required for every sign-in) ----------
+interface OtpRecord {
+  userId: string;
+  codeHash: string;
+  exp: number; // epoch seconds
+  attempts: number;
+  issuedAt: number; // epoch seconds — used for the resend cooldown
+}
+
+const OTP_KEY = 'otps';
+const OTP_TTL = 10 * 60; // 10 minutes
+const OTP_MAX_ATTEMPTS = 5;
+const OTP_RESEND_COOLDOWN = 30; // seconds
+
+async function readOtps(): Promise<OtpRecord[]> {
+  const data = await store().get(OTP_KEY, { type: 'json' });
+  const now = Math.floor(Date.now() / 1000);
+  return (Array.isArray(data) ? (data as OtpRecord[]) : []).filter((r) => r.exp > now);
+}
+
+async function writeOtps(list: OtpRecord[]): Promise<void> {
+  await store().setJSON(OTP_KEY, list);
+}
+
+function genOtpCode(): string {
+  return String(randomInt(1_000_000)).padStart(6, '0');
+}
+
+/** Issue (replacing any existing) login OTP for a user; returns the raw code to email. */
+export async function createLoginOtp(userId: string): Promise<string> {
+  const code = genOtpCode();
+  const now = Math.floor(Date.now() / 1000);
+  const list = (await readOtps()).filter((r) => r.userId !== userId);
+  list.push({ userId, codeHash: sha256(code), exp: now + OTP_TTL, attempts: 0, issuedAt: now });
+  await writeOtps(list);
+  return code;
+}
+
+/**
+ * Re-issue a code for a user, but only if they already have an active
+ * (unexpired) OTP record — i.e. they've already passed the password step —
+ * and the resend cooldown has elapsed. Returns null otherwise, so the caller
+ * can no-op without revealing which condition failed.
+ */
+export async function resendLoginOtp(userId: string): Promise<string | null> {
+  const now = Math.floor(Date.now() / 1000);
+  const list = await readOtps();
+  const existing = list.find((r) => r.userId === userId);
+  if (!existing || now - existing.issuedAt < OTP_RESEND_COOLDOWN) return null;
+  return createLoginOtp(userId);
+}
+
+/** Validate + consume a login OTP. Wrong/expired codes burn an attempt; too many burns the record. */
+export async function verifyLoginOtp(userId: string, code: string): Promise<boolean> {
+  const list = await readOtps();
+  const idx = list.findIndex((r) => r.userId === userId);
+  if (idx === -1) return false;
+  const rec = list[idx];
+  if (rec.attempts >= OTP_MAX_ATTEMPTS || rec.codeHash !== sha256(code)) {
+    if (rec.attempts + 1 >= OTP_MAX_ATTEMPTS) {
+      list.splice(idx, 1);
+    } else {
+      list[idx] = { ...rec, attempts: rec.attempts + 1 };
+    }
+    await writeOtps(list);
+    return false;
+  }
+  list.splice(idx, 1); // single-use
+  await writeOtps(list);
+  return true;
 }

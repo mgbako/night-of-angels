@@ -108,6 +108,21 @@ export function resetEmailHtml(name: string, url: string): string {
   );
 }
 
+export function otpEmailHtml(name: string, code: string): string {
+  const spaced = code.split('').join(' ');
+  return shell(
+    'Your sign-in code',
+    `<p>Hello ${escapeHtml(name)},</p>
+     <p>Use this code to finish signing in to the Back Office. It expires in 10 minutes.</p>
+     <table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0;">
+       <tr><td style="padding:16px 26px;background:#0b0b0a;border:1px solid rgba(201,162,39,.35);border-radius:10px;">
+         <span style="font-family:ui-monospace,Menlo,monospace;font-size:28px;letter-spacing:6px;color:#f4f1e7;">${spaced}</span>
+       </td></tr>
+     </table>
+     <p style="font-size:14px;color:#c9c2b0;">If you didn't just try to sign in, you can safely ignore this email.</p>`,
+  );
+}
+
 function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string),

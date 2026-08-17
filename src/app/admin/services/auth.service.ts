@@ -86,7 +86,8 @@ export class AuthService {
     return t ? { Authorization: `Bearer ${t}` } : {};
   }
 
-  async login(email: string, password: string): Promise<void> {
+  /** Step 1 — verifies the password and triggers the emailed sign-in code. */
+  async login(email: string, password: string): Promise<{ email: string }> {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -94,9 +95,30 @@ export class AuthService {
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || 'Login failed');
+    return { email: body.email ?? email };
+  }
+
+  /** Step 2 — verifies the emailed code and completes sign-in. */
+  async verifyOtp(email: string, code: string): Promise<void> {
+    const res = await fetch('/api/auth/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || 'Invalid or expired code');
     this.token.set(body.token);
     this.user.set(body.user);
     if (this.isBrowser) localStorage.setItem(LS_TOKEN, body.token);
+  }
+
+  /** Ask for a new sign-in code. Always resolves — never reveals whether it actually sent one. */
+  async resendOtp(email: string): Promise<void> {
+    await fetch('/api/auth/resend-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
   }
 
   logout(navigate = true): void {

@@ -5,6 +5,7 @@ import {
   Role,
   TokenPayload,
   consumeResetToken,
+  createLoginOtp,
   createResetToken,
   ensureSeedUser,
   findByEmail,
@@ -14,24 +15,31 @@ import {
   requireAuth,
   requireOwner,
   requirePermission,
+  resendLoginOtp,
   setDeleted,
   setPassword,
   setRole,
   signToken,
   toSafe,
+  verifyLoginOtp,
   verifyPassword,
   writeUsers,
 } from '../shared/auth';
-import { resetEmailHtml, sendEmail } from '../shared/email';
+import { EmailError, otpEmailHtml, resetEmailHtml, sendEmail } from '../shared/email';
 import { recordAudit } from '../shared/audit';
 
 /**
  * Auth API (self-hosted).
- *   POST   /api/auth/login        { email, password } -> { token, user }
+ *   POST   /api/auth/login        { email, password } -> { otpRequired: true, email }
+ *   POST   /api/auth/verify-otp   { email, code }      -> { token, user }
+ *   POST   /api/auth/resend-otp   { email }            -> { ok: true }
  *   GET    /api/auth/me           -> { user }                 [auth]
  *   GET    /api/auth/users        -> SafeUser[]               [auth]
  *   POST   /api/auth/users        { name, email, password }   [auth]
  *   DELETE /api/auth/users/:id                                [auth]
+ *
+ * Every sign-in requires a 6-digit code emailed after the password check
+ * succeeds (10-minute expiry, 5 attempts, 30s resend cooldown).
  *
  * Requires env: JWT_SECRET (>=16 chars). First admin is seeded from
  * SEED_ADMIN_EMAIL + SEED_ADMIN_PASSWORD when the user store is empty.
@@ -39,6 +47,8 @@ import { recordAudit } from '../shared/audit';
 export const config = {
   path: [
     '/api/auth/login',
+    '/api/auth/verify-otp',
+    '/api/auth/resend-otp',
     '/api/auth/me',
     '/api/auth/forgot',
     '/api/auth/reset',
@@ -72,6 +82,8 @@ export default async (req: Request, context: Context): Promise<Response> => {
 
   try {
     if (path === '/api/auth/login' && req.method === 'POST') return await login(req);
+    if (path === '/api/auth/verify-otp' && req.method === 'POST') return await verifyOtpRoute(req);
+    if (path === '/api/auth/resend-otp' && req.method === 'POST') return await resendOtpRoute(req);
     if (path === '/api/auth/me' && req.method === 'GET') return me(req);
     if (path === '/api/auth/forgot' && req.method === 'POST') return await forgot(req);
     if (path === '/api/auth/reset' && req.method === 'POST') return await reset(req);
@@ -145,6 +157,53 @@ async function login(req: Request): Promise<Response> {
     });
     return json({ error: 'Incorrect email or password' }, 401);
   }
+
+  const code = await createLoginOtp(user.id);
+  try {
+    await sendEmail({
+      to: user.email,
+      subject: 'Your sign-in code — A Night of Angels',
+      html: otpEmailHtml(user.name, code),
+    });
+  } catch (e) {
+    // 400, not 502: a Cloudflare-fronted origin 502 gets swapped for a generic
+    // "Bad gateway" page, hiding this message. The client reads `error` on any non-2xx.
+    if (e instanceof EmailError) return json({ error: e.message }, 400);
+    throw e;
+  }
+
+  await recordAudit({
+    req,
+    actor: { id: user.id, name: user.name, email: user.email, role: normalizeRole(user.role) },
+    action: 'auth.login.otp_sent',
+    target: { type: 'user', id: user.id, label: user.email },
+  });
+  return json({ otpRequired: true, email: user.email });
+}
+
+async function verifyOtpRoute(req: Request): Promise<Response> {
+  const { email, code } = (await req.json().catch(() => ({}))) as {
+    email?: string;
+    code?: string;
+  };
+  if (!email || !code) return json({ error: 'Email and code are required' }, 400);
+
+  const user = (await readUsers()).find((u) => u.email === email.trim().toLowerCase());
+  if (!user || user.deletedAt) return json({ error: 'Invalid or expired code' }, 401);
+
+  const ok = await verifyLoginOtp(user.id, code.trim());
+  if (!ok) {
+    await recordAudit({
+      req,
+      actor: null,
+      action: 'auth.login.otp_failure',
+      severity: 'warning',
+      outcome: 'failure',
+      target: { type: 'user', id: user.id, label: user.email },
+    });
+    return json({ error: 'Invalid or expired code' }, 401);
+  }
+
   await recordAudit({
     req,
     actor: { id: user.id, name: user.name, email: user.email, role: normalizeRole(user.role) },
@@ -152,6 +211,32 @@ async function login(req: Request): Promise<Response> {
     target: { type: 'user', id: user.id, label: user.email },
   });
   return json({ token: signToken(user), user: toSafe(user) });
+}
+
+async function resendOtpRoute(req: Request): Promise<Response> {
+  const { email } = (await req.json().catch(() => ({}))) as { email?: string };
+  if (!email) return json({ error: 'Email is required' }, 400);
+
+  const user = (await readUsers()).find(
+    (u) => u.email === email.trim().toLowerCase() && !u.deletedAt,
+  );
+  if (user) {
+    const code = await resendLoginOtp(user.id);
+    if (code) {
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: 'Your sign-in code — A Night of Angels',
+          html: otpEmailHtml(user.name, code),
+        });
+      } catch (e) {
+        if (e instanceof EmailError) return json({ error: e.message }, 400);
+        throw e;
+      }
+    }
+  }
+  // Same response either way — don't reveal whether the email or an active code exists.
+  return json({ ok: true });
 }
 
 function me(req: Request): Response {

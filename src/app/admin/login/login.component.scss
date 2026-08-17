@@ -80,6 +80,32 @@
   }
 }
 
+.login__code {
+  text-align: center;
+  letter-spacing: 0.7em;
+  font-size: 1.3rem;
+  font-family: ui-monospace, Menlo, monospace;
+  padding-left: 0.5em !important;
+}
+
+.login__link {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--gold-soft);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font: inherit;
+  font-size: inherit;
+  cursor: pointer;
+
+  &:disabled {
+    color: var(--ink-soft);
+    text-decoration: none;
+    cursor: default;
+  }
+}
+
 .login__pw {
   position: relative;
 
