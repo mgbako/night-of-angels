@@ -38,8 +38,10 @@ import { recordAudit } from '../shared/audit';
  *   POST   /api/auth/users        { name, email, password }   [auth]
  *   DELETE /api/auth/users/:id                                [auth]
  *
- * Every sign-in requires a 6-digit code emailed after the password check
- * succeeds (10-minute expiry, 5 attempts, 30s resend cooldown).
+ * When LOGIN_OTP_ENABLED=true, sign-in additionally requires a 6-digit code
+ * emailed after the password check succeeds (10-minute expiry, 5 attempts,
+ * 30s resend cooldown) — otherwise /login returns { token, user } directly,
+ * same as before the OTP step existed.
  *
  * Requires env: JWT_SECRET (>=16 chars). First admin is seeded from
  * SEED_ADMIN_EMAIL + SEED_ADMIN_PASSWORD when the user store is empty.
@@ -156,6 +158,18 @@ async function login(req: Request): Promise<Response> {
       target: { type: 'user', id: user?.id ?? null, label: email.trim().toLowerCase() },
     });
     return json({ error: 'Incorrect email or password' }, 401);
+  }
+
+  // The OTP step is opt-in via env var so it can be switched on later without
+  // a code change — unset/anything but 'true' keeps the classic one-step login.
+  if (process.env['LOGIN_OTP_ENABLED'] !== 'true') {
+    await recordAudit({
+      req,
+      actor: { id: user.id, name: user.name, email: user.email, role: normalizeRole(user.role) },
+      action: 'auth.login.success',
+      target: { type: 'user', id: user.id, label: user.email },
+    });
+    return json({ token: signToken(user), user: toSafe(user) });
   }
 
   const code = await createLoginOtp(user.id);

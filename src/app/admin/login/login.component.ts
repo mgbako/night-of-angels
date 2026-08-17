@@ -148,6 +148,12 @@ export class LoginComponent implements OnDestroy {
     this.busy.set(true);
     try {
       const result = await this.auth.login(this.email.trim(), this.password);
+      if (!result.otpRequired) {
+        // OTP step is currently disabled server-side — sign-in is already complete.
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        this.router.navigateByUrl(returnUrl || '/admin');
+        return;
+      }
       this.otpEmail = result.email;
       this.code = '';
       this.step.set('otp');

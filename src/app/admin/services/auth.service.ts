@@ -86,8 +86,15 @@ export class AuthService {
     return t ? { Authorization: `Bearer ${t}` } : {};
   }
 
-  /** Step 1 — verifies the password and triggers the emailed sign-in code. */
-  async login(email: string, password: string): Promise<{ email: string }> {
+  /**
+   * Step 1 — verifies the password. If the server has the OTP step enabled
+   * (LOGIN_OTP_ENABLED), this triggers the emailed code and the caller must
+   * follow up with verifyOtp(); otherwise sign-in is already complete.
+   */
+  async login(
+    email: string,
+    password: string,
+  ): Promise<{ otpRequired: true; email: string } | { otpRequired: false }> {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -95,7 +102,11 @@ export class AuthService {
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || 'Login failed');
-    return { email: body.email ?? email };
+    if (body.token) {
+      this.completeSession(body.token, body.user);
+      return { otpRequired: false };
+    }
+    return { otpRequired: true, email: body.email ?? email };
   }
 
   /** Step 2 — verifies the emailed code and completes sign-in. */
@@ -107,9 +118,13 @@ export class AuthService {
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || 'Invalid or expired code');
-    this.token.set(body.token);
-    this.user.set(body.user);
-    if (this.isBrowser) localStorage.setItem(LS_TOKEN, body.token);
+    this.completeSession(body.token, body.user);
+  }
+
+  private completeSession(token: string, user: AuthUser): void {
+    this.token.set(token);
+    this.user.set(user);
+    if (this.isBrowser) localStorage.setItem(LS_TOKEN, token);
   }
 
   /** Ask for a new sign-in code. Always resolves — never reveals whether it actually sent one. */
