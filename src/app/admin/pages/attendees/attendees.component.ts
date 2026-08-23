@@ -131,6 +131,18 @@ import {
         <option value="IN">Checked in</option>
         <option value="OUT">Not checked in</option>
       </select>
+      <select
+        class="adm-select"
+        [ngModel]="tableFilter()"
+        (ngModelChange)="tableFilter.set($event); page.set(1); clearSelection()"
+        aria-label="Filter by table number"
+      >
+        <option value="ALL">All tables</option>
+        <option value="NONE">No table assigned</option>
+        @for (t of tableOptions(); track t) {
+          <option [value]="t">Table {{ t }}</option>
+        }
+      </select>
     </div>
 
     @if (canManage() && selected().size) {
@@ -210,7 +222,7 @@ import {
             <th>Table</th>
             <th>Phone</th>
             <th>Check-in</th>
-            <th style="text-align:right">Actions</th>
+            <th class="adm-actions-col">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -259,7 +271,7 @@ import {
                   <span class="adm-badge adm-badge--out">Not yet</span>
                 }
               </td>
-              <td>
+              <td class="adm-actions-col">
                 <div class="row-actions">
                   @if (showArchived()) {
                     <button class="adm-btn adm-btn--sm" (click)="restore(a)" [disabled]="busy()">
@@ -551,6 +563,11 @@ import {
         text-align: center;
         padding-right: 0;
       }
+      .adm-actions-col {
+        width: 300px;
+        text-align: right;
+        white-space: nowrap;
+      }
       .adm-check-col input {
         width: 16px;
         height: 16px;
@@ -707,6 +724,8 @@ export class AttendeesComponent implements OnDestroy {
   search = signal('');
   typeFilter = signal<TicketType | 'ALL'>('ALL');
   checkFilter = signal<'ALL' | 'IN' | 'OUT'>('ALL');
+  /** 'ALL', 'NONE' (unassigned), or a specific table number. */
+  tableFilter = signal<string>('ALL');
   page = signal(1);
   readonly pageSize = 8;
 
@@ -910,11 +929,23 @@ export class AttendeesComponent implements OnDestroy {
     }
   }
 
+  /** Distinct assigned table numbers for the current view, sorted numerically where possible. */
+  tableOptions = computed(() => {
+    const base = this.showArchived() ? this.archived() : this.all();
+    const set = new Set<string>();
+    for (const a of base) {
+      const t = (a.tableNumber ?? '').trim();
+      if (t) set.add(t);
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  });
+
   filtered = computed<Attendee[]>(() => {
     const q = this.search().trim().toLowerCase();
     const qDigits = q.replace(/\D/g, '');
     const type = this.typeFilter();
     const check = this.checkFilter();
+    const table = this.tableFilter();
     const base = this.showArchived() ? this.archived() : this.all();
     return base.filter((a) => {
       if (q) {
@@ -927,6 +958,8 @@ export class AttendeesComponent implements OnDestroy {
       if (type !== 'ALL' && a.ticketType !== type) return false;
       if (check === 'IN' && !a.checkedIn) return false;
       if (check === 'OUT' && a.checkedIn) return false;
+      if (table === 'NONE' && (a.tableNumber ?? '').trim()) return false;
+      if (table !== 'ALL' && table !== 'NONE' && (a.tableNumber ?? '').trim() !== table) return false;
       return true;
     });
   });
