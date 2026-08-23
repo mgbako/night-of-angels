@@ -58,6 +58,7 @@ const GENDERS: Gender[] = ['MALE', 'FEMALE'];
 const SPECIFIC_DRINKS: SpecificDrink[] = [
   'ALCOHOLIC_WINE',
   'NON_ALCOHOLIC_WINE',
+  'SOURED_WINE',
   'SMIRNOFF',
   'STAR_RADLER',
   'MALT',

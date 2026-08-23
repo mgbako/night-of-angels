@@ -20,6 +20,7 @@ export function genderLabel(g?: Gender | null): string {
 export type SpecificDrink =
   | 'ALCOHOLIC_WINE'
   | 'NON_ALCOHOLIC_WINE'
+  | 'SOURED_WINE'
   | 'SMIRNOFF'
   | 'STAR_RADLER'
   | 'MALT'
@@ -32,6 +33,7 @@ export type SpecificDrink =
 export const SPECIFIC_DRINKS: { value: SpecificDrink; label: string }[] = [
   { value: 'ALCOHOLIC_WINE', label: 'Alcoholic Wine' },
   { value: 'NON_ALCOHOLIC_WINE', label: 'Non-Alcoholic Wine' },
+  { value: 'SOURED_WINE', label: 'Soured Wine' },
   { value: 'SMIRNOFF', label: 'Smirnoff' },
   { value: 'STAR_RADLER', label: 'Star Radler' },
   { value: 'MALT', label: 'Malt' },

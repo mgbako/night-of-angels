@@ -12,6 +12,7 @@ export type Gender = 'MALE' | 'FEMALE';
 export type SpecificDrink =
   | 'ALCOHOLIC_WINE'
   | 'NON_ALCOHOLIC_WINE'
+  | 'SOURED_WINE'
   | 'SMIRNOFF'
   | 'STAR_RADLER'
   | 'MALT'
