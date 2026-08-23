@@ -28,7 +28,8 @@ export type IconName =
   | 'tables'
   | 'sponsor'
   | 'audit'
-  | 'qr';
+  | 'qr'
+  | 'more';
 
 /**
  * Tiny inline-SVG icon set (stroke = currentColor). Rendered directly in the
@@ -167,6 +168,13 @@ export type IconName =
           <rect x="14" y="3" width="7" height="7" rx="1" />
           <rect x="3" y="14" width="7" height="7" rx="1" />
           <path d="M14 14h3v3M20 14v.01M14 20v.01M20 20v.01M17 17h.01M20 17h.01M17 20h3" />
+        }
+        @case ('more') {
+          <g fill="currentColor" stroke="none">
+            <circle cx="5" cy="12" r="1.8" />
+            <circle cx="12" cy="12" r="1.8" />
+            <circle cx="19" cy="12" r="1.8" />
+          </g>
         }
         @case ('settings') {
           <circle cx="12" cy="12" r="3" />

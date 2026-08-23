@@ -322,30 +322,44 @@ import {
                         [size]="15"
                       />
                     </button>
-                    <div class="row-actions__group">
+                    <div class="row-menu">
                       <button
-                        class="adm-btn adm-btn--sm"
-                        (click)="emailTicket(a)"
-                        [disabled]="sendingCode() === a.ticketCode || !a.email"
-                        [title]="a.email ? 'Email ticket to guest' : 'No email on file for this guest'"
+                        class="adm-btn adm-btn--sm adm-btn--ghost"
+                        (click)="toggleRowMenu(a.ticketCode)"
+                        [attr.aria-expanded]="rowMenuOpen() === a.ticketCode"
+                        title="More actions"
                       >
-                        <adm-icon name="mail" [size]="15" />
+                        <adm-icon name="more" [size]="15" />
                       </button>
-                      <button
-                        class="adm-btn adm-btn--sm"
-                        (click)="smsTicket(a)"
-                        [disabled]="sendingCode() === a.ticketCode || !a.phone"
-                        [title]="a.phone ? 'Text ticket link to guest' : 'No phone on file for this guest'"
-                      >
-                        <adm-icon name="message" [size]="15" />
-                      </button>
-                      <button
-                        class="adm-btn adm-btn--sm adm-btn--danger"
-                        (click)="remove(a)"
-                        title="Archive"
-                      >
-                        <adm-icon name="trash" [size]="15" />
-                      </button>
+                      @if (rowMenuOpen() === a.ticketCode) {
+                        <div class="row-menu__backdrop" (click)="rowMenuOpen.set(null)"></div>
+                        <div class="row-menu__menu" role="menu">
+                          <button
+                            role="menuitem"
+                            (click)="emailTicket(a); rowMenuOpen.set(null)"
+                            [disabled]="sendingCode() === a.ticketCode || !a.email"
+                            [title]="a.email ? 'Email ticket to guest' : 'No email on file for this guest'"
+                          >
+                            <adm-icon name="mail" [size]="15" /> Email
+                          </button>
+                          <button
+                            role="menuitem"
+                            (click)="smsTicket(a); rowMenuOpen.set(null)"
+                            [disabled]="sendingCode() === a.ticketCode || !a.phone"
+                            [title]="a.phone ? 'Text ticket link to guest' : 'No phone on file for this guest'"
+                          >
+                            <adm-icon name="message" [size]="15" /> Text
+                          </button>
+                          <button
+                            role="menuitem"
+                            class="row-menu__danger"
+                            (click)="remove(a); rowMenuOpen.set(null)"
+                            title="Archive"
+                          >
+                            <adm-icon name="trash" [size]="15" /> Delete
+                          </button>
+                        </div>
+                      }
                     </div>
                   }
                   }
@@ -542,12 +556,52 @@ import {
         gap: 0.35rem;
         justify-content: flex-end;
       }
-      .row-actions__group {
+      .row-menu {
+        position: relative;
+        display: inline-block;
+      }
+      .row-menu__backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+      }
+      .row-menu__menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        z-index: 31;
+        min-width: 150px;
+        background: #fff;
+        border: 1px solid #e7e2d5;
+        border-radius: 10px;
+        box-shadow: 0 16px 40px -18px rgba(0, 0, 0, 0.4);
+        padding: 0.3rem;
         display: flex;
-        gap: 0.35rem;
-        padding-left: 0.4rem;
-        margin-left: 0.05rem;
-        border-left: 1px solid var(--adm-line);
+        flex-direction: column;
+      }
+      .row-menu__menu button {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0.5rem 0.65rem;
+        border: none;
+        background: transparent;
+        border-radius: 7px;
+        font-size: 0.85rem;
+        color: #23201a;
+        cursor: pointer;
+        text-align: left;
+        white-space: nowrap;
+      }
+      .row-menu__menu button:hover:not(:disabled) {
+        background: #f3f1ea;
+      }
+      .row-menu__menu button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .row-menu__menu .row-menu__danger {
+        color: #c0553f;
       }
       .bulk-bar {
         display: flex;
@@ -571,7 +625,7 @@ import {
         padding-right: 0;
       }
       .adm-actions-col {
-        width: 310px;
+        width: 200px;
         text-align: right;
         white-space: nowrap;
       }
@@ -737,9 +791,15 @@ export class AttendeesComponent implements OnDestroy {
   readonly pageSize = 8;
 
   exportOpen = signal(false);
+  /** Ticket code of the row whose "more actions" menu is open, if any. */
+  rowMenuOpen = signal<string | null>(null);
   busy = signal(false);
   sendingCode = signal<string | null>(null);
   notice = signal<{ msg: string; ok: boolean } | null>(null);
+
+  toggleRowMenu(code: string): void {
+    this.rowMenuOpen.set(this.rowMenuOpen() === code ? null : code);
+  }
 
   /** Bulk SMS composer state. */
   smsOpen = signal(false);
