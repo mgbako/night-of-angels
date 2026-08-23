@@ -295,24 +295,6 @@ import {
                   >
                     <adm-icon name="whatsapp" [size]="16" />
                   </a>
-                  @if (canManage()) {
-                    <button
-                      class="adm-btn adm-btn--sm"
-                      (click)="emailTicket(a)"
-                      [disabled]="sendingCode() === a.ticketCode || !a.email"
-                      [title]="a.email ? 'Email ticket to guest' : 'No email on file for this guest'"
-                    >
-                      <adm-icon name="mail" [size]="15" />
-                    </button>
-                    <button
-                      class="adm-btn adm-btn--sm"
-                      (click)="smsTicket(a)"
-                      [disabled]="sendingCode() === a.ticketCode || !a.phone"
-                      [title]="a.phone ? 'Text ticket link to guest' : 'No phone on file for this guest'"
-                    >
-                      <adm-icon name="message" [size]="15" />
-                    </button>
-                  }
                   <a
                     [routerLink]="['/tickets', a.ticketCode]"
                     target="_blank"
@@ -340,13 +322,31 @@ import {
                         [size]="15"
                       />
                     </button>
-                    <button
-                      class="adm-btn adm-btn--sm adm-btn--danger"
-                      (click)="remove(a)"
-                      title="Archive"
-                    >
-                      <adm-icon name="trash" [size]="15" />
-                    </button>
+                    <div class="row-actions__group">
+                      <button
+                        class="adm-btn adm-btn--sm"
+                        (click)="emailTicket(a)"
+                        [disabled]="sendingCode() === a.ticketCode || !a.email"
+                        [title]="a.email ? 'Email ticket to guest' : 'No email on file for this guest'"
+                      >
+                        <adm-icon name="mail" [size]="15" />
+                      </button>
+                      <button
+                        class="adm-btn adm-btn--sm"
+                        (click)="smsTicket(a)"
+                        [disabled]="sendingCode() === a.ticketCode || !a.phone"
+                        [title]="a.phone ? 'Text ticket link to guest' : 'No phone on file for this guest'"
+                      >
+                        <adm-icon name="message" [size]="15" />
+                      </button>
+                      <button
+                        class="adm-btn adm-btn--sm adm-btn--danger"
+                        (click)="remove(a)"
+                        title="Archive"
+                      >
+                        <adm-icon name="trash" [size]="15" />
+                      </button>
+                    </div>
                   }
                   }
                 </div>
@@ -542,6 +542,13 @@ import {
         gap: 0.35rem;
         justify-content: flex-end;
       }
+      .row-actions__group {
+        display: flex;
+        gap: 0.35rem;
+        padding-left: 0.4rem;
+        margin-left: 0.05rem;
+        border-left: 1px solid var(--adm-line);
+      }
       .bulk-bar {
         display: flex;
         align-items: center;
@@ -564,7 +571,7 @@ import {
         padding-right: 0;
       }
       .adm-actions-col {
-        width: 300px;
+        width: 310px;
         text-align: right;
         white-space: nowrap;
       }
