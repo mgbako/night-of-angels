@@ -37,8 +37,16 @@ import {
   template: `
     <div class="adm-page-head">
       <div>
-        <h2>Attendees @if (showArchived()) { <span class="adm-badge">Archived</span> }</h2>
-        <p>{{ filtered().length }} of {{ (showArchived() ? archived() : all()).length }} shown</p>
+        <h2>
+          Attendees
+          @if (showArchived()) {
+            <span class="adm-badge">Archived</span>
+          }
+        </h2>
+        <p>
+          {{ filtered().length }} of
+          {{ (showArchived() ? archived() : all()).length }} shown
+        </p>
       </div>
       <div style="display:flex; gap:.6rem; flex-wrap:wrap; align-items:center">
         <button
@@ -47,7 +55,11 @@ import {
           [class.live-toggle--on]="liveEnabled()"
           (click)="toggleLive()"
           [attr.aria-pressed]="liveEnabled()"
-          [title]="liveEnabled() ? 'Live updates on — click to pause' : 'Live updates paused — click to resume'"
+          [title]="
+            liveEnabled()
+              ? 'Live updates on — click to pause'
+              : 'Live updates paused — click to resume'
+          "
         >
           <span class="live-toggle__dot"></span>
           {{ liveEnabled() ? 'Live' : 'Live off' }}
@@ -60,18 +72,32 @@ import {
             [attr.aria-expanded]="exportOpen()"
           >
             <adm-icon name="download" [size]="17" /> Export
-            <span class="exp__caret" [class.exp__caret--open]="exportOpen()">▾</span>
+            <span class="exp__caret" [class.exp__caret--open]="exportOpen()"
+              >▾</span
+            >
           </button>
           @if (exportOpen()) {
             <div class="exp__backdrop" (click)="exportOpen.set(false)"></div>
             <div class="exp__menu" role="menu">
-              <button role="menuitem" (click)="download('csv')" [disabled]="busy()">
+              <button
+                role="menuitem"
+                (click)="download('csv')"
+                [disabled]="busy()"
+              >
                 CSV <span>.csv</span>
               </button>
-              <button role="menuitem" (click)="download('excel')" [disabled]="busy()">
+              <button
+                role="menuitem"
+                (click)="download('excel')"
+                [disabled]="busy()"
+              >
                 Excel <span>.xlsx</span>
               </button>
-              <button role="menuitem" (click)="download('pdf')" [disabled]="busy()">
+              <button
+                role="menuitem"
+                (click)="download('pdf')"
+                [disabled]="busy()"
+              >
                 PDF <span>.pdf</span>
               </button>
             </div>
@@ -149,15 +175,27 @@ import {
       <div class="bulk-bar">
         <span class="bulk-bar__count">{{ selected().size }} selected</span>
         @if (!showArchived()) {
-          <button class="adm-btn adm-btn--sm" (click)="openSms()" [disabled]="busy() || smsBusy()">
+          <button
+            class="adm-btn adm-btn--sm"
+            (click)="openSms()"
+            [disabled]="busy() || smsBusy()"
+          >
             <adm-icon name="message" [size]="15" /> Send SMS
           </button>
         }
-        <button class="adm-btn adm-btn--sm adm-btn--danger" (click)="bulkDelete()" [disabled]="busy()">
+        <button
+          class="adm-btn adm-btn--sm adm-btn--danger"
+          (click)="bulkDelete()"
+          [disabled]="busy()"
+        >
           <adm-icon name="trash" [size]="15" />
           {{ showArchived() ? 'Delete permanently' : 'Archive selected' }}
         </button>
-        <button class="adm-btn adm-btn--sm adm-btn--ghost" (click)="clearSelection()" [disabled]="busy()">
+        <button
+          class="adm-btn adm-btn--sm adm-btn--ghost"
+          (click)="clearSelection()"
+          [disabled]="busy()"
+        >
           Clear
         </button>
       </div>
@@ -165,11 +203,20 @@ import {
 
     @if (smsOpen()) {
       <div class="sms-backdrop" (click)="closeSms()"></div>
-      <div class="sms-modal" role="dialog" aria-modal="true" aria-labelledby="sms-title">
-        <h3 id="sms-title">Send SMS to {{ selected().size }} guest{{ selected().size === 1 ? '' : 's' }}</h3>
+      <div
+        class="sms-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sms-title"
+      >
+        <h3 id="sms-title">
+          Send SMS to {{ selected().size }} guest{{
+            selected().size === 1 ? '' : 's'
+          }}
+        </h3>
         <p class="sms-modal__hint">
-          One message goes to every selected guest with a phone number. Guests without a
-          number are skipped.
+          One message goes to every selected guest with a phone number. Guests
+          without a number are skipped.
         </p>
         <textarea
           class="sms-textarea"
@@ -182,10 +229,19 @@ import {
         ></textarea>
         <div class="sms-meta">
           <span>{{ smsText().length }}/480 chars</span>
-          <span>{{ smsSegments() }} SMS segment{{ smsSegments() === 1 ? '' : 's' }} each</span>
+          <span
+            >{{ smsSegments() }} SMS segment{{
+              smsSegments() === 1 ? '' : 's'
+            }}
+            each</span
+          >
         </div>
         <div class="sms-actions">
-          <button class="adm-btn adm-btn--sm adm-btn--ghost" (click)="closeSms()" [disabled]="smsBusy()">
+          <button
+            class="adm-btn adm-btn--sm adm-btn--ghost"
+            (click)="closeSms()"
+            [disabled]="smsBusy()"
+          >
             Cancel
           </button>
           <button
@@ -240,12 +296,17 @@ import {
               <td>
                 <span class="adm-name">{{ a.name }}</span>
                 <span class="adm-sub"
-                  >{{ genderLabel(a.gender) }} · {{ a.phone }}@if (a.email) { · {{ a.email }} }</span
-                >
+                  >{{ genderLabel(a.gender) }} · {{ a.phone }}
+                  @if (a.email) {
+                    · {{ a.email }}
+                  }
+                </span>
               </td>
               <td>
                 <span class="adm-name">{{ meta(a.ticketType).label }}</span>
-                <span class="adm-sub"><span class="adm-code">{{ a.ticketCode }}</span></span>
+                <span class="adm-sub"
+                  ><span class="adm-code">{{ a.ticketCode }}</span></span
+                >
               </td>
               <td>{{ specificDrinksLabel(a.specificDrinks) }}</td>
               <td>
@@ -274,7 +335,11 @@ import {
               <td class="adm-actions-col">
                 <div class="row-actions">
                   @if (showArchived()) {
-                    <button class="adm-btn adm-btn--sm" (click)="restore(a)" [disabled]="busy()">
+                    <button
+                      class="adm-btn adm-btn--sm"
+                      (click)="restore(a)"
+                      [disabled]="busy()"
+                    >
                       Restore
                     </button>
                     <button
@@ -286,80 +351,100 @@ import {
                       <adm-icon name="trash" [size]="15" /> Delete
                     </button>
                   } @else {
-                  <a
-                    [href]="waLink(a)"
-                    target="_blank"
-                    rel="noopener"
-                    class="adm-btn adm-btn--sm wa-share"
-                    title="Send ticket on WhatsApp"
-                  >
-                    <adm-icon name="whatsapp" [size]="16" />
-                  </a>
-                  <a
-                    [routerLink]="['/tickets', a.ticketCode]"
-                    target="_blank"
-                    class="adm-btn adm-btn--sm adm-btn--ghost"
-                    title="View ticket"
-                  >
-                    <adm-icon name="external" [size]="15" />
-                  </a>
-                  @if (canManage()) {
-                    <button
-                      class="adm-btn adm-btn--sm"
-                      (click)="openEdit(a)"
-                      [disabled]="busy()"
-                      title="Edit attendee"
+                    <a
+                      [href]="waLink(a)"
+                      target="_blank"
+                      rel="noopener"
+                      class="adm-btn adm-btn--sm wa-share"
+                      title="Send ticket on WhatsApp"
                     >
-                      <adm-icon name="edit" [size]="15" />
-                    </button>
-                    <div class="row-menu">
+                      <adm-icon name="whatsapp" [size]="16" />
+                    </a>
+                    <a
+                      [routerLink]="['/tickets', a.ticketCode]"
+                      target="_blank"
+                      class="adm-btn adm-btn--sm adm-btn--ghost"
+                      title="View ticket"
+                    >
+                      <adm-icon name="external" [size]="15" />
+                    </a>
+                    @if (canManage()) {
                       <button
-                        class="adm-btn adm-btn--sm adm-btn--ghost"
-                        (click)="toggleRowMenu(a.ticketCode)"
-                        [attr.aria-expanded]="rowMenuOpen() === a.ticketCode"
-                        title="More actions"
+                        class="adm-btn adm-btn--sm"
+                        (click)="openEdit(a)"
+                        [disabled]="busy()"
+                        title="Edit attendee"
                       >
-                        <adm-icon name="more" [size]="15" />
+                        <adm-icon name="edit" [size]="15" />
                       </button>
-                      @if (rowMenuOpen() === a.ticketCode) {
-                        <div class="row-menu__backdrop" (click)="rowMenuOpen.set(null)"></div>
-                        <div class="row-menu__menu" role="menu">
-                          <button
-                            role="menuitem"
-                            (click)="toggle(a); rowMenuOpen.set(null)"
-                            [title]="a.checkedIn ? 'Undo check-in' : 'Check in'"
-                          >
-                            <adm-icon [name]="a.checkedIn ? 'close' : 'check'" [size]="15" />
-                            {{ a.checkedIn ? 'Undo check-in' : 'Check in' }}
-                          </button>
-                          <button
-                            role="menuitem"
-                            (click)="emailTicket(a); rowMenuOpen.set(null)"
-                            [disabled]="sendingCode() === a.ticketCode || !a.email"
-                            [title]="a.email ? 'Email ticket to guest' : 'No email on file for this guest'"
-                          >
-                            <adm-icon name="mail" [size]="15" /> Email
-                          </button>
-                          <button
-                            role="menuitem"
-                            (click)="smsTicket(a); rowMenuOpen.set(null)"
-                            [disabled]="sendingCode() === a.ticketCode || !a.phone"
-                            [title]="a.phone ? 'Text ticket link to guest' : 'No phone on file for this guest'"
-                          >
-                            <adm-icon name="message" [size]="15" /> Text
-                          </button>
-                          <button
-                            role="menuitem"
-                            class="row-menu__danger"
-                            (click)="remove(a); rowMenuOpen.set(null)"
-                            title="Archive"
-                          >
-                            <adm-icon name="trash" [size]="15" /> Delete
-                          </button>
-                        </div>
-                      }
-                    </div>
-                  }
+                      <div class="row-menu">
+                        <button
+                          class="adm-btn adm-btn--sm adm-btn--ghost"
+                          (click)="toggleRowMenu(a.ticketCode)"
+                          [attr.aria-expanded]="rowMenuOpen() === a.ticketCode"
+                          title="More actions"
+                        >
+                          <adm-icon name="more" [size]="15" />
+                        </button>
+                        @if (rowMenuOpen() === a.ticketCode) {
+                          <div
+                            class="row-menu__backdrop"
+                            (click)="rowMenuOpen.set(null)"
+                          ></div>
+                          <div class="row-menu__menu" role="menu">
+                            <button
+                              role="menuitem"
+                              (click)="toggle(a); rowMenuOpen.set(null)"
+                              [title]="
+                                a.checkedIn ? 'Undo check-in' : 'Check in'
+                              "
+                            >
+                              <adm-icon
+                                [name]="a.checkedIn ? 'close' : 'check'"
+                                [size]="15"
+                              />
+                              {{ a.checkedIn ? 'Undo check-in' : 'Check in' }}
+                            </button>
+                            <button
+                              role="menuitem"
+                              (click)="emailTicket(a); rowMenuOpen.set(null)"
+                              [disabled]="
+                                sendingCode() === a.ticketCode || !a.email
+                              "
+                              [title]="
+                                a.email
+                                  ? 'Email ticket to guest'
+                                  : 'No email on file for this guest'
+                              "
+                            >
+                              <adm-icon name="mail" [size]="15" /> Email
+                            </button>
+                            <button
+                              role="menuitem"
+                              (click)="smsTicket(a); rowMenuOpen.set(null)"
+                              [disabled]="
+                                sendingCode() === a.ticketCode || !a.phone
+                              "
+                              [title]="
+                                a.phone
+                                  ? 'Text ticket link to guest'
+                                  : 'No phone on file for this guest'
+                              "
+                            >
+                              <adm-icon name="message" [size]="15" /> Text
+                            </button>
+                            <button
+                              role="menuitem"
+                              class="row-menu__danger"
+                              (click)="remove(a); rowMenuOpen.set(null)"
+                              title="Archive"
+                            >
+                              <adm-icon name="trash" [size]="15" /> Delete
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    }
                   }
                 </div>
               </td>
@@ -417,24 +502,50 @@ import {
 
     @if (editOpen()) {
       <div class="sms-backdrop" (click)="closeEdit()"></div>
-      <div class="sms-modal edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+      <div
+        class="sms-modal edit-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-title"
+      >
         <h3 id="edit-title">Edit {{ editTarget()?.name }}</h3>
 
         <div class="adm-field">
           <label for="e-name">Full name</label>
-          <input id="e-name" type="text" [(ngModel)]="editForm.name" [disabled]="editBusy()" />
+          <input
+            id="e-name"
+            type="text"
+            [(ngModel)]="editForm.name"
+            [disabled]="editBusy()"
+          />
         </div>
         <div class="adm-field">
           <label for="e-phone">Phone number</label>
-          <input id="e-phone" type="tel" [(ngModel)]="editForm.phone" [disabled]="editBusy()" />
+          <input
+            id="e-phone"
+            type="tel"
+            [(ngModel)]="editForm.phone"
+            [disabled]="editBusy()"
+          />
         </div>
         <div class="adm-field">
-          <label for="e-email">Email <span style="opacity:.6">(optional)</span></label>
-          <input id="e-email" type="email" [(ngModel)]="editForm.email" [disabled]="editBusy()" />
+          <label for="e-email"
+            >Email <span style="opacity:.6">(optional)</span></label
+          >
+          <input
+            id="e-email"
+            type="email"
+            [(ngModel)]="editForm.email"
+            [disabled]="editBusy()"
+          />
         </div>
         <div class="adm-field">
           <label for="e-ticket">Ticket type</label>
-          <select id="e-ticket" [(ngModel)]="editForm.ticketType" [disabled]="editBusy()">
+          <select
+            id="e-ticket"
+            [(ngModel)]="editForm.ticketType"
+            [disabled]="editBusy()"
+          >
             @for (t of ticketTypes; track t.value) {
               <option [value]="t.value">{{ t.label }}</option>
             }
@@ -442,7 +553,11 @@ import {
         </div>
         <div class="adm-field">
           <label for="e-gender">Gender</label>
-          <select id="e-gender" [(ngModel)]="editForm.gender" [disabled]="editBusy()">
+          <select
+            id="e-gender"
+            [(ngModel)]="editForm.gender"
+            [disabled]="editBusy()"
+          >
             <option value="" disabled>Select gender</option>
             @for (g of genders; track g.value) {
               <option [value]="g.value">{{ g.label }}</option>
@@ -450,14 +565,23 @@ import {
           </select>
         </div>
         <div class="adm-field">
-          <label>Preferred drink(s) <span style="opacity:.6">(optional)</span></label>
+          <label
+            >Preferred drink(s)
+            <span style="opacity:.6">(optional)</span></label
+          >
           <div class="adm-checks">
             @for (d of specificDrinks; track d.value) {
               <label class="adm-check">
                 <input
                   type="checkbox"
                   [checked]="editForm.specificDrink.includes(d.value)"
-                  (change)="toggleEditDrink('specificDrink', d.value, $any($event.target).checked)"
+                  (change)="
+                    toggleEditDrink(
+                      'specificDrink',
+                      d.value,
+                      $any($event.target).checked
+                    )
+                  "
                   [disabled]="editBusy()"
                 />
                 {{ d.label }}
@@ -467,8 +591,15 @@ import {
         </div>
         @if (editForm.ticketType === 'COUPLES') {
           <div class="adm-field">
-            <label for="e-p-gender">Partner's gender <span style="opacity:.6">(optional)</span></label>
-            <select id="e-p-gender" [(ngModel)]="editForm.partnerGender" [disabled]="editBusy()">
+            <label for="e-p-gender"
+              >Partner's gender
+              <span style="opacity:.6">(optional)</span></label
+            >
+            <select
+              id="e-p-gender"
+              [(ngModel)]="editForm.partnerGender"
+              [disabled]="editBusy()"
+            >
               <option value="">Select gender</option>
               @for (g of genders; track g.value) {
                 <option [value]="g.value">{{ g.label }}</option>
@@ -476,14 +607,23 @@ import {
             </select>
           </div>
           <div class="adm-field">
-            <label>Partner's preferred drink(s) <span style="opacity:.6">(optional)</span></label>
+            <label
+              >Partner's preferred drink(s)
+              <span style="opacity:.6">(optional)</span></label
+            >
             <div class="adm-checks">
               @for (d of specificDrinks; track d.value) {
                 <label class="adm-check">
                   <input
                     type="checkbox"
                     [checked]="editForm.partnerSpecificDrink.includes(d.value)"
-                    (change)="toggleEditDrink('partnerSpecificDrink', d.value, $any($event.target).checked)"
+                    (change)="
+                      toggleEditDrink(
+                        'partnerSpecificDrink',
+                        d.value,
+                        $any($event.target).checked
+                      )
+                    "
                     [disabled]="editBusy()"
                   />
                   {{ d.label }}
@@ -494,14 +634,24 @@ import {
         }
 
         @if (editError()) {
-          <p class="adm-error" style="font-size:.85rem" role="alert">{{ editError() }}</p>
+          <p class="adm-error" style="font-size:.85rem" role="alert">
+            {{ editError() }}
+          </p>
         }
 
         <div class="sms-actions">
-          <button class="adm-btn adm-btn--sm adm-btn--ghost" (click)="closeEdit()" [disabled]="editBusy()">
+          <button
+            class="adm-btn adm-btn--sm adm-btn--ghost"
+            (click)="closeEdit()"
+            [disabled]="editBusy()"
+          >
             Cancel
           </button>
-          <button class="adm-btn adm-btn--sm adm-btn--primary" (click)="saveEdit()" [disabled]="editBusy()">
+          <button
+            class="adm-btn adm-btn--sm adm-btn--primary"
+            (click)="saveEdit()"
+            [disabled]="editBusy()"
+          >
             {{ editBusy() ? 'Saving…' : 'Save changes' }}
           </button>
         </div>
@@ -623,7 +773,7 @@ import {
         padding-right: 0;
       }
       .adm-actions-col {
-        width: 165px;
+        width: 240px;
         text-align: right;
         white-space: nowrap;
       }
@@ -868,7 +1018,9 @@ export class AttendeesComponent implements OnDestroy {
     checked: boolean,
   ): void {
     const current = this.editForm[field];
-    this.editForm[field] = checked ? [...current, value] : current.filter((v) => v !== value);
+    this.editForm[field] = checked
+      ? [...current, value]
+      : current.filter((v) => v !== value);
   }
 
   async saveEdit(): Promise<void> {
@@ -891,14 +1043,19 @@ export class AttendeesComponent implements OnDestroy {
         gender: f.gender,
         specificDrinks: f.specificDrink,
         ...(f.ticketType === 'COUPLES'
-          ? { partnerGender: f.partnerGender, partnerSpecificDrinks: f.partnerSpecificDrink }
+          ? {
+              partnerGender: f.partnerGender,
+              partnerSpecificDrinks: f.partnerSpecificDrink,
+            }
           : {}),
       });
       this.flash(`${name} updated.`, true);
       this.editOpen.set(false);
       this.editTarget.set(null);
     } catch (e) {
-      this.editError.set(e instanceof Error ? e.message : 'Could not update attendee');
+      this.editError.set(
+        e instanceof Error ? e.message : 'Could not update attendee',
+      );
     } finally {
       this.editBusy.set(false);
     }
@@ -921,7 +1078,9 @@ export class AttendeesComponent implements OnDestroy {
     return f.length > 0 && f.every((a) => this.selected().has(a.ticketCode));
   });
 
-  someSelected = computed(() => this.selected().size > 0 && !this.allFilteredSelected());
+  someSelected = computed(
+    () => this.selected().size > 0 && !this.allFilteredSelected(),
+  );
 
   /** Owner-only archive view of soft-deleted attendees. */
   showArchived = signal(false);
@@ -959,7 +1118,10 @@ export class AttendeesComponent implements OnDestroy {
       try {
         this.archived.set(await this.api.archived());
       } catch (e) {
-        this.flash(e instanceof Error ? e.message : 'Could not load archive', false);
+        this.flash(
+          e instanceof Error ? e.message : 'Could not load archive',
+          false,
+        );
         this.showArchived.set(false);
       }
     }
@@ -979,7 +1141,11 @@ export class AttendeesComponent implements OnDestroy {
   }
 
   async permanentDelete(a: Attendee): Promise<void> {
-    if (!confirm(`Permanently delete ${a.name}? Their ticket is voided and this cannot be undone.`)) {
+    if (
+      !confirm(
+        `Permanently delete ${a.name}? Their ticket is voided and this cannot be undone.`,
+      )
+    ) {
       return;
     }
     this.busy.set(true);
@@ -1002,7 +1168,9 @@ export class AttendeesComponent implements OnDestroy {
       const t = (a.tableNumber ?? '').trim();
       if (t) set.add(t);
     }
-    return [...set].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    return [...set].sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true }),
+    );
   });
 
   filtered = computed<Attendee[]>(() => {
@@ -1014,17 +1182,24 @@ export class AttendeesComponent implements OnDestroy {
     const base = this.showArchived() ? this.archived() : this.all();
     return base.filter((a) => {
       if (q) {
-        const hay = `${a.name} ${a.email} ${a.phone} ${a.ticketCode}`.toLowerCase();
+        const hay =
+          `${a.name} ${a.email} ${a.phone} ${a.ticketCode}`.toLowerCase();
         const phoneDigits = a.phone.replace(/\D/g, '');
         const match =
-          hay.includes(q) || (qDigits.length >= 3 && phoneDigits.includes(qDigits));
+          hay.includes(q) ||
+          (qDigits.length >= 3 && phoneDigits.includes(qDigits));
         if (!match) return false;
       }
       if (type !== 'ALL' && a.ticketType !== type) return false;
       if (check === 'IN' && !a.checkedIn) return false;
       if (check === 'OUT' && a.checkedIn) return false;
       if (table === 'NONE' && (a.tableNumber ?? '').trim()) return false;
-      if (table !== 'ALL' && table !== 'NONE' && (a.tableNumber ?? '').trim() !== table) return false;
+      if (
+        table !== 'ALL' &&
+        table !== 'NONE' &&
+        (a.tableNumber ?? '').trim() !== table
+      )
+        return false;
       return true;
     });
   });
@@ -1059,7 +1234,10 @@ export class AttendeesComponent implements OnDestroy {
       const to = await this.api.emailTicket(a.ticketCode);
       this.flash(`Ticket emailed to ${to}`, true);
     } catch (e) {
-      this.flash(e instanceof Error ? e.message : 'Could not send email', false);
+      this.flash(
+        e instanceof Error ? e.message : 'Could not send email',
+        false,
+      );
     } finally {
       this.sendingCode.set(null);
     }
@@ -1138,16 +1316,27 @@ export class AttendeesComponent implements OnDestroy {
     this.busy.set(true);
     try {
       await this.api.setTable(a.ticketCode, next);
-      this.flash(next ? `${a.name} assigned to table ${next}.` : `Table cleared for ${a.name}.`, true);
+      this.flash(
+        next
+          ? `${a.name} assigned to table ${next}.`
+          : `Table cleared for ${a.name}.`,
+        true,
+      );
     } catch (e) {
-      this.flash(e instanceof Error ? e.message : 'Could not update table', false);
+      this.flash(
+        e instanceof Error ? e.message : 'Could not update table',
+        false,
+      );
     } finally {
       this.busy.set(false);
     }
   }
 
   async remove(a: Attendee): Promise<void> {
-    if (this.isBrowser && !confirm(`Archive ${a.name}? They can be restored from the archive.`))
+    if (
+      this.isBrowser &&
+      !confirm(`Archive ${a.name}? They can be restored from the archive.`)
+    )
       return;
     await this.api.remove(a.ticketCode);
     if (this.page() > this.totalPages()) this.page.set(this.totalPages());
@@ -1269,13 +1458,18 @@ export class AttendeesComponent implements OnDestroy {
     const csv = [this.columns, ...this.exportData()]
       .map((row) => row.map(esc).join(','))
       .join('\n');
-    this.saveBlob(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }), this.fileName('csv'));
+    this.saveBlob(
+      new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }),
+      this.fileName('csv'),
+    );
   }
 
   private async exportExcel(): Promise<void> {
     const XLSX = await import('xlsx');
     const ws = XLSX.utils.aoa_to_sheet([this.columns, ...this.exportData()]);
-    ws['!cols'] = [24, 26, 16, 14, 10, 14, 10, 11, 11, 20, 20].map((w) => ({ wch: w }));
+    ws['!cols'] = [24, 26, 16, 14, 10, 14, 10, 11, 11, 20, 20].map((w) => ({
+      wch: w,
+    }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Attendees');
     XLSX.writeFile(wb, this.fileName('xlsx'));
