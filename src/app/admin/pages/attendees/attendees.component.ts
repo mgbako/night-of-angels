@@ -274,7 +274,7 @@ import {
             }
             <th>Attendee Detail</th>
             <th>Ticket</th>
-            <th>Preferred Drink</th>
+            <th class="adm-drink-col">Preferred Drink</th>
             <th>Table</th>
             <th>Check-in</th>
             <th class="adm-actions-col">Actions</th>
@@ -308,7 +308,7 @@ import {
                   ><span class="adm-code">{{ a.ticketCode }}</span></span
                 >
               </td>
-              <td>{{ specificDrinksLabel(a.specificDrinks) }}</td>
+              <td class="adm-drink-col">{{ specificDrinksLabel(a.specificDrinks) }}</td>
               <td>
                 @if (!showArchived() && canManage()) {
                   <button
@@ -776,6 +776,10 @@ import {
         width: 240px;
         text-align: right;
         white-space: nowrap;
+      }
+      .adm-drink-col {
+        width: 160px;
+        white-space: normal;
       }
       .adm-check-col input {
         width: 16px;
