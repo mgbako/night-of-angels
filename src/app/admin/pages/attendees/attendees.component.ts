@@ -312,16 +312,6 @@ import {
                     >
                       <adm-icon name="edit" [size]="15" />
                     </button>
-                    <button
-                      class="adm-btn adm-btn--sm"
-                      (click)="toggle(a)"
-                      [title]="a.checkedIn ? 'Undo check-in' : 'Check in'"
-                    >
-                      <adm-icon
-                        [name]="a.checkedIn ? 'close' : 'check'"
-                        [size]="15"
-                      />
-                    </button>
                     <div class="row-menu">
                       <button
                         class="adm-btn adm-btn--sm adm-btn--ghost"
@@ -334,6 +324,14 @@ import {
                       @if (rowMenuOpen() === a.ticketCode) {
                         <div class="row-menu__backdrop" (click)="rowMenuOpen.set(null)"></div>
                         <div class="row-menu__menu" role="menu">
+                          <button
+                            role="menuitem"
+                            (click)="toggle(a); rowMenuOpen.set(null)"
+                            [title]="a.checkedIn ? 'Undo check-in' : 'Check in'"
+                          >
+                            <adm-icon [name]="a.checkedIn ? 'close' : 'check'" [size]="15" />
+                            {{ a.checkedIn ? 'Undo check-in' : 'Check in' }}
+                          </button>
                           <button
                             role="menuitem"
                             (click)="emailTicket(a); rowMenuOpen.set(null)"
@@ -625,7 +623,7 @@ import {
         padding-right: 0;
       }
       .adm-actions-col {
-        width: 200px;
+        width: 165px;
         text-align: right;
         white-space: nowrap;
       }
