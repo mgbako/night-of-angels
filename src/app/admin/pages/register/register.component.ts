@@ -127,14 +127,42 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
                 <label class="adm-check">
                   <input
                     type="checkbox"
-                    [checked]="isDrinkSelected(d.value)"
-                    (change)="toggleDrink(d.value, $any($event.target).checked)"
+                    [checked]="isDrinkSelected('specificDrink', d.value)"
+                    (change)="toggleDrink('specificDrink', d.value, $any($event.target).checked)"
                   />
                   {{ d.label }}
                 </label>
               }
             </div>
           </div>
+
+          @if (isCouples()) {
+            <div class="adm-field">
+              <label for="r-p-gender">Partner's gender <span class="adm-muted-label">(optional)</span></label>
+              <select id="r-p-gender" formControlName="partnerGender">
+                <option value="">Select gender</option>
+                @for (g of genders; track g.value) {
+                  <option [value]="g.value">{{ g.label }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="adm-field">
+              <label>Partner's preferred drink(s) <span class="adm-muted-label">(optional)</span></label>
+              <div class="adm-checks">
+                @for (d of specificDrinks; track d.value) {
+                  <label class="adm-check">
+                    <input
+                      type="checkbox"
+                      [checked]="isDrinkSelected('partnerSpecificDrink', d.value)"
+                      (change)="toggleDrink('partnerSpecificDrink', d.value, $any($event.target).checked)"
+                    />
+                    {{ d.label }}
+                  </label>
+                }
+              </div>
+            </div>
+          }
 
           <div class="adm-field">
             <label for="r-table">Table number <span style="opacity:.6">(optional)</span></label>
@@ -213,6 +241,8 @@ export class RegisterComponent {
     ticketType: ['SINGLES' as TicketType, Validators.required],
     gender: ['' as Gender | '', Validators.required],
     specificDrink: [[] as SpecificDrink[]],
+    partnerGender: ['' as Gender | ''],
+    partnerSpecificDrink: [[] as SpecificDrink[]],
     tableNumber: [''],
   });
 
@@ -221,13 +251,18 @@ export class RegisterComponent {
     return !!c && c.invalid && (c.touched || c.dirty);
   }
 
-  /** Preferred-drink checkboxes are optional and multi-select. */
-  isDrinkSelected(value: SpecificDrink): boolean {
-    return this.form.controls.specificDrink.value.includes(value);
+  /** Couples tickets capture a second guest's gender and preferred drink(s). */
+  isCouples(): boolean {
+    return this.form.controls.ticketType.value === 'COUPLES';
   }
 
-  toggleDrink(value: SpecificDrink, checked: boolean): void {
-    const control = this.form.controls.specificDrink;
+  /** Preferred-drink checkboxes are optional and multi-select, for both the primary guest and their partner. */
+  isDrinkSelected(field: 'specificDrink' | 'partnerSpecificDrink', value: SpecificDrink): boolean {
+    return this.form.controls[field].value.includes(value);
+  }
+
+  toggleDrink(field: 'specificDrink' | 'partnerSpecificDrink', value: SpecificDrink, checked: boolean): void {
+    const control = this.form.controls[field];
     const current = control.value;
     control.setValue(checked ? [...current, value] : current.filter((v) => v !== value));
   }
@@ -240,11 +275,14 @@ export class RegisterComponent {
     }
     this.submitting.set(true);
     try {
-      const { specificDrink, ...raw } = this.form.getRawValue();
+      const { specificDrink, partnerGender, partnerSpecificDrink, ...raw } = this.form.getRawValue();
+      const isCouples = raw.ticketType === 'COUPLES';
       const attendee = await this.api.register({
         ...raw,
         gender: raw.gender as Gender,
         specificDrinks: specificDrink,
+        ...(isCouples && partnerGender ? { partnerGender: partnerGender as Gender } : {}),
+        ...(isCouples && partnerSpecificDrink.length ? { partnerSpecificDrinks: partnerSpecificDrink } : {}),
       });
       this.created.set(attendee);
     } catch (e) {
@@ -289,6 +327,8 @@ export class RegisterComponent {
       ticketType: 'SINGLES',
       gender: '',
       specificDrink: [],
+      partnerGender: '',
+      partnerSpecificDrink: [],
       tableNumber: '',
     });
   }

@@ -242,6 +242,16 @@ async function register(req: Request, actor: TokenPayload): Promise<Response> {
   const specificDrinks = Array.isArray(body.specificDrinks)
     ? body.specificDrinks.filter((d) => SPECIFIC_DRINKS.includes(d))
     : [];
+  // Second-guest preferences only make sense for Couples tickets.
+  const isCouples = body.ticketType === 'COUPLES';
+  const partnerGender =
+    isCouples && typeof body.partnerGender === 'string' && GENDERS.includes(body.partnerGender)
+      ? body.partnerGender
+      : undefined;
+  const partnerSpecificDrinks =
+    isCouples && Array.isArray(body.partnerSpecificDrinks)
+      ? body.partnerSpecificDrinks.filter((d) => SPECIFIC_DRINKS.includes(d))
+      : [];
   const list = await readAll();
   // Email is optional. Only dedupe when one is supplied.
   const email = String(body.email ?? '').trim().toLowerCase();
@@ -268,6 +278,8 @@ async function register(req: Request, actor: TokenPayload): Promise<Response> {
     ...(tableNumber ? { tableNumber } : {}),
     gender: body.gender,
     ...(specificDrinks.length ? { specificDrinks } : {}),
+    ...(partnerGender ? { partnerGender } : {}),
+    ...(partnerSpecificDrinks.length ? { partnerSpecificDrinks } : {}),
   };
   await writeAll([attendee, ...list]);
   await recordAudit({

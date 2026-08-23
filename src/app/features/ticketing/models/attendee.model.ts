@@ -173,6 +173,9 @@ export interface RegisterDto {
   tableNumber?: string;
   gender: Gender;
   specificDrinks?: SpecificDrink[];
+  /** Second guest's preferences — Couples tickets only. */
+  partnerGender?: Gender;
+  partnerSpecificDrinks?: SpecificDrink[];
 }
 
 /** Edit an existing attendee's own details — owner only. */
