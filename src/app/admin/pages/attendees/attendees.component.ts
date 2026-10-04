@@ -18,6 +18,7 @@ import {
   Attendee,
   GENDERS,
   Gender,
+  MAX_PREFERRED_DRINKS,
   SPECIFIC_DRINKS,
   SpecificDrink,
   TABLE_CAPACITY,
@@ -577,7 +578,7 @@ import {
         <div class="adm-field">
           <label
             >Preferred drink(s)
-            <span style="opacity:.6">(optional)</span></label
+            <span style="opacity:.6">(choose up to {{ maxDrinks }})</span></label
           >
           <div class="adm-checks">
             @for (d of specificDrinks; track d.value) {
@@ -592,7 +593,10 @@ import {
                       $any($event.target).checked
                     )
                   "
-                  [disabled]="editBusy()"
+                  [disabled]="
+                    editBusy() ||
+                    (atEditDrinkLimit('specificDrink') && !editForm.specificDrink.includes(d.value))
+                  "
                 />
                 {{ d.label }}
               </label>
@@ -619,7 +623,7 @@ import {
           <div class="adm-field">
             <label
               >Partner's preferred drink(s)
-              <span style="opacity:.6">(optional)</span></label
+              <span style="opacity:.6">(choose up to {{ maxDrinks }})</span></label
             >
             <div class="adm-checks">
               @for (d of specificDrinks; track d.value) {
@@ -634,7 +638,10 @@ import {
                         $any($event.target).checked
                       )
                     "
-                    [disabled]="editBusy()"
+                    [disabled]="
+                      editBusy() ||
+                      (atEditDrinkLimit('partnerSpecificDrink') && !editForm.partnerSpecificDrink.includes(d.value))
+                    "
                   />
                   {{ d.label }}
                 </label>
@@ -940,6 +947,7 @@ export class AttendeesComponent implements OnDestroy {
   readonly ticketTypes = TICKET_TYPES;
   readonly genders = GENDERS;
   readonly specificDrinks = SPECIFIC_DRINKS;
+  readonly maxDrinks = MAX_PREFERRED_DRINKS;
   meta = ticketTypeMeta;
   genderLabel = genderLabel;
   specificDrinksLabel = specificDrinksLabel;
@@ -1029,12 +1037,17 @@ export class AttendeesComponent implements OnDestroy {
   }
 
   /** Preferred-drink checkboxes in the edit modal are optional and multi-select. */
+  atEditDrinkLimit(field: 'specificDrink' | 'partnerSpecificDrink'): boolean {
+    return this.editForm[field].length >= this.maxDrinks;
+  }
+
   toggleEditDrink(
     field: 'specificDrink' | 'partnerSpecificDrink',
     value: SpecificDrink,
     checked: boolean,
   ): void {
     const current = this.editForm[field];
+    if (checked && current.length >= this.maxDrinks) return;
     this.editForm[field] = checked
       ? [...current, value]
       : current.filter((v) => v !== value);

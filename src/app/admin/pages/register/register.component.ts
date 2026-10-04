@@ -15,8 +15,10 @@ import {
 import { ticketShareUrl } from '../../../features/ticketing/share.util';
 import {
   Attendee,
+  DEFAULT_SPECIFIC_DRINK,
   GENDERS,
   Gender,
+  MAX_PREFERRED_DRINKS,
   SPECIFIC_DRINKS,
   SpecificDrink,
   TICKET_TYPES,
@@ -121,13 +123,14 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
           </div>
 
           <div class="adm-field">
-            <label>Preferred drink(s) <span class="adm-muted-label">(optional)</span></label>
+            <label>Preferred drink(s) <span class="adm-muted-label">(choose up to {{ maxDrinks }})</span></label>
             <div class="adm-checks">
               @for (d of specificDrinks; track d.value) {
                 <label class="adm-check">
                   <input
                     type="checkbox"
                     [checked]="isDrinkSelected('specificDrink', d.value)"
+                    [disabled]="atDrinkLimit('specificDrink') && !isDrinkSelected('specificDrink', d.value)"
                     (change)="toggleDrink('specificDrink', d.value, $any($event.target).checked)"
                   />
                   {{ d.label }}
@@ -148,13 +151,14 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
             </div>
 
             <div class="adm-field">
-              <label>Partner's preferred drink(s) <span class="adm-muted-label">(optional)</span></label>
+              <label>Partner's preferred drink(s) <span class="adm-muted-label">(choose up to {{ maxDrinks }})</span></label>
               <div class="adm-checks">
                 @for (d of specificDrinks; track d.value) {
                   <label class="adm-check">
                     <input
                       type="checkbox"
                       [checked]="isDrinkSelected('partnerSpecificDrink', d.value)"
+                      [disabled]="atDrinkLimit('partnerSpecificDrink') && !isDrinkSelected('partnerSpecificDrink', d.value)"
                       (change)="toggleDrink('partnerSpecificDrink', d.value, $any($event.target).checked)"
                     />
                     {{ d.label }}
@@ -217,6 +221,7 @@ export class RegisterComponent {
   readonly ticketTypes = TICKET_TYPES;
   readonly genders = GENDERS;
   readonly specificDrinks = SPECIFIC_DRINKS;
+  readonly maxDrinks = MAX_PREFERRED_DRINKS;
 
   constructor() {
     afterNextRender(() => this.settings.load());
@@ -240,9 +245,9 @@ export class RegisterComponent {
     email: ['', [Validators.email]],
     ticketType: ['SINGLES' as TicketType, Validators.required],
     gender: ['' as Gender | '', Validators.required],
-    specificDrink: [[] as SpecificDrink[]],
+    specificDrink: [[DEFAULT_SPECIFIC_DRINK] as SpecificDrink[]],
     partnerGender: ['' as Gender | ''],
-    partnerSpecificDrink: [[] as SpecificDrink[]],
+    partnerSpecificDrink: [[DEFAULT_SPECIFIC_DRINK] as SpecificDrink[]],
     tableNumber: [''],
   });
 
@@ -261,9 +266,14 @@ export class RegisterComponent {
     return this.form.controls[field].value.includes(value);
   }
 
+  atDrinkLimit(field: 'specificDrink' | 'partnerSpecificDrink'): boolean {
+    return this.form.controls[field].value.length >= this.maxDrinks;
+  }
+
   toggleDrink(field: 'specificDrink' | 'partnerSpecificDrink', value: SpecificDrink, checked: boolean): void {
     const control = this.form.controls[field];
     const current = control.value;
+    if (checked && current.length >= this.maxDrinks) return;
     control.setValue(checked ? [...current, value] : current.filter((v) => v !== value));
   }
 
@@ -326,9 +336,9 @@ export class RegisterComponent {
       email: '',
       ticketType: 'SINGLES',
       gender: '',
-      specificDrink: [],
+      specificDrink: [DEFAULT_SPECIFIC_DRINK],
       partnerGender: '',
-      partnerSpecificDrink: [],
+      partnerSpecificDrink: [DEFAULT_SPECIFIC_DRINK],
       tableNumber: '',
     });
   }

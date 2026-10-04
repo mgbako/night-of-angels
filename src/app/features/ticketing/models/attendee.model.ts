@@ -44,6 +44,12 @@ export const SPECIFIC_DRINKS: { value: SpecificDrink; label: string }[] = [
   { value: 'KUMELIN', label: 'Kumelin' },
 ];
 
+/** A guest may select at most this many preferred drinks. */
+export const MAX_PREFERRED_DRINKS = 2;
+
+/** Preferred drink defaults to water unless the guest changes it. */
+export const DEFAULT_SPECIFIC_DRINK: SpecificDrink = 'BOTTLE_WATER';
+
 export function specificDrinkLabel(d?: SpecificDrink | null): string {
   return SPECIFIC_DRINKS.find((x) => x.value === d)?.label ?? '—';
 }
