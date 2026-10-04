@@ -28,6 +28,7 @@ export const PHONE_DISPLAY = '+234 4803 786 6963';
 export const PHONE_TEL = '+2348037866963';
 export const INSTAGRAM_HANDLE = '@nightofangels2026';
 export const INSTAGRAM_URL = 'https://www.instagram.com/nightofangels2026/';
+export const EVENT_HASHTAG = '#NightOfAngels2026';
 
 // Bank / transfer details guests pay into before uploading proof of payment.
 export const PAYMENT = {

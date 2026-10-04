@@ -1,0 +1,154 @@
+:host {
+  display: block;
+}
+
+.shp {
+  min-height: 100vh;
+  padding: calc(var(--nav-h) + 2.2rem) var(--gut) 4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.shp__head {
+  text-align: center;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.shp__head h1 {
+  font-family: var(--display);
+  font-size: 2.2rem;
+  color: var(--text-on-ink);
+  margin: 0.4rem 0 0;
+}
+.shp__head p {
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.shp__grid {
+  width: 100%;
+  max-width: 980px;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (max-width: 760px) {
+  .shp__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.shp__panel {
+  background: var(--panel);
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  padding: 1.4rem;
+  display: grid;
+  gap: 1.1rem;
+}
+.shp__field {
+  display: grid;
+  gap: 0.45rem;
+}
+.shp__field > span {
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+}
+.shp__field > span em {
+  font-style: normal;
+  opacity: 0.7;
+}
+.shp__field input[type='text'] {
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: var(--ivory-card, #fff);
+  color: var(--text-on-ink);
+  font: inherit;
+  font-size: 0.92rem;
+}
+.shp__field input[type='text']:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.shp__drop {
+  display: grid;
+  place-items: center;
+  gap: 0.3rem;
+  padding: 1.6rem 1rem;
+  border: 1.5px dashed var(--hairline);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: center;
+}
+.shp__drop--has {
+  border-style: solid;
+  border-color: var(--gold);
+}
+.shp__drop-name {
+  font-size: 0.88rem;
+  color: var(--text-on-ink);
+}
+.shp__drop-hint {
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+}
+
+.shp__err {
+  display: block;
+  margin-top: 0.4rem;
+  color: #d46a52;
+  font-size: 0.8rem;
+}
+
+.shp__actions {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.shp__preview {
+  display: flex;
+  justify-content: center;
+}
+.shp__preview img {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 14px;
+  box-shadow: 0 30px 70px -40px rgba(23, 20, 15, 0.3);
+}
+.shp__spinner-wrap {
+  display: grid;
+  place-items: center;
+  min-height: 300px;
+  width: 100%;
+}
+.shp__spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid var(--hairline);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: shp-spin 0.8s linear infinite;
+}
+@keyframes shp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.shp__back {
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+  text-decoration: none;
+}
+.shp__back:hover {
+  color: var(--gold);
+}

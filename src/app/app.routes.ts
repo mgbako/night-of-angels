@@ -29,6 +29,14 @@ export const routes: Routes = [
     title: 'Reserve Your Seat — A Night of Angels',
   },
   {
+    path: 'share',
+    loadComponent: () =>
+      import('./features/ticketing/pages/share-poster/share-poster.component').then(
+        (m) => m.SharePosterComponent,
+      ),
+    title: 'Share Your Invite — A Night of Angels',
+  },
+  {
     path: 'tickets',
     loadChildren: () =>
       import('./features/ticketing/ticketing.routes').then((m) => m.TICKETING_ROUTES),

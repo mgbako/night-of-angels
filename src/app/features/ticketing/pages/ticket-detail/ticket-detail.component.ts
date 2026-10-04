@@ -74,6 +74,9 @@ type State = 'loading' | 'ready' | 'notfound';
               <div class="ticket__actions no-print">
                 <button class="btn btn--solid" (click)="download()" [disabled]="!qr()">Download QR</button>
                 <button class="btn btn--outline" (click)="print()">Print ticket</button>
+                <a class="btn btn--outline" [routerLink]="['/share']" [queryParams]="{ name: a.name }">
+                  Share your invite
+                </a>
               </div>
             </article>
           }

@@ -433,6 +433,16 @@ import {
                             >
                               <adm-icon name="message" [size]="15" /> Text
                             </button>
+                            <a
+                              role="menuitem"
+                              [routerLink]="['/share']"
+                              [queryParams]="{ name: a.name }"
+                              target="_blank"
+                              (click)="rowMenuOpen.set(null)"
+                              title="Generate a shareable poster for this guest"
+                            >
+                              <adm-icon name="external" [size]="15" /> Poster
+                            </a>
                             <button
                               role="menuitem"
                               class="row-menu__danger"
@@ -727,7 +737,8 @@ import {
         display: flex;
         flex-direction: column;
       }
-      .row-menu__menu button {
+      .row-menu__menu button,
+      .row-menu__menu a {
         display: flex;
         align-items: center;
         gap: 0.55rem;
@@ -737,11 +748,13 @@ import {
         border-radius: 7px;
         font-size: 0.85rem;
         color: #23201a;
+        text-decoration: none;
         cursor: pointer;
         text-align: left;
         white-space: nowrap;
       }
-      .row-menu__menu button:hover:not(:disabled) {
+      .row-menu__menu button:hover:not(:disabled),
+      .row-menu__menu a:hover {
         background: #f3f1ea;
       }
       .row-menu__menu button:disabled {
