@@ -109,6 +109,56 @@
   font-size: 0.8rem;
 }
 
+.shp__cropper {
+  width: 220px;
+  height: 220px;
+  margin: 0 auto;
+  border-radius: 50%;
+  overflow: hidden;
+  position: relative;
+  background: var(--ivory-card, #efe9da);
+  border: 2px solid var(--gold);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.shp__cropper:active {
+  cursor: grabbing;
+}
+.shp__cropper img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform-origin: center;
+  pointer-events: none;
+}
+
+.shp__zoom {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+}
+.shp__zoom > span {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.shp__zoom input[type='range'] {
+  flex: 1;
+  accent-color: var(--gold);
+}
+.shp__reset {
+  background: none;
+  border: none;
+  color: var(--gold);
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
 .shp__actions {
   display: grid;
   gap: 0.6rem;

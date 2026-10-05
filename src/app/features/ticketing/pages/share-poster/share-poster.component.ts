@@ -64,6 +64,34 @@ const MAX_BYTES = 8 * 1024 * 1024;
             @if (photoError()) { <span class="shp__err">{{ photoError() }}</span> }
           </div>
 
+          @if (hasPhoto()) {
+            <div class="shp__field">
+              <span>Adjust photo</span>
+              <div
+                class="shp__cropper"
+                (pointerdown)="onDragStart($event)"
+                (pointermove)="onDragMove($event)"
+                (pointerup)="onDragEnd($event)"
+                (pointercancel)="onDragEnd($event)"
+              >
+                <img [src]="photoSrc()" [style.transform]="cropperTransform()" alt="" draggable="false" />
+              </div>
+              <div class="shp__zoom">
+                <span>Zoom</span>
+                <input
+                  type="range"
+                  min="1"
+                  max="2.5"
+                  step="0.01"
+                  [value]="zoom()"
+                  (input)="onZoom($any($event.target).value)"
+                />
+                <button type="button" class="shp__reset" (click)="resetAdjust()">Reset</button>
+              </div>
+              <span class="shp__drop-hint">Drag the photo to reposition it</span>
+            </div>
+          }
+
           <div class="shp__actions">
             <button class="btn btn--solid btn--block" (click)="download()" [disabled]="!posterUrl() || rendering()">
               Download poster
@@ -98,7 +126,24 @@ export class SharePosterComponent {
   hasPhoto = signal(false);
   shared = signal(false);
 
+  /** Data URL shown in the on-screen cropper (the canvas draws from `photoImg`). */
+  photoSrc = signal<string | null>(null);
+  /** 1 = just covers the frame; higher zooms in. */
+  zoom = signal(1);
+  /** Pan offset as a fraction of the frame's diameter — resolution-independent
+   *  so the cropper preview and the final canvas crop stay in sync. */
+  offsetX = signal(0);
+  offsetY = signal(0);
+
   private photoImg: HTMLImageElement | null = null;
+  private logoImg: HTMLImageElement | null = null;
+  private sponsorImg: HTMLImageElement | null = null;
+
+  /** Matches the `.shp__cropper` CSS size — drag distance is read against it. */
+  private readonly cropperSize = 220;
+  private dragging = false;
+  private dragStart = { x: 0, y: 0, offX: 0, offY: 0 };
+  private renderScheduled = false;
 
   readonly eventDateLabel = EVENT_DATE.toLocaleDateString('en-GB', {
     day: 'numeric',
@@ -138,7 +183,12 @@ export class SharePosterComponent {
     const reader = new FileReader();
     reader.onload = async () => {
       try {
-        this.photoImg = await this.loadImage(String(reader.result));
+        const dataUrl = String(reader.result);
+        this.photoImg = await this.loadImage(dataUrl);
+        this.photoSrc.set(dataUrl);
+        this.zoom.set(1);
+        this.offsetX.set(0);
+        this.offsetY.set(0);
         this.hasPhoto.set(true);
         this.shared.set(false);
         await this.render();
@@ -148,6 +198,75 @@ export class SharePosterComponent {
     };
     reader.onerror = () => this.photoError.set('Could not read that photo. Try another.');
     reader.readAsDataURL(file);
+  }
+
+  /** CSS transform for the live on-screen cropper preview. */
+  cropperTransform(): string {
+    return `translate(${this.offsetX() * 100}%, ${this.offsetY() * 100}%) scale(${this.zoom()})`;
+  }
+
+  onDragStart(ev: PointerEvent): void {
+    if (!this.photoImg) return;
+    this.dragging = true;
+    this.dragStart = { x: ev.clientX, y: ev.clientY, offX: this.offsetX(), offY: this.offsetY() };
+    (ev.currentTarget as HTMLElement).setPointerCapture(ev.pointerId);
+  }
+
+  onDragMove(ev: PointerEvent): void {
+    if (!this.dragging || !this.photoImg) return;
+    const dx = (ev.clientX - this.dragStart.x) / this.cropperSize;
+    const dy = (ev.clientY - this.dragStart.y) / this.cropperSize;
+    this.setOffset(this.dragStart.offX + dx, this.dragStart.offY + dy);
+    this.scheduleRender();
+  }
+
+  onDragEnd(ev: PointerEvent): void {
+    if (!this.dragging) return;
+    this.dragging = false;
+    (ev.currentTarget as HTMLElement).releasePointerCapture(ev.pointerId);
+    this.scheduleRender();
+  }
+
+  onZoom(value: string): void {
+    const z = Number(value);
+    if (!Number.isFinite(z)) return;
+    this.zoom.set(z);
+    this.setOffset(this.offsetX(), this.offsetY());
+    this.scheduleRender();
+  }
+
+  resetAdjust(): void {
+    this.zoom.set(1);
+    this.offsetX.set(0);
+    this.offsetY.set(0);
+    this.scheduleRender();
+  }
+
+  /** Clamp so the photo always fully covers the circular frame — no empty edges. */
+  private setOffset(x: number, y: number): void {
+    const img = this.photoImg;
+    if (!img) {
+      this.offsetX.set(0);
+      this.offsetY.set(0);
+      return;
+    }
+    const ratioX = Math.max(1, img.naturalWidth / img.naturalHeight);
+    const ratioY = Math.max(img.naturalHeight / img.naturalWidth, 1);
+    const z = this.zoom();
+    const maxX = Math.max(0, (ratioX * z - 1) / 2);
+    const maxY = Math.max(0, (ratioY * z - 1) / 2);
+    this.offsetX.set(Math.min(maxX, Math.max(-maxX, x)));
+    this.offsetY.set(Math.min(maxY, Math.max(-maxY, y)));
+  }
+
+  /** Coalesce rapid drag/zoom events into one render per frame. */
+  private scheduleRender(): void {
+    if (this.renderScheduled) return;
+    this.renderScheduled = true;
+    requestAnimationFrame(() => {
+      this.renderScheduled = false;
+      this.render();
+    });
   }
 
   download(): void {
@@ -229,8 +348,9 @@ export class SharePosterComponent {
     ctx.textAlign = 'center';
     let y = 90;
 
-    // Emblem.
-    const logo = await this.loadImage('/noa-logo.png').catch(() => null);
+    // Emblem (cached after first load — avoids a re-fetch on every drag/zoom frame).
+    if (!this.logoImg) this.logoImg = await this.loadImage('/noa-logo.png').catch(() => null);
+    const logo = this.logoImg;
     const logoSize = 126;
     if (logo) ctx.drawImage(logo, (W - logoSize) / 2, y, logoSize, logoSize);
     y += logoSize + 46;
@@ -266,7 +386,7 @@ export class SharePosterComponent {
     ctx.restore();
 
     if (this.photoImg) {
-      this.drawCoverImage(ctx, this.photoImg, cx, cy, r);
+      this.drawAdjustedImage(ctx, this.photoImg, cx, cy, r, this.zoom(), this.offsetX(), this.offsetY());
     } else {
       ctx.save();
       ctx.beginPath();
@@ -319,8 +439,11 @@ export class SharePosterComponent {
     this.detailCol(ctx, W * 0.8, y, 'LOCATION', 'LAGOS, NIGERIA', ink, gold);
     y += 54;
 
-    // Title sponsor.
-    const sponsor = await this.loadImage('/partners/africhange.png').catch(() => null);
+    // Title sponsor (cached after first load).
+    if (!this.sponsorImg) {
+      this.sponsorImg = await this.loadImage('/partners/africhange.png').catch(() => null);
+    }
+    const sponsor = this.sponsorImg;
     if (sponsor) {
       ctx.fillStyle = soft;
       this.text(ctx, 'TITLE SPONSOR', W / 2, y, '600 15px Jost, Arial, sans-serif', 4);
@@ -334,23 +457,34 @@ export class SharePosterComponent {
     return canvas;
   }
 
-  /** Draw an image cover-fit and centered within a circular clip. */
-  private drawCoverImage(
+  /**
+   * Draw an image within a circular clip, cover-fit at zoom 1 and adjustable
+   * from there — `zoom` scales up from the covering size, `offsetX`/`offsetY`
+   * pan as a fraction of the frame's diameter. Mirrors the CSS transform used
+   * by the on-screen cropper so the two stay in visual sync.
+   */
+  private drawAdjustedImage(
     ctx: CanvasRenderingContext2D,
     img: HTMLImageElement,
     cx: number,
     cy: number,
     r: number,
+    zoom: number,
+    offsetX: number,
+    offsetY: number,
   ): void {
     ctx.save();
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.clip();
-    const size = r * 2;
-    const scale = Math.max(size / img.naturalWidth, size / img.naturalHeight);
+    const d = r * 2;
+    const baseScale = Math.max(d / img.naturalWidth, d / img.naturalHeight);
+    const scale = baseScale * zoom;
     const w = img.naturalWidth * scale;
     const h = img.naturalHeight * scale;
-    ctx.drawImage(img, cx - w / 2, cy - h / 2, w, h);
+    const dx = offsetX * d;
+    const dy = offsetY * d;
+    ctx.drawImage(img, cx - w / 2 + dx, cy - h / 2 + dy, w, h);
     ctx.restore();
   }
 
