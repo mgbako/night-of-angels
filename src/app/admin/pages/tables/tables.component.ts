@@ -1,4 +1,5 @@
 import { Component, afterNextRender, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { AdminIconComponent } from '../../shared/admin-icon.component';
 import { AdminPaginatorComponent } from '../../shared/admin-paginator.component';
 import { AttendeeApiService } from '../../../features/ticketing/services/attendee-api.service';
@@ -18,13 +19,14 @@ import {
 @Component({
   selector: 'app-admin-tables',
   standalone: true,
-  imports: [AdminIconComponent, AdminPaginatorComponent],
+  imports: [FormsModule, AdminIconComponent, AdminPaginatorComponent],
   template: `
     <div class="adm-page-head">
       <div>
         <h2>Tables</h2>
         <p>
-          {{ tables().length }} {{ tables().length === 1 ? 'table' : 'tables' }} ·
+          {{ filteredTables().length }} of {{ tables().length }}
+          {{ tables().length === 1 ? 'table' : 'tables' }} shown ·
           {{ tablesWithSpace() }} with space ·
           {{ seated() }} seated · {{ seatsLeft() }} {{ seatsLeft() === 1 ? 'seat' : 'seats' }} left ·
           {{ unassignedCount() }} unassigned
@@ -35,10 +37,33 @@ import {
       </button>
     </div>
 
+    <div class="adm-toolbar">
+      <div class="adm-search">
+        <adm-icon name="search" [size]="17" />
+        <input
+          type="search"
+          placeholder="Search table number…"
+          [ngModel]="search()"
+          (ngModelChange)="search.set($event); page.set(1)"
+          aria-label="Search by table number"
+        />
+      </div>
+      <select
+        class="adm-select"
+        [ngModel]="statusFilter()"
+        (ngModelChange)="statusFilter.set($event); page.set(1)"
+        aria-label="Filter by table status"
+      >
+        <option value="ALL">All tables</option>
+        <option value="SPACE">Has space</option>
+        <option value="FULL">Full</option>
+      </select>
+    </div>
+
     @if (loading()) {
       <div class="adm-loading"><div class="adm-spinner"></div><p>Loading…</p></div>
     } @else {
-      @if (tables().length) {
+      @if (filteredTables().length) {
         <div class="tbl-grid">
           @for (t of pagedTables(); track t.table) {
             <div class="adm-card tbl" [class.tbl--full]="t.full">
@@ -118,10 +143,15 @@ import {
           [totalPages]="totalPages()"
           [pageSize]="pageSize()"
           [pageSizeOptions]="pageSizeOptions"
-          [total]="tables().length"
+          [total]="filteredTables().length"
           (pageChange)="page.set($event)"
           (pageSizeChange)="onPageSizeChange($event)"
         />
+      } @else if (tables().length) {
+        <div class="adm-empty">
+          <adm-icon name="search" [size]="28" />
+          <p style="margin-top:.5rem">No tables match your filter.</p>
+        </div>
       } @else {
         <div class="adm-empty">
           <adm-icon name="attendees" [size]="28" />
@@ -243,13 +273,30 @@ export class TablesComponent {
     this.page.set(1);
   }
 
+  /** Table-number search text. */
+  search = signal('');
+  /** 'ALL', 'FULL' (no seats left), or 'SPACE' (has seats left). */
+  statusFilter = signal<'ALL' | 'FULL' | 'SPACE'>('ALL');
+
   tables = computed(() => tableSummaries(this.api.attendees()));
-  totalPages = computed(() => Math.max(1, Math.ceil(this.tables().length / this.pageSize())));
+  filteredTables = computed(() => {
+    const q = this.search().trim().toLowerCase();
+    const status = this.statusFilter();
+    return this.tables().filter((t) => {
+      if (q && !t.table.toLowerCase().includes(q)) return false;
+      if (status === 'FULL' && !t.full) return false;
+      if (status === 'SPACE' && t.full) return false;
+      return true;
+    });
+  });
+  totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.filteredTables().length / this.pageSize())),
+  );
   pagedTables = computed(() => {
     const page = Math.min(this.page(), this.totalPages());
     const size = this.pageSize();
     const start = (page - 1) * size;
-    return this.tables().slice(start, start + size);
+    return this.filteredTables().slice(start, start + size);
   });
   tablesWithSpace = computed(() => this.tables().filter((t) => !t.full).length);
   seated = computed(() => this.tables().reduce((s, t) => s + t.persons, 0));
