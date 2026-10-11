@@ -19,10 +19,12 @@ import {
   GENDERS,
   Gender,
   MAX_PREFERRED_DRINKS,
+  MAX_TABLE_GUESTS,
   SPECIFIC_DRINKS,
   SpecificDrink,
   TABLE_CAPACITY,
   TICKET_TYPES,
+  TableGuest,
   TicketType,
   genderLabel,
   seatsFor,
@@ -649,6 +651,64 @@ import {
             </div>
           </div>
         }
+        @if (editForm.ticketType === 'TABLE') {
+          <div class="adm-field">
+            <label>
+              Table guests
+              <span style="opacity:.6">(optional — up to {{ maxTableGuests }} more, beyond the buyer)</span>
+            </label>
+            @for (guest of editForm.tableGuests; track $index; let i = $index) {
+              <div class="adm-table-guest">
+                <div class="adm-table-guest__row">
+                  <input
+                    type="text"
+                    [(ngModel)]="guest.name"
+                    [disabled]="editBusy()"
+                    [placeholder]="'Guest ' + (i + 2) + ' name'"
+                  />
+                  <select [(ngModel)]="guest.gender" [disabled]="editBusy()">
+                    <option value="">Select gender</option>
+                    @for (g of genders; track g.value) {
+                      <option [value]="g.value">{{ g.label }}</option>
+                    }
+                  </select>
+                  <button
+                    type="button"
+                    class="adm-btn adm-btn--sm adm-btn--danger"
+                    (click)="removeEditTableGuest(i)"
+                    [disabled]="editBusy()"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div class="adm-checks">
+                  @for (d of specificDrinks; track d.value) {
+                    <label class="adm-check">
+                      <input
+                        type="checkbox"
+                        [checked]="isEditTableGuestDrinkSelected(i, d.value)"
+                        (change)="toggleEditTableGuestDrink(i, d.value, $any($event.target).checked)"
+                        [disabled]="
+                          editBusy() ||
+                          (atEditTableGuestDrinkLimit(i) && !isEditTableGuestDrinkSelected(i, d.value))
+                        "
+                      />
+                      {{ d.label }}
+                    </label>
+                  }
+                </div>
+              </div>
+            }
+            <button
+              type="button"
+              class="adm-btn adm-btn--sm"
+              (click)="addEditTableGuest()"
+              [disabled]="editBusy() || editForm.tableGuests.length >= maxTableGuests"
+            >
+              + Add guest ({{ editForm.tableGuests.length }}/{{ maxTableGuests }})
+            </button>
+          </div>
+        }
 
         @if (editError()) {
           <p class="adm-error" style="font-size:.85rem" role="alert">
@@ -845,6 +905,23 @@ import {
       .edit-modal .adm-field {
         margin-bottom: 0.8rem;
       }
+      .adm-table-guest {
+        border: 1px solid #e7e2d5;
+        border-radius: 8px;
+        padding: 0.8rem;
+        margin-bottom: 0.7rem;
+      }
+      .adm-table-guest__row {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 0.6rem;
+        flex-wrap: wrap;
+      }
+      .adm-table-guest__row input[type='text'],
+      .adm-table-guest__row select {
+        flex: 1;
+        min-width: 140px;
+      }
       .sms-modal__hint {
         margin: 0 0 0.9rem;
         font-size: 0.82rem;
@@ -948,6 +1025,7 @@ export class AttendeesComponent implements OnDestroy {
   readonly genders = GENDERS;
   readonly specificDrinks = SPECIFIC_DRINKS;
   readonly maxDrinks = MAX_PREFERRED_DRINKS;
+  readonly maxTableGuests = MAX_TABLE_GUESTS;
   meta = ticketTypeMeta;
   genderLabel = genderLabel;
   specificDrinksLabel = specificDrinksLabel;
@@ -999,6 +1077,7 @@ export class AttendeesComponent implements OnDestroy {
     specificDrink: SpecificDrink[];
     partnerGender: Gender | '';
     partnerSpecificDrink: SpecificDrink[];
+    tableGuests: { name: string; gender: Gender | ''; specificDrink: SpecificDrink[] }[];
   } = this.blankEditForm();
 
   private blankEditForm() {
@@ -1011,6 +1090,7 @@ export class AttendeesComponent implements OnDestroy {
       specificDrink: [] as SpecificDrink[],
       partnerGender: '' as Gender | '',
       partnerSpecificDrink: [] as SpecificDrink[],
+      tableGuests: [] as { name: string; gender: Gender | ''; specificDrink: SpecificDrink[] }[],
     };
   }
 
@@ -1025,6 +1105,11 @@ export class AttendeesComponent implements OnDestroy {
       specificDrink: a.specificDrinks ?? [],
       partnerGender: a.partnerGender ?? '',
       partnerSpecificDrink: a.partnerSpecificDrinks ?? [],
+      tableGuests: (a.tableGuests ?? []).map((g) => ({
+        name: g.name ?? '',
+        gender: g.gender ?? '',
+        specificDrink: g.specificDrinks ?? [],
+      })),
     };
     this.editError.set(null);
     this.editOpen.set(true);
@@ -1053,6 +1138,46 @@ export class AttendeesComponent implements OnDestroy {
       : current.filter((v) => v !== value);
   }
 
+  addEditTableGuest(): void {
+    if (this.editForm.tableGuests.length >= this.maxTableGuests) return;
+    this.editForm.tableGuests = [
+      ...this.editForm.tableGuests,
+      { name: '', gender: '', specificDrink: [] },
+    ];
+  }
+
+  removeEditTableGuest(i: number): void {
+    this.editForm.tableGuests = this.editForm.tableGuests.filter((_, idx) => idx !== i);
+  }
+
+  isEditTableGuestDrinkSelected(i: number, value: SpecificDrink): boolean {
+    return this.editForm.tableGuests[i].specificDrink.includes(value);
+  }
+
+  atEditTableGuestDrinkLimit(i: number): boolean {
+    return this.editForm.tableGuests[i].specificDrink.length >= this.maxDrinks;
+  }
+
+  toggleEditTableGuestDrink(i: number, value: SpecificDrink, checked: boolean): void {
+    const guest = this.editForm.tableGuests[i];
+    const current = guest.specificDrink;
+    if (checked && current.length >= this.maxDrinks) return;
+    guest.specificDrink = checked ? [...current, value] : current.filter((v) => v !== value);
+  }
+
+  /** Drop fully-empty guest rows before saving. */
+  private cleanedEditTableGuests(
+    guests: { name: string; gender: Gender | ''; specificDrink: SpecificDrink[] }[],
+  ): TableGuest[] {
+    return guests
+      .map((g) => ({
+        ...(g.name.trim() ? { name: g.name.trim() } : {}),
+        ...(g.gender ? { gender: g.gender } : {}),
+        ...(g.specificDrink.length ? { specificDrinks: g.specificDrink } : {}),
+      }))
+      .filter((g) => Object.keys(g).length > 0);
+  }
+
   async saveEdit(): Promise<void> {
     const a = this.editTarget();
     if (!a) return;
@@ -1077,6 +1202,9 @@ export class AttendeesComponent implements OnDestroy {
               partnerGender: f.partnerGender,
               partnerSpecificDrinks: f.partnerSpecificDrink,
             }
+          : {}),
+        ...(f.ticketType === 'TABLE'
+          ? { tableGuests: this.cleanedEditTableGuests(f.tableGuests) }
           : {}),
       });
       this.flash(`${name} updated.`, true);

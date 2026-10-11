@@ -1,4 +1,4 @@
-import { Gender, SpecificDrink, TicketType } from './attendee.model';
+import { Gender, SpecificDrink, TableGuest, TicketType } from './attendee.model';
 
 export type ReservationStatus = 'pending' | 'approved' | 'rejected';
 
@@ -19,6 +19,8 @@ export interface Reservation {
   partnerEmail?: string;
   partnerGender?: Gender;
   partnerSpecificDrinks?: SpecificDrink[];
+  /** Named occupants beyond the primary buyer — Table reservations only. */
+  tableGuests?: TableGuest[];
   proofType: string;
   proofName: string;
   status: ReservationStatus;
@@ -39,7 +41,8 @@ export interface ReservationDto {
   partnerEmail?: string;
   partnerGender?: Gender;
   partnerSpecificDrinks?: SpecificDrink[];
+  tableGuests?: TableGuest[];
   proof: { name: string; type: string; dataBase64: string };
 }
 
-export type { TicketType, Gender, SpecificDrink };
+export type { TicketType, Gender, SpecificDrink, TableGuest };

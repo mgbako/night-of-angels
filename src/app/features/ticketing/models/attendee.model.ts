@@ -98,6 +98,16 @@ export function seatsFor(t: TicketType): number {
   return ticketTypeMeta(t).seats;
 }
 
+/** A named occupant of a Table ticket, beyond the primary buyer. All optional. */
+export interface TableGuest {
+  name?: string;
+  gender?: Gender;
+  specificDrinks?: SpecificDrink[];
+}
+
+/** A Table ticket's remaining seats beyond the primary buyer (10 - 1 = 9). */
+export const MAX_TABLE_GUESTS = TABLE_CAPACITY - 1;
+
 export interface TableSummary {
   table: string;
   persons: number;
@@ -139,7 +149,8 @@ export interface GuestPreference {
 /**
  * Expands attendee records into one entry per known individual guest — a
  * Couples ticket contributes both the primary guest and, if captured, their
- * partner. Table/Singles tickets only ever have the one captured guest.
+ * partner; a Table ticket contributes the primary guest plus any named
+ * table guests. Singles tickets only ever have the one captured guest.
  */
 export function guestPreferences(list: Attendee[]): GuestPreference[] {
   const out: GuestPreference[] = [];
@@ -148,6 +159,13 @@ export function guestPreferences(list: Attendee[]): GuestPreference[] {
     out.push({ gender: a.gender, specificDrinks: a.specificDrinks });
     if (a.ticketType === 'COUPLES' && (a.partnerGender || a.partnerSpecificDrinks?.length)) {
       out.push({ gender: a.partnerGender, specificDrinks: a.partnerSpecificDrinks });
+    }
+    if (a.ticketType === 'TABLE' && a.tableGuests?.length) {
+      for (const g of a.tableGuests) {
+        if (g.gender || g.specificDrinks?.length) {
+          out.push({ gender: g.gender, specificDrinks: g.specificDrinks });
+        }
+      }
     }
   }
   return out;
@@ -171,6 +189,8 @@ export interface Attendee {
   /** Second guest's preferences — Couples tickets only. */
   partnerGender?: Gender;
   partnerSpecificDrinks?: SpecificDrink[];
+  /** Named occupants beyond the primary buyer — Table tickets only, up to MAX_TABLE_GUESTS. */
+  tableGuests?: TableGuest[];
 }
 
 export interface RegisterDto {
@@ -184,6 +204,8 @@ export interface RegisterDto {
   /** Second guest's preferences — Couples tickets only. */
   partnerGender?: Gender;
   partnerSpecificDrinks?: SpecificDrink[];
+  /** Named occupants beyond the primary buyer — Table tickets only, up to MAX_TABLE_GUESTS. */
+  tableGuests?: TableGuest[];
 }
 
 /** Edit an existing attendee's own details — owner only. */
@@ -197,4 +219,6 @@ export interface EditAttendeeDto {
   /** Second guest's preferences — Couples tickets only. */
   partnerGender?: Gender | '';
   partnerSpecificDrinks?: SpecificDrink[];
+  /** Named occupants beyond the primary buyer — Table tickets only, up to MAX_TABLE_GUESTS. */
+  tableGuests?: TableGuest[];
 }

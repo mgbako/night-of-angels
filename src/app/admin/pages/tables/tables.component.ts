@@ -6,8 +6,10 @@ import {
   SPECIFIC_DRINKS,
   TABLE_CAPACITY,
   TableSummary,
+  genderLabel,
   guestPreferences,
   seatsFor,
+  specificDrinksLabel,
   tableSummaries,
   ticketTypeMeta,
 } from '../../../features/ticketing/models/attendee.model';
@@ -88,6 +90,18 @@ import {
                     <span>{{ a.name }}</span>
                     <span class="tbl__seats">{{ meta(a.ticketType).label }} · {{ seats(a.ticketType) }}</span>
                   </li>
+                  @if (a.tableGuests?.length) {
+                    <ul class="tbl__guests">
+                      @for (g of a.tableGuests; track $index) {
+                        <li>
+                          <span>{{ g.name || 'Guest' }}</span>
+                          <span class="tbl__seats">
+                            {{ genderLabel(g.gender) }}@if (g.specificDrinks?.length) { · {{ specificDrinksLabel(g.specificDrinks) }} }
+                          </span>
+                        </li>
+                      }
+                    </ul>
+                  }
                 }
               </ul>
             </div>
@@ -170,6 +184,21 @@ import {
         color: #23201a;
       }
       .tbl__seats { color: #8a8270; font-size: 0.76rem; white-space: nowrap; }
+      .tbl__guests {
+        list-style: none;
+        margin: 0.25rem 0 0.2rem;
+        padding-left: 0.9rem;
+        display: grid;
+        gap: 0.3rem;
+        border-left: 2px solid #efeade;
+      }
+      .tbl__guests li {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.6rem;
+        font-size: 0.78rem;
+        color: #6c6555;
+      }
     `,
   ],
 })
@@ -180,6 +209,8 @@ export class TablesComponent {
   loading = this.api.loading;
   meta = ticketTypeMeta;
   seats = seatsFor;
+  genderLabel = genderLabel;
+  specificDrinksLabel = specificDrinksLabel;
 
   tables = computed(() => tableSummaries(this.api.attendees()));
   seated = computed(() => this.tables().reduce((s, t) => s + t.persons, 0));

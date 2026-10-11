@@ -2,6 +2,8 @@ import { Component, afterNextRender, inject, signal } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
+  FormControl,
+  FormGroup,
   ReactiveFormsModule,
   ValidationErrors,
   Validators,
@@ -19,6 +21,7 @@ import {
   GENDERS,
   Gender,
   MAX_PREFERRED_DRINKS,
+  MAX_TABLE_GUESTS,
   SPECIFIC_DRINKS,
   SpecificDrink,
   TICKET_TYPES,
@@ -28,6 +31,12 @@ import {
   ticketTypeMeta,
 } from '../../../features/ticketing/models/attendee.model';
 import { EventSettingsService } from '../../../shared/event-settings.service';
+
+type TableGuestGroup = FormGroup<{
+  name: FormControl<string>;
+  gender: FormControl<Gender | ''>;
+  specificDrink: FormControl<SpecificDrink[]>;
+}>;
 
 // Accepts Nigerian formats: 0803..., +234803..., with spaces/dashes. 10–14 digits.
 function phoneValidator(control: AbstractControl): ValidationErrors | null {
@@ -168,6 +177,60 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
             </div>
           }
 
+          @if (isTable()) {
+            <div class="adm-field">
+              <label>
+                Table guests
+                <span class="adm-muted-label">(optional — up to {{ maxTableGuests }} more, beyond you)</span>
+              </label>
+              @for (guest of tableGuestsArray.controls; track guest; let i = $index) {
+                <div class="adm-table-guest" [formGroup]="guest">
+                  <div class="adm-table-guest__row">
+                    <input
+                      type="text"
+                      formControlName="name"
+                      [placeholder]="'Guest ' + (i + 2) + ' name'"
+                    />
+                    <select formControlName="gender">
+                      <option value="">Select gender</option>
+                      @for (g of genders; track g.value) {
+                        <option [value]="g.value">{{ g.label }}</option>
+                      }
+                    </select>
+                    <button
+                      type="button"
+                      class="adm-btn adm-btn--sm adm-btn--danger"
+                      (click)="removeTableGuest(i)"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <div class="adm-checks">
+                    @for (d of specificDrinks; track d.value) {
+                      <label class="adm-check">
+                        <input
+                          type="checkbox"
+                          [checked]="isTableGuestDrinkSelected(i, d.value)"
+                          [disabled]="atTableGuestDrinkLimit(i) && !isTableGuestDrinkSelected(i, d.value)"
+                          (change)="toggleTableGuestDrink(i, d.value, $any($event.target).checked)"
+                        />
+                        {{ d.label }}
+                      </label>
+                    }
+                  </div>
+                </div>
+              }
+              <button
+                type="button"
+                class="adm-btn adm-btn--sm"
+                (click)="addTableGuest()"
+                [disabled]="tableGuestsArray.length >= maxTableGuests"
+              >
+                + Add guest ({{ tableGuestsArray.length }}/{{ maxTableGuests }})
+              </button>
+            </div>
+          }
+
           <div class="adm-field">
             <label for="r-table">Table number <span style="opacity:.6">(optional)</span></label>
             <input id="r-table" type="text" formControlName="tableNumber" placeholder="e.g. 12 or VIP 3" />
@@ -210,6 +273,23 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
       .reg-note { margin: 1rem 0 0; font-size: 0.86rem; }
       .reg-note--ok { color: #1c7a41; }
       .reg-note--err { color: #a83a2c; }
+      .adm-table-guest {
+        border: 1px solid #e7e2d5;
+        border-radius: 8px;
+        padding: 0.8rem;
+        margin-bottom: 0.7rem;
+      }
+      .adm-table-guest__row {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 0.6rem;
+        flex-wrap: wrap;
+      }
+      .adm-table-guest__row input[type='text'],
+      .adm-table-guest__row select {
+        flex: 1;
+        min-width: 140px;
+      }
     `,
   ],
 })
@@ -222,6 +302,7 @@ export class RegisterComponent {
   readonly genders = GENDERS;
   readonly specificDrinks = SPECIFIC_DRINKS;
   readonly maxDrinks = MAX_PREFERRED_DRINKS;
+  readonly maxTableGuests = MAX_TABLE_GUESTS;
 
   constructor() {
     afterNextRender(() => this.settings.load());
@@ -248,6 +329,7 @@ export class RegisterComponent {
     specificDrink: [[DEFAULT_SPECIFIC_DRINK] as SpecificDrink[]],
     partnerGender: ['' as Gender | ''],
     partnerSpecificDrink: [[DEFAULT_SPECIFIC_DRINK] as SpecificDrink[]],
+    tableGuests: this.fb.array<TableGuestGroup>([]),
     tableNumber: [''],
   });
 
@@ -259,6 +341,11 @@ export class RegisterComponent {
   /** Couples tickets capture a second guest's gender and preferred drink(s). */
   isCouples(): boolean {
     return this.form.controls.ticketType.value === 'COUPLES';
+  }
+
+  /** Table tickets can name up to maxTableGuests guests beyond the buyer. */
+  isTable(): boolean {
+    return this.form.controls.ticketType.value === 'TABLE';
   }
 
   /** Preferred-drink checkboxes are optional and multi-select, for both the primary guest and their partner. */
@@ -277,6 +364,42 @@ export class RegisterComponent {
     control.setValue(checked ? [...current, value] : current.filter((v) => v !== value));
   }
 
+  get tableGuestsArray() {
+    return this.form.controls.tableGuests;
+  }
+
+  private newTableGuest(): TableGuestGroup {
+    return this.fb.nonNullable.group({
+      name: [''],
+      gender: ['' as Gender | ''],
+      specificDrink: [[] as SpecificDrink[]],
+    });
+  }
+
+  addTableGuest(): void {
+    if (this.tableGuestsArray.length >= this.maxTableGuests) return;
+    this.tableGuestsArray.push(this.newTableGuest());
+  }
+
+  removeTableGuest(i: number): void {
+    this.tableGuestsArray.removeAt(i);
+  }
+
+  isTableGuestDrinkSelected(i: number, value: SpecificDrink): boolean {
+    return this.tableGuestsArray.at(i).controls.specificDrink.value.includes(value);
+  }
+
+  atTableGuestDrinkLimit(i: number): boolean {
+    return this.tableGuestsArray.at(i).controls.specificDrink.value.length >= this.maxDrinks;
+  }
+
+  toggleTableGuestDrink(i: number, value: SpecificDrink, checked: boolean): void {
+    const control = this.tableGuestsArray.at(i).controls.specificDrink;
+    const current = control.value;
+    if (checked && current.length >= this.maxDrinks) return;
+    control.setValue(checked ? [...current, value] : current.filter((v) => v !== value));
+  }
+
   async submit(): Promise<void> {
     this.error.set(null);
     if (this.form.invalid) {
@@ -285,14 +408,24 @@ export class RegisterComponent {
     }
     this.submitting.set(true);
     try {
-      const { specificDrink, partnerGender, partnerSpecificDrink, ...raw } = this.form.getRawValue();
+      const { specificDrink, partnerGender, partnerSpecificDrink, tableGuests, ...raw } =
+        this.form.getRawValue();
       const isCouples = raw.ticketType === 'COUPLES';
+      const isTable = raw.ticketType === 'TABLE';
+      const cleanedTableGuests = tableGuests
+        .map((g) => ({
+          ...(g.name.trim() ? { name: g.name.trim() } : {}),
+          ...(g.gender ? { gender: g.gender as Gender } : {}),
+          ...(g.specificDrink.length ? { specificDrinks: g.specificDrink } : {}),
+        }))
+        .filter((g) => Object.keys(g).length > 0);
       const attendee = await this.api.register({
         ...raw,
         gender: raw.gender as Gender,
         specificDrinks: specificDrink,
         ...(isCouples && partnerGender ? { partnerGender: partnerGender as Gender } : {}),
         ...(isCouples && partnerSpecificDrink.length ? { partnerSpecificDrinks: partnerSpecificDrink } : {}),
+        ...(isTable && cleanedTableGuests.length ? { tableGuests: cleanedTableGuests } : {}),
       });
       this.created.set(attendee);
     } catch (e) {
@@ -330,6 +463,7 @@ export class RegisterComponent {
   reset(): void {
     this.created.set(null);
     this.error.set(null);
+    while (this.tableGuestsArray.length) this.tableGuestsArray.removeAt(0);
     this.form.reset({
       name: '',
       phone: '',

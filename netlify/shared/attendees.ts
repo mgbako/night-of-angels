@@ -22,6 +22,12 @@ export type SpecificDrink =
   | 'BOTTLE_WATER'
   | 'KUMELIN';
 
+export interface TableGuest {
+  name?: string;
+  gender?: Gender;
+  specificDrinks?: SpecificDrink[];
+}
+
 export interface Attendee {
   id: string;
   name: string;
@@ -42,6 +48,8 @@ export interface Attendee {
   /** Second guest's preferences — Couples tickets only. */
   partnerGender?: Gender;
   partnerSpecificDrinks?: SpecificDrink[];
+  /** Named occupants beyond the primary buyer — Table tickets only. */
+  tableGuests?: TableGuest[];
 }
 
 const STORE = 'ticketing';
@@ -80,6 +88,7 @@ export async function addAttendee(input: {
   specificDrinks?: SpecificDrink[];
   partnerGender?: Gender;
   partnerSpecificDrinks?: SpecificDrink[];
+  tableGuests?: TableGuest[];
 }): Promise<Attendee> {
   const list = await readAttendees();
   const email = input.email.trim().toLowerCase();
@@ -100,6 +109,7 @@ export async function addAttendee(input: {
     ...(input.specificDrinks?.length ? { specificDrinks: input.specificDrinks } : {}),
     ...(input.partnerGender ? { partnerGender: input.partnerGender } : {}),
     ...(input.partnerSpecificDrinks?.length ? { partnerSpecificDrinks: input.partnerSpecificDrinks } : {}),
+    ...(input.tableGuests?.length ? { tableGuests: input.tableGuests } : {}),
   };
   await writeAttendees([attendee, ...list]);
   return attendee;

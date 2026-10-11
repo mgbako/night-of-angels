@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import {
   AbstractControl,
   FormBuilder,
+  FormControl,
+  FormGroup,
   ReactiveFormsModule,
   ValidationErrors,
   Validators,
@@ -17,6 +19,7 @@ import {
   GENDERS,
   Gender,
   MAX_PREFERRED_DRINKS,
+  MAX_TABLE_GUESTS,
   SPECIFIC_DRINKS,
   SpecificDrink,
   TICKET_TYPES,
@@ -29,6 +32,12 @@ import { EventSettingsService } from '../../../../shared/event-settings.service'
 
 const ALLOWED = ['image/jpeg', 'image/png', 'application/pdf'];
 const MAX_BYTES = 4 * 1024 * 1024;
+
+type TableGuestGroup = FormGroup<{
+  name: FormControl<string>;
+  gender: FormControl<Gender | ''>;
+  specificDrink: FormControl<SpecificDrink[]>;
+}>;
 
 function phoneValidator(control: AbstractControl): ValidationErrors | null {
   const raw = String(control.value ?? '').trim();
@@ -181,6 +190,55 @@ function phoneValidator(control: AbstractControl): ValidationErrors | null {
               </div>
             }
 
+            @if (isTable) {
+              <div class="rsv__partner">
+                <span class="rsv__partner-title">
+                  Table guests <span class="opt">(optional — up to {{ maxTableGuests }} more, beyond you)</span>
+                </span>
+                @for (guest of tableGuestsArray.controls; track guest; let i = $index) {
+                  <div class="rsv__table-guest" [formGroup]="guest">
+                    <div class="rsv__table-guest-row">
+                      <input
+                        type="text"
+                        formControlName="name"
+                        [placeholder]="'Guest ' + (i + 2) + ' name'"
+                      />
+                      <select formControlName="gender">
+                        <option value="">Select gender</option>
+                        @for (g of genders; track g.value) {
+                          <option [value]="g.value">{{ g.label }}</option>
+                        }
+                      </select>
+                      <button type="button" class="rsv__table-guest-remove" (click)="removeTableGuest(i)">
+                        Remove
+                      </button>
+                    </div>
+                    <div class="rsv__checks">
+                      @for (d of specificDrinks; track d.value) {
+                        <label class="rsv__check">
+                          <input
+                            type="checkbox"
+                            [checked]="isTableGuestDrinkSelected(i, d.value)"
+                            [disabled]="atTableGuestDrinkLimit(i) && !isTableGuestDrinkSelected(i, d.value)"
+                            (change)="toggleTableGuestDrink(i, d.value, $any($event.target).checked)"
+                          />
+                          {{ d.label }}
+                        </label>
+                      }
+                    </div>
+                  </div>
+                }
+                <button
+                  type="button"
+                  class="btn btn--outline"
+                  (click)="addTableGuest()"
+                  [disabled]="tableGuestsArray.length >= maxTableGuests"
+                >
+                  + Add guest ({{ tableGuestsArray.length }}/{{ maxTableGuests }})
+                </button>
+              </div>
+            }
+
             <div class="rsv__pay">
               <span class="rsv__pay-title">Make payment to</span>
               <div class="rsv__pay-row">
@@ -247,6 +305,7 @@ export class ReserveComponent implements OnInit {
   readonly genders = GENDERS;
   readonly specificDrinks = SPECIFIC_DRINKS;
   readonly maxDrinks = MAX_PREFERRED_DRINKS;
+  readonly maxTableGuests = MAX_TABLE_GUESTS;
   readonly payment = PAYMENT;
 
   constructor() {
@@ -290,6 +349,8 @@ export class ReserveComponent implements OnInit {
     partnerEmail: ['', [Validators.email]],
     partnerGender: ['' as Gender | ''],
     partnerSpecificDrink: [[DEFAULT_SPECIFIC_DRINK] as SpecificDrink[]],
+    // Table guests — only shown/collected for Table, all optional.
+    tableGuests: this.fb.array<TableGuestGroup>([]),
   });
 
   /** Preferred-drink checkboxes are optional and multi-select, up to maxDrinks. */
@@ -315,6 +376,47 @@ export class ReserveComponent implements OnInit {
   /** Whether the Couples ticket (and its optional second-guest fields) is selected. */
   get isCouples(): boolean {
     return this.form.controls.ticketType.value === 'COUPLES';
+  }
+
+  /** Whether the Table ticket (and its optional named-guest fields) is selected. */
+  get isTable(): boolean {
+    return this.form.controls.ticketType.value === 'TABLE';
+  }
+
+  get tableGuestsArray() {
+    return this.form.controls.tableGuests;
+  }
+
+  private newTableGuest(): TableGuestGroup {
+    return this.fb.nonNullable.group({
+      name: [''],
+      gender: ['' as Gender | ''],
+      specificDrink: [[] as SpecificDrink[]],
+    });
+  }
+
+  addTableGuest(): void {
+    if (this.tableGuestsArray.length >= this.maxTableGuests) return;
+    this.tableGuestsArray.push(this.newTableGuest());
+  }
+
+  removeTableGuest(i: number): void {
+    this.tableGuestsArray.removeAt(i);
+  }
+
+  isTableGuestDrinkSelected(i: number, value: SpecificDrink): boolean {
+    return this.tableGuestsArray.at(i).controls.specificDrink.value.includes(value);
+  }
+
+  atTableGuestDrinkLimit(i: number): boolean {
+    return this.tableGuestsArray.at(i).controls.specificDrink.value.length >= this.maxDrinks;
+  }
+
+  toggleTableGuestDrink(i: number, value: SpecificDrink, checked: boolean): void {
+    const control = this.tableGuestsArray.at(i).controls.specificDrink;
+    const current = control.value;
+    if (checked && current.length >= this.maxDrinks) return;
+    control.setValue(checked ? [...current, value] : current.filter((v) => v !== value));
   }
 
   async copyAccount(): Promise<void> {
@@ -385,6 +487,7 @@ export class ReserveComponent implements OnInit {
         partnerEmail,
         partnerGender,
         partnerSpecificDrink,
+        tableGuests,
         ...rest
       } = this.form.getRawValue();
       const dto: ReservationDto = {
@@ -403,6 +506,17 @@ export class ReserveComponent implements OnInit {
         if (partnerEmail.trim()) dto.partnerEmail = partnerEmail.trim();
         if (partnerGender) dto.partnerGender = partnerGender as Gender;
         if (partnerSpecificDrink.length) dto.partnerSpecificDrinks = partnerSpecificDrink;
+      }
+      // Only send named guests for a Table reservation, and only the ones filled in.
+      if (ticketType === 'TABLE') {
+        const cleanedTableGuests = tableGuests
+          .map((g) => ({
+            ...(g.name.trim() ? { name: g.name.trim() } : {}),
+            ...(g.gender ? { gender: g.gender as Gender } : {}),
+            ...(g.specificDrink.length ? { specificDrinks: g.specificDrink } : {}),
+          }))
+          .filter((g) => Object.keys(g).length > 0);
+        if (cleanedTableGuests.length) dto.tableGuests = cleanedTableGuests;
       }
       await this.api.create(dto);
       this.submittedName.set(rest.name);

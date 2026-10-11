@@ -83,6 +83,14 @@ const SPECIFIC_DRINKS: SpecificDrink[] = [
   'BOTTLE_WATER',
   'KUMELIN',
 ];
+/** A Table ticket's remaining seats beyond the primary buyer (10 - 1 = 9). */
+const MAX_TABLE_GUESTS = TABLE_CAPACITY - 1;
+
+interface TableGuest {
+  name?: string;
+  gender?: Gender;
+  specificDrinks?: SpecificDrink[];
+}
 
 interface Attendee {
   id: string;
@@ -100,6 +108,25 @@ interface Attendee {
   specificDrinks?: SpecificDrink[];
   partnerGender?: Gender;
   partnerSpecificDrinks?: SpecificDrink[];
+  tableGuests?: TableGuest[];
+}
+
+/** Validate/clean a Table ticket's named-guest list — ignored for other ticket types. */
+function parseTableGuests(ticketType: TicketType, raw: unknown): TableGuest[] {
+  if (ticketType !== 'TABLE' || !Array.isArray(raw)) return [];
+  return raw.slice(0, MAX_TABLE_GUESTS).map((g) => {
+    const guest = (g ?? {}) as Partial<TableGuest>;
+    const name = typeof guest.name === 'string' ? guest.name.trim() : '';
+    const gender = guest.gender && GENDERS.includes(guest.gender) ? guest.gender : undefined;
+    const specificDrinks = Array.isArray(guest.specificDrinks)
+      ? guest.specificDrinks.filter((d) => SPECIFIC_DRINKS.includes(d))
+      : [];
+    return {
+      ...(name ? { name } : {}),
+      ...(gender ? { gender } : {}),
+      ...(specificDrinks.length ? { specificDrinks } : {}),
+    };
+  });
 }
 
 const STORE = 'ticketing';
@@ -254,6 +281,7 @@ async function register(req: Request, actor: TokenPayload): Promise<Response> {
     isCouples && Array.isArray(body.partnerSpecificDrinks)
       ? body.partnerSpecificDrinks.filter((d) => SPECIFIC_DRINKS.includes(d))
       : [];
+  const tableGuests = parseTableGuests(body.ticketType as TicketType, body.tableGuests);
   const list = await readAll();
   // Email is optional. Only dedupe when one is supplied.
   const email = String(body.email ?? '').trim().toLowerCase();
@@ -282,6 +310,7 @@ async function register(req: Request, actor: TokenPayload): Promise<Response> {
     ...(specificDrinks.length ? { specificDrinks } : {}),
     ...(partnerGender ? { partnerGender } : {}),
     ...(partnerSpecificDrinks.length ? { partnerSpecificDrinks } : {}),
+    ...(tableGuests.length ? { tableGuests } : {}),
   };
   await writeAll([attendee, ...list]);
   await recordAudit({
@@ -336,6 +365,7 @@ async function patchOne(code: string, req: Request): Promise<Response> {
     specificDrinks?: SpecificDrink[];
     partnerGender?: Gender | '';
     partnerSpecificDrinks?: SpecificDrink[];
+    tableGuests?: TableGuest[];
   } | null;
   const list = await readAll();
   const idx = list.findIndex((a) => a.ticketCode.toLowerCase() === code.toLowerCase());
@@ -457,6 +487,12 @@ async function patchOne(code: string, req: Request): Promise<Response> {
           : before.partnerSpecificDrinks)
       : undefined;
 
+    // Named table guests only make sense for Table tickets.
+    const isTable = ticketType === 'TABLE';
+    const tableGuests = isTable
+      ? (Array.isArray(body?.tableGuests) ? parseTableGuests(ticketType, body.tableGuests) : before.tableGuests)
+      : undefined;
+
     list[idx] = {
       ...list[idx],
       name,
@@ -467,6 +503,7 @@ async function patchOne(code: string, req: Request): Promise<Response> {
       specificDrinks,
       partnerGender,
       partnerSpecificDrinks,
+      tableGuests,
     };
     await recordAudit({
       req,

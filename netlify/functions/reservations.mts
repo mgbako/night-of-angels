@@ -2,7 +2,7 @@ import type { Context } from '@netlify/functions';
 import { getStore } from '@netlify/blobs';
 import { randomUUID } from 'node:crypto';
 import { AuthError, TokenPayload, requireOwner, requirePermission } from '../shared/auth';
-import { addAttendee, Gender, SpecificDrink, TicketType } from '../shared/attendees';
+import { addAttendee, Gender, SpecificDrink, TableGuest, TicketType } from '../shared/attendees';
 import { readSettings, reservationsOpen } from '../shared/settings';
 import { recordAudit } from '../shared/audit';
 
@@ -39,6 +39,7 @@ interface Reservation {
   partnerEmail?: string;
   partnerGender?: Gender;
   partnerSpecificDrinks?: SpecificDrink[];
+  tableGuests?: TableGuest[];
   proofKey: string;
   proofType: string;
   proofName: string;
@@ -68,6 +69,26 @@ const SPECIFIC_DRINKS: SpecificDrink[] = [
   'BOTTLE_WATER',
   'KUMELIN',
 ];
+/** A Table ticket's remaining seats beyond the primary buyer (10 - 1 = 9). */
+const MAX_TABLE_GUESTS = 9;
+
+/** Validate/clean a Table ticket's named-guest list — ignored for other ticket types. */
+function parseTableGuests(ticketType: TicketType | undefined, raw: unknown): TableGuest[] {
+  if (ticketType !== 'TABLE' || !Array.isArray(raw)) return [];
+  return raw.slice(0, MAX_TABLE_GUESTS).map((g) => {
+    const guest = (g ?? {}) as Partial<TableGuest>;
+    const name = typeof guest.name === 'string' ? guest.name.trim() : '';
+    const gender = guest.gender && GENDERS.includes(guest.gender) ? guest.gender : undefined;
+    const specificDrinks = Array.isArray(guest.specificDrinks)
+      ? guest.specificDrinks.filter((d) => SPECIFIC_DRINKS.includes(d))
+      : [];
+    return {
+      ...(name ? { name } : {}),
+      ...(gender ? { gender } : {}),
+      ...(specificDrinks.length ? { specificDrinks } : {}),
+    };
+  });
+}
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -167,6 +188,7 @@ async function create(req: Request): Promise<Response> {
     partnerEmail?: string;
     partnerGender?: Gender;
     partnerSpecificDrinks?: SpecificDrink[];
+    tableGuests?: TableGuest[];
     proof?: { name?: string; type?: string; dataBase64?: string };
   } | null;
 
@@ -215,6 +237,7 @@ async function create(req: Request): Promise<Response> {
     isCouples && Array.isArray(body.partnerSpecificDrinks)
       ? body.partnerSpecificDrinks.filter((d) => SPECIFIC_DRINKS.includes(d))
       : [];
+  const tableGuests = parseTableGuests(body.ticketType, body.tableGuests);
 
   const reservation: Reservation = {
     id: randomUUID(),
@@ -229,6 +252,7 @@ async function create(req: Request): Promise<Response> {
     ...(partnerEmail ? { partnerEmail } : {}),
     ...(partnerGender ? { partnerGender } : {}),
     ...(partnerSpecificDrinks.length ? { partnerSpecificDrinks } : {}),
+    ...(tableGuests.length ? { tableGuests } : {}),
     proofKey,
     proofType: proof.type,
     proofName: proof.name ?? 'proof',
@@ -283,6 +307,7 @@ async function approve(id: string, req: Request, actor: TokenPayload): Promise<R
       specificDrinks: reservation.specificDrinks,
       partnerGender: reservation.partnerGender,
       partnerSpecificDrinks: reservation.partnerSpecificDrinks,
+      tableGuests: reservation.tableGuests,
     });
   } catch (e) {
     if (e instanceof Error && e.message === 'DUP_EMAIL') {
