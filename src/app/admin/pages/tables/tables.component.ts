@@ -1,4 +1,4 @@
-import { Component, afterNextRender, computed, inject } from '@angular/core';
+import { Component, afterNextRender, computed, inject, signal } from '@angular/core';
 import { AdminIconComponent } from '../../shared/admin-icon.component';
 import { AttendeeApiService } from '../../../features/ticketing/services/attendee-api.service';
 import {
@@ -38,7 +38,7 @@ import {
     } @else {
       @if (tables().length) {
         <div class="tbl-grid">
-          @for (t of tables(); track t.table) {
+          @for (t of pagedTables(); track t.table) {
             <div class="adm-card tbl" [class.tbl--full]="t.full">
               <div class="tbl__head">
                 <span class="tbl__name">Table {{ t.table }}</span>
@@ -110,6 +110,28 @@ import {
             </div>
           }
         </div>
+
+        @if (totalPages() > 1) {
+          <div class="adm-pagination">
+            <span>Page {{ page() }} of {{ totalPages() }}</span>
+            <div class="adm-pagination__controls">
+              <button
+                (click)="page.set(page() - 1)"
+                [disabled]="page() === 1"
+                aria-label="Previous page"
+              >
+                <adm-icon name="chevron-left" [size]="16" />
+              </button>
+              <button
+                (click)="page.set(page() + 1)"
+                [disabled]="page() === totalPages()"
+                aria-label="Next page"
+              >
+                <adm-icon name="chevron-right" [size]="16" />
+              </button>
+            </div>
+          </div>
+        }
       } @else {
         <div class="adm-empty">
           <adm-icon name="attendees" [size]="28" />
@@ -222,7 +244,16 @@ export class TablesComponent {
     });
   }
 
+  page = signal(1);
+  readonly pageSize = 12;
+
   tables = computed(() => tableSummaries(this.api.attendees()));
+  totalPages = computed(() => Math.max(1, Math.ceil(this.tables().length / this.pageSize)));
+  pagedTables = computed(() => {
+    const page = Math.min(this.page(), this.totalPages());
+    const start = (page - 1) * this.pageSize;
+    return this.tables().slice(start, start + this.pageSize);
+  });
   seated = computed(() => this.tables().reduce((s, t) => s + t.persons, 0));
   seatsLeft = computed(() =>
     this.tables().reduce((s, t) => s + Math.max(0, TABLE_CAPACITY - t.persons), 0),
