@@ -125,7 +125,7 @@ export class AdminPaginatorComponent implements OnChanges {
   @Input() page = 1;
   @Input() totalPages = 1;
   @Input() pageSize = 10;
-  @Input() pageSizeOptions: number[] = [10, 25, 50];
+  @Input() pageSizeOptions: number[] = [10, 20, 50, 100];
   @Input() total = 0;
 
   @Output() pageChange = new EventEmitter<number>();

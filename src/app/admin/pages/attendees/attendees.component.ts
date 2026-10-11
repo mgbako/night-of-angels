@@ -1185,8 +1185,8 @@ export class AttendeesComponent implements OnDestroy {
   /** 'ALL', 'NONE' (unassigned), or a specific table number. */
   tableFilter = signal<string>('ALL');
   page = signal(1);
-  pageSize = signal(8);
-  readonly pageSizeOptions = [8, 20, 50, 100];
+  pageSize = signal(10);
+  readonly pageSizeOptions = [10, 20, 50, 100];
 
   onPageSizeChange(size: number): void {
     this.pageSize.set(size);

@@ -235,8 +235,8 @@ export class TablesComponent {
   }
 
   page = signal(1);
-  pageSize = signal(12);
-  readonly pageSizeOptions = [6, 12, 24, 48];
+  pageSize = signal(10);
+  readonly pageSizeOptions = [10, 20, 50, 100];
 
   onPageSizeChange(size: number): void {
     this.pageSize.set(size);
