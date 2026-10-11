@@ -298,7 +298,9 @@ import {
                 </td>
               }
               <td>
-                <span class="adm-name">{{ a.name }}</span>
+                <button type="button" class="adm-name adm-name--link" (click)="openDetails(a)">
+                  {{ a.name }}
+                </button>
                 <span class="adm-sub"
                   >{{ genderLabel(a.gender) }} · {{ a.phone }}
                   @if (a.email) {
@@ -738,6 +740,69 @@ import {
         </div>
       </div>
     }
+
+    @if (detailsTarget(); as d) {
+      <div class="sms-backdrop" (click)="closeDetails()"></div>
+      <div
+        class="sms-modal details-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="details-title"
+      >
+        <h3 id="details-title">
+          {{ d.name }}
+          @if (d.deletedAt) {
+            <span class="adm-badge">Archived</span>
+          }
+        </h3>
+
+        <dl class="details-dl">
+          <div><dt>Ticket</dt><dd>{{ meta(d.ticketType).label }} · <span class="adm-code">{{ d.ticketCode }}</span></dd></div>
+          <div><dt>Gender</dt><dd>{{ genderLabel(d.gender) }}</dd></div>
+          <div><dt>Phone</dt><dd>{{ d.phone || '—' }}</dd></div>
+          <div><dt>Email</dt><dd>{{ d.email || '—' }}</dd></div>
+          <div><dt>Table</dt><dd>{{ d.tableNumber || '—' }}</dd></div>
+          <div><dt>Preferred drink(s)</dt><dd>{{ specificDrinksLabel(d.specificDrinks) }}</dd></div>
+          <div><dt>Check-in</dt><dd>{{ d.checkedIn ? ('Checked in · ' + fullDate(d.checkedInAt)) : 'Not yet' }}</dd></div>
+          <div><dt>Registered</dt><dd>{{ fullDate(d.createdAt) }}</dd></div>
+        </dl>
+
+        @if (d.ticketType === 'COUPLES' && (d.partnerGender || d.partnerSpecificDrinks?.length)) {
+          <div class="details-section">
+            <h4>Partner</h4>
+            <dl class="details-dl">
+              <div><dt>Gender</dt><dd>{{ genderLabel(d.partnerGender) }}</dd></div>
+              <div><dt>Preferred drink(s)</dt><dd>{{ specificDrinksLabel(d.partnerSpecificDrinks) }}</dd></div>
+            </dl>
+          </div>
+        }
+
+        @if (d.ticketType === 'TABLE' && d.tableGuests?.length) {
+          <div class="details-section">
+            <h4>Table guests ({{ d.tableGuests!.length }})</h4>
+            <ul class="details-guests">
+              @for (g of d.tableGuests; track $index) {
+                <li>
+                  <span class="adm-name">{{ g.name || 'Guest' }}</span>
+                  <span class="adm-sub">
+                    {{ genderLabel(g.gender) }}@if (g.specificDrinks?.length) { · {{ specificDrinksLabel(g.specificDrinks) }} }
+                  </span>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+
+        <div class="sms-actions">
+          <button class="adm-btn adm-btn--sm adm-btn--ghost" (click)="closeDetails()">Close</button>
+          @if (canManage() && !d.deletedAt) {
+            <button class="adm-btn adm-btn--sm adm-btn--primary" (click)="editFromDetails(d)">
+              Edit
+            </button>
+          }
+        </div>
+      </div>
+    }
   `,
   styles: [
     `
@@ -774,6 +839,20 @@ import {
       }
       .adm-table .adm-name {
         display: block;
+      }
+      button.adm-name--link {
+        border: none;
+        background: none;
+        padding: 0;
+        margin: 0;
+        font: inherit;
+        text-align: left;
+        color: inherit;
+        cursor: pointer;
+      }
+      button.adm-name--link:hover {
+        color: var(--adm-gold, #b0891d);
+        text-decoration: underline;
       }
       .adm-table .adm-sub {
         display: block;
@@ -921,6 +1000,62 @@ import {
         margin-bottom: 0.6rem;
         flex-wrap: wrap;
       }
+      .details-modal {
+        max-height: 88vh;
+        overflow-y: auto;
+      }
+      .details-modal h3 {
+        margin-bottom: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .details-dl {
+        margin: 0;
+        display: grid;
+        gap: 0.6rem;
+      }
+      .details-dl div {
+        display: grid;
+        grid-template-columns: 130px 1fr;
+        gap: 0.5rem;
+        align-items: baseline;
+      }
+      .details-dl dt {
+        font-size: 0.72rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #8a8270;
+      }
+      .details-dl dd {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #23201a;
+      }
+      .details-section {
+        margin-top: 1.1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e7e2d5;
+      }
+      .details-section h4 {
+        margin: 0 0 0.6rem;
+        font-size: 0.78rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #8a8270;
+      }
+      .details-guests {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.5rem;
+      }
+      .details-guests li {
+        padding: 0.5rem 0.7rem;
+        border: 1px solid #e7e2d5;
+        border-radius: 8px;
+      }
       .adm-table-guest__row input[type='text'],
       .adm-table-guest__row select {
         flex: 1;
@@ -1041,6 +1176,17 @@ export class AttendeesComponent implements OnDestroy {
     });
   }
 
+  fullDate(iso: string | null): string {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
   /** Ushers get a read-only view: hide register / email / check-in / delete. */
   canManage = () => this.auth.canManageAttendees();
 
@@ -1103,6 +1249,22 @@ export class AttendeesComponent implements OnDestroy {
       partnerSpecificDrink: [] as SpecificDrink[],
       tableGuests: [] as { name: string; gender: Gender | ''; specificDrink: SpecificDrink[] }[],
     };
+  }
+
+  /** Read-only details modal, opened by clicking an attendee's name. */
+  detailsTarget = signal<Attendee | null>(null);
+
+  openDetails(a: Attendee): void {
+    this.detailsTarget.set(a);
+  }
+
+  closeDetails(): void {
+    this.detailsTarget.set(null);
+  }
+
+  editFromDetails(a: Attendee): void {
+    this.closeDetails();
+    this.openEdit(a);
   }
 
   openEdit(a: Attendee): void {
