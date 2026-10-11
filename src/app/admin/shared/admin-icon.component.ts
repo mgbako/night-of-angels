@@ -17,6 +17,8 @@ export type IconName =
   | 'trash'
   | 'chevron-left'
   | 'chevron-right'
+  | 'chevrons-left'
+  | 'chevrons-right'
   | 'mail'
   | 'message'
   | 'phone'
@@ -118,6 +120,14 @@ export type IconName =
         }
         @case ('chevron-right') {
           <path d="M9 5l7 7-7 7" />
+        }
+        @case ('chevrons-left') {
+          <path d="M18 5l-7 7 7 7" />
+          <path d="M11 5l-7 7 7 7" />
+        }
+        @case ('chevrons-right') {
+          <path d="M6 5l7 7-7 7" />
+          <path d="M13 5l7 7-7 7" />
         }
         @case ('mail') {
           <rect x="3" y="5" width="18" height="14" rx="2" />

@@ -11,6 +11,7 @@ import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AdminIconComponent } from '../../shared/admin-icon.component';
+import { AdminPaginatorComponent } from '../../shared/admin-paginator.component';
 import { AttendeeApiService } from '../../../features/ticketing/services/attendee-api.service';
 import { AuthService } from '../../services/auth.service';
 import { ticketShareUrl } from '../../../features/ticketing/share.util';
@@ -36,7 +37,7 @@ import {
 @Component({
   selector: 'app-admin-attendees',
   standalone: true,
-  imports: [FormsModule, RouterLink, AdminIconComponent],
+  imports: [FormsModule, RouterLink, AdminIconComponent, AdminPaginatorComponent],
   template: `
     <div class="adm-page-head">
       <div>
@@ -497,27 +498,15 @@ import {
       </table>
     </div>
 
-    @if (totalPages() > 1) {
-      <div class="adm-pagination">
-        <span>Page {{ page() }} of {{ totalPages() }}</span>
-        <div class="adm-pagination__controls">
-          <button
-            (click)="page.set(page() - 1)"
-            [disabled]="page() === 1"
-            aria-label="Previous page"
-          >
-            <adm-icon name="chevron-left" [size]="16" />
-          </button>
-          <button
-            (click)="page.set(page() + 1)"
-            [disabled]="page() === totalPages()"
-            aria-label="Next page"
-          >
-            <adm-icon name="chevron-right" [size]="16" />
-          </button>
-        </div>
-      </div>
-    }
+    <adm-paginator
+      [page]="page()"
+      [totalPages]="totalPages()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="pageSizeOptions"
+      [total]="filtered().length"
+      (pageChange)="page.set($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    />
 
     @if (editOpen()) {
       <div class="sms-backdrop" (click)="closeEdit()"></div>
@@ -1196,7 +1185,13 @@ export class AttendeesComponent implements OnDestroy {
   /** 'ALL', 'NONE' (unassigned), or a specific table number. */
   tableFilter = signal<string>('ALL');
   page = signal(1);
-  readonly pageSize = 8;
+  pageSize = signal(8);
+  readonly pageSizeOptions = [8, 20, 50, 100];
+
+  onPageSizeChange(size: number): void {
+    this.pageSize.set(size);
+    this.page.set(1);
+  }
 
   exportOpen = signal(false);
   /** Ticket code of the row whose "more actions" menu is open, if any. */
@@ -1536,12 +1531,13 @@ export class AttendeesComponent implements OnDestroy {
   });
 
   totalPages = computed(() =>
-    Math.max(1, Math.ceil(this.filtered().length / this.pageSize)),
+    Math.max(1, Math.ceil(this.filtered().length / this.pageSize())),
   );
 
   paged = computed(() => {
-    const start = (this.page() - 1) * this.pageSize;
-    return this.filtered().slice(start, start + this.pageSize);
+    const size = this.pageSize();
+    const start = (this.page() - 1) * size;
+    return this.filtered().slice(start, start + size);
   });
 
   reload(): void {

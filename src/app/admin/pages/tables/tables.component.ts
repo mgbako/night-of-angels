@@ -1,5 +1,6 @@
 import { Component, afterNextRender, computed, inject, signal } from '@angular/core';
 import { AdminIconComponent } from '../../shared/admin-icon.component';
+import { AdminPaginatorComponent } from '../../shared/admin-paginator.component';
 import { AttendeeApiService } from '../../../features/ticketing/services/attendee-api.service';
 import {
   GENDERS,
@@ -17,13 +18,14 @@ import {
 @Component({
   selector: 'app-admin-tables',
   standalone: true,
-  imports: [AdminIconComponent],
+  imports: [AdminIconComponent, AdminPaginatorComponent],
   template: `
     <div class="adm-page-head">
       <div>
         <h2>Tables</h2>
         <p>
           {{ tables().length }} {{ tables().length === 1 ? 'table' : 'tables' }} ·
+          {{ tablesWithSpace() }} with space ·
           {{ seated() }} seated · {{ seatsLeft() }} {{ seatsLeft() === 1 ? 'seat' : 'seats' }} left ·
           {{ unassignedCount() }} unassigned
         </p>
@@ -111,27 +113,15 @@ import {
           }
         </div>
 
-        @if (totalPages() > 1) {
-          <div class="adm-pagination">
-            <span>Page {{ page() }} of {{ totalPages() }}</span>
-            <div class="adm-pagination__controls">
-              <button
-                (click)="page.set(page() - 1)"
-                [disabled]="page() === 1"
-                aria-label="Previous page"
-              >
-                <adm-icon name="chevron-left" [size]="16" />
-              </button>
-              <button
-                (click)="page.set(page() + 1)"
-                [disabled]="page() === totalPages()"
-                aria-label="Next page"
-              >
-                <adm-icon name="chevron-right" [size]="16" />
-              </button>
-            </div>
-          </div>
-        }
+        <adm-paginator
+          [page]="page()"
+          [totalPages]="totalPages()"
+          [pageSize]="pageSize()"
+          [pageSizeOptions]="pageSizeOptions"
+          [total]="tables().length"
+          (pageChange)="page.set($event)"
+          (pageSizeChange)="onPageSizeChange($event)"
+        />
       } @else {
         <div class="adm-empty">
           <adm-icon name="attendees" [size]="28" />
@@ -245,15 +235,23 @@ export class TablesComponent {
   }
 
   page = signal(1);
-  readonly pageSize = 12;
+  pageSize = signal(12);
+  readonly pageSizeOptions = [6, 12, 24, 48];
+
+  onPageSizeChange(size: number): void {
+    this.pageSize.set(size);
+    this.page.set(1);
+  }
 
   tables = computed(() => tableSummaries(this.api.attendees()));
-  totalPages = computed(() => Math.max(1, Math.ceil(this.tables().length / this.pageSize)));
+  totalPages = computed(() => Math.max(1, Math.ceil(this.tables().length / this.pageSize())));
   pagedTables = computed(() => {
     const page = Math.min(this.page(), this.totalPages());
-    const start = (page - 1) * this.pageSize;
-    return this.tables().slice(start, start + this.pageSize);
+    const size = this.pageSize();
+    const start = (page - 1) * size;
+    return this.tables().slice(start, start + size);
   });
+  tablesWithSpace = computed(() => this.tables().filter((t) => !t.full).length);
   seated = computed(() => this.tables().reduce((s, t) => s + t.persons, 0));
   seatsLeft = computed(() =>
     this.tables().reduce((s, t) => s + Math.max(0, TABLE_CAPACITY - t.persons), 0),
