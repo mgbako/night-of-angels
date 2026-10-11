@@ -20,7 +20,9 @@ export type SpecificDrink =
   | 'STOUT'
   | 'TROPHY'
   | 'BOTTLE_WATER'
-  | 'KUMELIN';
+  | 'KUMELIN'
+  | 'VODKA'
+  | 'WHISKEY';
 
 export interface TableGuest {
   name?: string;

@@ -68,7 +68,9 @@ type SpecificDrink =
   | 'STOUT'
   | 'TROPHY'
   | 'BOTTLE_WATER'
-  | 'KUMELIN';
+  | 'KUMELIN'
+  | 'VODKA'
+  | 'WHISKEY';
 const GENDERS: Gender[] = ['MALE', 'FEMALE'];
 const SPECIFIC_DRINKS: SpecificDrink[] = [
   'ALCOHOLIC_WINE',
@@ -82,6 +84,8 @@ const SPECIFIC_DRINKS: SpecificDrink[] = [
   'TROPHY',
   'BOTTLE_WATER',
   'KUMELIN',
+  'VODKA',
+  'WHISKEY',
 ];
 /** A Table ticket's remaining seats beyond the primary buyer (10 - 1 = 9). */
 const MAX_TABLE_GUESTS = TABLE_CAPACITY - 1;

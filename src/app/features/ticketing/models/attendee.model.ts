@@ -28,7 +28,9 @@ export type SpecificDrink =
   | 'STOUT'
   | 'TROPHY'
   | 'BOTTLE_WATER'
-  | 'KUMELIN';
+  | 'KUMELIN'
+  | 'VODKA'
+  | 'WHISKEY';
 
 export const SPECIFIC_DRINKS: { value: SpecificDrink; label: string }[] = [
   { value: 'ALCOHOLIC_WINE', label: 'Alcoholic Wine' },
@@ -42,6 +44,8 @@ export const SPECIFIC_DRINKS: { value: SpecificDrink; label: string }[] = [
   { value: 'TROPHY', label: 'Trophy' },
   { value: 'BOTTLE_WATER', label: 'Bottle Water' },
   { value: 'KUMELIN', label: 'Kumelin' },
+  { value: 'VODKA', label: 'Vodka' },
+  { value: 'WHISKEY', label: 'Whiskey' },
 ];
 
 /** A guest may select at most this many preferred drinks. */

@@ -68,6 +68,8 @@ const SPECIFIC_DRINKS: SpecificDrink[] = [
   'TROPHY',
   'BOTTLE_WATER',
   'KUMELIN',
+  'VODKA',
+  'WHISKEY',
 ];
 /** A Table ticket's remaining seats beyond the primary buyer (10 - 1 = 9). */
 const MAX_TABLE_GUESTS = 9;
