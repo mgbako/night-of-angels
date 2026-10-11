@@ -279,6 +279,7 @@ import {
             <th>Ticket</th>
             <th class="adm-drink-col">Preferred Drink</th>
             <th>Table</th>
+            <th>Created</th>
             <th>Check-in</th>
             <th class="adm-actions-col">Actions</th>
           </tr>
@@ -325,6 +326,9 @@ import {
                 } @else {
                   {{ a.tableNumber || '—' }}
                 }
+              </td>
+              <td>
+                <span class="adm-sub">{{ shortDate(a.createdAt) }}</span>
               </td>
               <td>
                 @if (a.checkedIn) {
@@ -464,7 +468,7 @@ import {
             </tr>
           } @empty {
             <tr>
-              <td [attr.colspan]="canManage() ? 7 : 6">
+              <td [attr.colspan]="canManage() ? 8 : 7">
                 @if (loading() && !all().length) {
                   <div class="adm-loading">
                     <div class="adm-spinner"></div>
@@ -1029,6 +1033,13 @@ export class AttendeesComponent implements OnDestroy {
   meta = ticketTypeMeta;
   genderLabel = genderLabel;
   specificDrinksLabel = specificDrinksLabel;
+
+  shortDate(iso: string): string {
+    return new Date(iso).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+    });
+  }
 
   /** Ushers get a read-only view: hide register / email / check-in / delete. */
   canManage = () => this.auth.canManageAttendees();

@@ -88,7 +88,10 @@ import {
                 @for (a of t.attendees; track a.id) {
                   <li>
                     <span>{{ a.name }}</span>
-                    <span class="tbl__seats">{{ meta(a.ticketType).label }} · {{ seats(a.ticketType) }}</span>
+                    <span class="tbl__seats"
+                      >{{ meta(a.ticketType).label }} · {{ seats(a.ticketType) }} ·
+                      {{ shortDate(a.createdAt) }}</span
+                    >
                   </li>
                   @if (a.tableGuests?.length) {
                     <ul class="tbl__guests">
@@ -211,6 +214,13 @@ export class TablesComponent {
   seats = seatsFor;
   genderLabel = genderLabel;
   specificDrinksLabel = specificDrinksLabel;
+
+  shortDate(iso: string): string {
+    return new Date(iso).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+    });
+  }
 
   tables = computed(() => tableSummaries(this.api.attendees()));
   seated = computed(() => this.tables().reduce((s, t) => s + t.persons, 0));
