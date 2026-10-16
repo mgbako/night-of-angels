@@ -276,12 +276,12 @@ import {
                 />
               </th>
             }
-            <th>Attendee Detail</th>
-            <th>Ticket</th>
+            <th class="adm-name-col">Attendee Detail</th>
+            <th class="adm-ticket-col">Ticket</th>
             <th class="adm-drink-col">Preferred Drink</th>
-            <th>Table</th>
-            <th>Created</th>
-            <th>Check-in</th>
+            <th class="adm-tablenum-col">Table</th>
+            <th class="adm-created-col">Created</th>
+            <th class="adm-checkin-col">Check-in</th>
             <th class="adm-actions-col">Actions</th>
           </tr>
         </thead>
@@ -298,7 +298,7 @@ import {
                   />
                 </td>
               }
-              <td>
+              <td class="adm-name-col" data-label="Attendee">
                 <button type="button" class="adm-name adm-name--link" (click)="openDetails(a)">
                   {{ a.name }}
                 </button>
@@ -309,14 +309,14 @@ import {
                   }
                 </span>
               </td>
-              <td>
+              <td class="adm-ticket-col" data-label="Ticket">
                 <span class="adm-name">{{ meta(a.ticketType).label }}</span>
                 <span class="adm-sub"
                   ><span class="adm-code">{{ a.ticketCode }}</span></span
                 >
               </td>
-              <td class="adm-drink-col">{{ specificDrinksLabel(a.specificDrinks) }}</td>
-              <td>
+              <td class="adm-drink-col" data-label="Preferred drink">{{ specificDrinksLabel(a.specificDrinks) }}</td>
+              <td class="adm-tablenum-col" data-label="Table">
                 @if (!showArchived() && canManage()) {
                   <button
                     class="adm-btn adm-btn--sm adm-btn--ghost adm-table-edit"
@@ -330,10 +330,10 @@ import {
                   {{ a.tableNumber || '—' }}
                 }
               </td>
-              <td>
+              <td class="adm-created-col" data-label="Created">
                 <span class="adm-sub">{{ shortDate(a.createdAt) }}</span>
               </td>
-              <td>
+              <td class="adm-checkin-col" data-label="Check-in">
                 @if (a.checkedIn) {
                   <span class="adm-badge adm-badge--in"
                     ><adm-icon name="check" [size]="13" /> In</span
@@ -919,19 +919,56 @@ import {
         color: #23201a;
         margin-right: auto;
       }
+      /*
+       * Fixed table layout so every column keeps its declared width —
+       * auto layout was letting the browser squeeze the Actions column
+       * well below 240px on narrow/portrait screens, which in turn
+       * collapsed the action-button icons to 0 width (no flex-shrink
+       * guard on the svg). Column widths below sum to the table's
+       * min-width, so the wrap's horizontal scroll only kicks in below
+       * that, same as before.
+       */
+      .adm-table {
+        table-layout: fixed;
+        min-width: 956px;
+      }
       .adm-check-col {
         width: 36px;
         text-align: center;
         padding-right: 0;
       }
+      .adm-name-col {
+        width: 220px;
+      }
+      .adm-ticket-col {
+        width: 110px;
+      }
+      .adm-drink-col {
+        width: 140px;
+        white-space: normal;
+      }
+      .adm-tablenum-col {
+        width: 70px;
+      }
+      .adm-created-col {
+        width: 90px;
+      }
+      .adm-checkin-col {
+        width: 90px;
+      }
       .adm-actions-col {
-        width: 240px;
+        width: 200px;
         text-align: right;
         white-space: nowrap;
       }
-      .adm-drink-col {
-        width: 160px;
-        white-space: normal;
+      /* Belt-and-suspenders: action buttons/icons never shrink below
+         their content size, regardless of how much room the column gets. */
+      .row-actions > * {
+        flex-shrink: 0;
+      }
+      .row-actions adm-icon,
+      .row-actions adm-icon svg {
+        flex-shrink: 0;
       }
       .adm-check-col input {
         width: 16px;
@@ -942,6 +979,92 @@ import {
       }
       .adm-row--selected {
         background: rgba(176, 137, 29, 0.08);
+      }
+
+      /* =========================================================
+         Mobile card layout — below this width the table collapses
+         into stacked cards (one per attendee) instead of forcing
+         horizontal scroll through seven cramped columns.
+         ========================================================= */
+      @media (max-width: 768px) {
+        .adm-table-wrap {
+          overflow-x: visible;
+          border: none;
+          background: transparent;
+          border-radius: 0;
+        }
+        .adm-table {
+          table-layout: auto;
+          min-width: 0;
+          width: 100%;
+        }
+        .adm-table thead {
+          display: none;
+        }
+        .adm-table tbody tr {
+          display: block;
+          position: relative;
+          margin-bottom: 0.9rem;
+          padding: 0.9rem 1rem;
+          border: 1px solid var(--adm-line);
+          border-radius: 12px;
+          background: var(--adm-surface);
+          box-shadow: 0 2px 10px rgba(23, 20, 15, 0.04);
+        }
+        .adm-table tbody tr:hover {
+          background: var(--adm-surface);
+        }
+        .adm-table td {
+          display: block;
+          width: auto !important;
+          padding: 0.5rem 0;
+          border-bottom: 1px dashed var(--adm-line);
+          white-space: normal;
+          text-align: left;
+        }
+        .adm-table td:last-child {
+          border-bottom: none;
+        }
+        .adm-table td[data-label]::before {
+          content: attr(data-label);
+          display: block;
+          font-size: 0.66rem;
+          font-weight: 600;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          color: var(--adm-muted);
+          margin-bottom: 0.25rem;
+        }
+        /* Bulk-select checkbox floats top-right of the card, out of flow. */
+        .adm-table .adm-check-col {
+          position: absolute;
+          top: 0.9rem;
+          right: 1rem;
+          width: auto;
+          padding: 0;
+          border-bottom: none;
+        }
+        .adm-table .adm-name-col {
+          padding-right: 2.2rem;
+        }
+        .adm-table .adm-actions-col {
+          text-align: left;
+          padding-top: 0.7rem;
+          margin-top: 0.2rem;
+          border-top: 1px solid var(--adm-line);
+          border-bottom: none;
+        }
+        .row-actions {
+          justify-content: flex-start;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+        /* Bigger touch targets for action buttons on mobile. */
+        .row-actions .adm-btn {
+          min-height: 40px;
+          min-width: 40px;
+          padding: 0.5rem 0.75rem;
+        }
       }
       .sms-backdrop {
         position: fixed;
