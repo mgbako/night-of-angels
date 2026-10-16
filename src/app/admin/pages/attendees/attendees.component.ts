@@ -387,6 +387,22 @@ import {
                       >
                         <adm-icon name="edit" [size]="15" />
                       </button>
+                      <button
+                        class="adm-btn adm-btn--sm"
+                        (click)="toggle(a)"
+                        [disabled]="busy()"
+                        [title]="a.checkedIn ? 'Undo check-in' : 'Check in'"
+                      >
+                        <adm-icon [name]="a.checkedIn ? 'close' : 'check'" [size]="15" />
+                      </button>
+                      <button
+                        class="adm-btn adm-btn--sm"
+                        (click)="emailTicket(a)"
+                        [disabled]="sendingCode() === a.ticketCode || !a.email"
+                        [title]="a.email ? 'Email ticket to guest' : 'No email on file for this guest'"
+                      >
+                        <adm-icon name="mail" [size]="15" />
+                      </button>
                       <div class="row-menu">
                         <button
                           class="adm-btn adm-btn--sm adm-btn--ghost"
@@ -402,33 +418,6 @@ import {
                             (click)="rowMenuOpen.set(null)"
                           ></div>
                           <div class="row-menu__menu" role="menu">
-                            <button
-                              role="menuitem"
-                              (click)="toggle(a); rowMenuOpen.set(null)"
-                              [title]="
-                                a.checkedIn ? 'Undo check-in' : 'Check in'
-                              "
-                            >
-                              <adm-icon
-                                [name]="a.checkedIn ? 'close' : 'check'"
-                                [size]="15"
-                              />
-                              {{ a.checkedIn ? 'Undo check-in' : 'Check in' }}
-                            </button>
-                            <button
-                              role="menuitem"
-                              (click)="emailTicket(a); rowMenuOpen.set(null)"
-                              [disabled]="
-                                sendingCode() === a.ticketCode || !a.email
-                              "
-                              [title]="
-                                a.email
-                                  ? 'Email ticket to guest'
-                                  : 'No email on file for this guest'
-                              "
-                            >
-                              <adm-icon name="mail" [size]="15" /> Email
-                            </button>
                             <button
                               role="menuitem"
                               (click)="smsTicket(a); rowMenuOpen.set(null)"
@@ -930,7 +919,7 @@ import {
        */
       .adm-table {
         table-layout: fixed;
-        min-width: 956px;
+        min-width: 1016px;
       }
       .adm-check-col {
         width: 36px;
@@ -957,7 +946,7 @@ import {
         width: 90px;
       }
       .adm-actions-col {
-        width: 200px;
+        width: 260px;
         text-align: right;
         white-space: nowrap;
       }
