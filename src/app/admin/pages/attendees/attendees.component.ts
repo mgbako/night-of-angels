@@ -2,6 +2,7 @@ import {
   Component,
   OnDestroy,
   PLATFORM_ID,
+  ViewChild,
   afterNextRender,
   computed,
   inject,
@@ -12,6 +13,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AdminIconComponent } from '../../shared/admin-icon.component';
 import { AdminPaginatorComponent } from '../../shared/admin-paginator.component';
+import { QrScannerModalComponent } from '../../shared/qr-scanner-modal.component';
 import { AttendeeApiService } from '../../../features/ticketing/services/attendee-api.service';
 import { AuthService } from '../../services/auth.service';
 import { ticketShareUrl } from '../../../features/ticketing/share.util';
@@ -37,7 +39,13 @@ import {
 @Component({
   selector: 'app-admin-attendees',
   standalone: true,
-  imports: [FormsModule, RouterLink, AdminIconComponent, AdminPaginatorComponent],
+  imports: [
+    FormsModule,
+    RouterLink,
+    AdminIconComponent,
+    AdminPaginatorComponent,
+    QrScannerModalComponent,
+  ],
   template: `
     <div class="adm-page-head">
       <div>
@@ -118,6 +126,9 @@ import {
           </button>
         }
         @if (canManage() && !showArchived()) {
+          <button class="adm-btn adm-btn--primary" (click)="scannerOpen.set(true)">
+            <adm-icon name="qr" [size]="17" /> Scan to check in
+          </button>
           <a routerLink="/admin/register" class="adm-btn adm-btn--primary">
             <adm-icon name="register" [size]="17" /> Register
           </a>
@@ -781,6 +792,14 @@ import {
         </div>
       </div>
     }
+
+    @if (scannerOpen()) {
+      <adm-qr-scanner
+        #scanner
+        (scanned)="onScanned($event)"
+        (close)="scannerOpen.set(false)"
+      />
+    }
   `,
   styles: [
     `
@@ -1296,6 +1315,8 @@ export class AttendeesComponent implements OnDestroy {
   checkFilter = signal<'ALL' | 'IN' | 'OUT'>('ALL');
   /** 'ALL', 'NONE' (unassigned), or a specific table number. */
   tableFilter = signal<string>('ALL');
+  scannerOpen = signal(false);
+  @ViewChild('scanner') scannerCmp?: QrScannerModalComponent;
   page = signal(1);
   pageSize = signal(10);
   readonly pageSizeOptions = [10, 20, 50, 100];
@@ -1734,6 +1755,43 @@ export class AttendeesComponent implements OnDestroy {
 
   async toggle(a: Attendee): Promise<void> {
     await this.api.setCheckIn(a.ticketCode, !a.checkedIn);
+  }
+
+  /** Pulls the ticket code out of a scanned QR payload (a full check-in URL) or a raw code. */
+  private extractTicketCode(scanned: string): string {
+    const trimmed = scanned.trim();
+    try {
+      const url = new URL(trimmed);
+      const segments = url.pathname.split('/').filter(Boolean);
+      return segments[segments.length - 1] ?? trimmed;
+    } catch {
+      return trimmed;
+    }
+  }
+
+  /** Resolves a scanned/typed code against the current roster and checks the guest in. */
+  async onScanned(raw: string): Promise<void> {
+    const code = this.extractTicketCode(raw);
+    const a = this.all().find(
+      (x) => x.ticketCode.toLowerCase() === code.toLowerCase(),
+    );
+    if (!a) {
+      this.scannerCmp?.showFeedback(`No ticket found for "${code}".`, false);
+      return;
+    }
+    if (a.checkedIn) {
+      this.scannerCmp?.showFeedback(`${a.name} is already checked in.`, true);
+      return;
+    }
+    try {
+      await this.api.setCheckIn(a.ticketCode, true);
+      this.scannerCmp?.showFeedback(`${a.name} checked in ✓`, true);
+    } catch (e) {
+      this.scannerCmp?.showFeedback(
+        e instanceof Error ? e.message : 'Could not check in',
+        false,
+      );
+    }
   }
 
   async editTable(a: Attendee): Promise<void> {
