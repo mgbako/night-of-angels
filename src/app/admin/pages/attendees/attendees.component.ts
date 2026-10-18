@@ -125,10 +125,12 @@ import {
             {{ showArchived() ? 'Back to active' : 'Archived' }}
           </button>
         }
-        @if (canManage() && !showArchived()) {
+        @if (canCheckIn() && !showArchived()) {
           <button class="adm-btn adm-btn--primary" (click)="scannerOpen.set(true)">
             <adm-icon name="qr" [size]="17" /> Scan to check in
           </button>
+        }
+        @if (canRegister() && !showArchived()) {
           <a routerLink="/admin/register" class="adm-btn adm-btn--primary">
             <adm-icon name="register" [size]="17" /> Register
           </a>
@@ -398,6 +400,8 @@ import {
                       >
                         <adm-icon name="edit" [size]="15" />
                       </button>
+                    }
+                    @if (canCheckIn()) {
                       <button
                         class="adm-btn adm-btn--sm"
                         (click)="toggle(a)"
@@ -406,6 +410,8 @@ import {
                       >
                         <adm-icon [name]="a.checkedIn ? 'close' : 'check'" [size]="15" />
                       </button>
+                    }
+                    @if (canManage()) {
                       <button
                         class="adm-btn adm-btn--sm"
                         (click)="emailTicket(a)"
@@ -1309,6 +1315,9 @@ export class AttendeesComponent implements OnDestroy {
 
   /** Ushers get a read-only view: hide register / email / check-in / delete. */
   canManage = () => this.auth.canManageAttendees();
+  /** Door check-in: available to every role (owner, manager, coordinator, usher). */
+  canCheckIn = () => this.auth.can('checkin');
+  canRegister = () => this.auth.can('register');
 
   search = signal('');
   typeFilter = signal<TicketType | 'ALL'>('ALL');
