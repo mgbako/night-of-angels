@@ -10,11 +10,22 @@ import {
 import { FormsModule } from '@angular/forms';
 import jsQR from 'jsqr';
 import { AdminIconComponent } from './admin-icon.component';
+import {
+  Attendee,
+  genderLabel,
+  seatsFor,
+  specificDrinksLabel,
+  ticketTypeLabel,
+} from '../../features/ticketing/models/attendee.model';
 
 /**
  * Full-screen camera QR scanner for guest check-in, with a manual code
  * entry fallback for devices without a usable camera. Decoding runs
  * entirely client-side via jsQR — no frames leave the device.
+ *
+ * A scan doesn't check anyone in by itself: the parent resolves the code and
+ * calls showGuest(), the door staff confirm the guest's details, then tap
+ * Check in (emits `checkIn`).
  */
 @Component({
   selector: 'adm-qr-scanner',
@@ -30,7 +41,66 @@ import { AdminIconComponent } from './admin-icon.component';
         </button>
       </div>
 
-      <div class="qr-video-wrap">
+      @if (guest(); as g) {
+        <div class="qr-guest" [class.qr-guest--in]="g.checkedIn">
+          <div class="qr-guest__status">
+            @if (g.checkedIn) {
+              <adm-icon name="check" [size]="16" /> Checked in{{ g.checkedInAt ? ' · ' + time(g.checkedInAt) : '' }}
+            } @else {
+              Not checked in yet
+            }
+          </div>
+          <h4 class="qr-guest__name">{{ g.name }}</h4>
+          <dl class="qr-guest__dl">
+            <div>
+              <dt>Ticket</dt>
+              <dd>{{ ticketTypeLabel(g.ticketType) }} · admits {{ seatsFor(g.ticketType) }}</dd>
+            </div>
+            <div><dt>Code</dt><dd class="qr-guest__code">{{ g.ticketCode }}</dd></div>
+            <div><dt>Table</dt><dd>{{ g.tableNumber || '—' }}</dd></div>
+            <div><dt>Gender</dt><dd>{{ genderLabel(g.gender) }}</dd></div>
+            <div><dt>Phone</dt><dd>{{ g.phone || '—' }}</dd></div>
+            <div><dt>Drink(s)</dt><dd>{{ specificDrinksLabel(g.specificDrinks) }}</dd></div>
+            @if (g.ticketType === 'COUPLES' && (g.partnerGender || g.partnerSpecificDrinks?.length)) {
+              <div>
+                <dt>Partner</dt>
+                <dd>
+                  {{ genderLabel(g.partnerGender) }}@if (g.partnerSpecificDrinks?.length) { · {{ specificDrinksLabel(g.partnerSpecificDrinks) }} }
+                </dd>
+              </div>
+            }
+            @if (g.ticketType === 'TABLE' && g.tableGuests?.length) {
+              <div>
+                <dt>Guests</dt>
+                <dd>
+                  @for (t of g.tableGuests; track $index) {
+                    <span class="qr-guest__party">{{ t.name || 'Guest' }}</span>
+                  }
+                </dd>
+              </div>
+            }
+          </dl>
+        </div>
+      }
+
+      @if (lastFeedback(); as f) {
+        <div class="qr-feedback" [class.qr-feedback--err]="!f.ok">{{ f.msg }}</div>
+      }
+
+      @if (guest(); as g) {
+        <div class="qr-guest__actions">
+          <button class="adm-btn adm-btn--ghost" (click)="scanNext()" [disabled]="checkingIn()">
+            <adm-icon name="qr" [size]="16" /> Scan next
+          </button>
+          @if (!g.checkedIn) {
+            <button class="adm-btn adm-btn--primary" (click)="checkIn.emit(g)" [disabled]="checkingIn()">
+              <adm-icon name="check" [size]="16" /> {{ checkingIn() ? 'Checking in…' : 'Check in' }}
+            </button>
+          }
+        </div>
+      }
+
+      <div class="qr-video-wrap" [hidden]="guest()">
         <video #video class="qr-video" muted playsinline [hidden]="!cameraReady()"></video>
         @if (!cameraReady()) {
           <div class="qr-video-fallback">
@@ -48,25 +118,23 @@ import { AdminIconComponent } from './admin-icon.component';
         }
       </div>
 
-      <p class="qr-hint">Point the camera at the QR code on the guest's ticket.</p>
+      @if (!guest()) {
+        <p class="qr-hint">Point the camera at the QR code on the guest's ticket.</p>
 
-      @if (lastFeedback(); as f) {
-        <div class="qr-feedback" [class.qr-feedback--err]="!f.ok">{{ f.msg }}</div>
+        <div class="qr-manual">
+          <input
+            type="text"
+            placeholder="Or enter ticket code manually…"
+            [ngModel]="manualCode()"
+            (ngModelChange)="manualCode.set($event)"
+            (keydown.enter)="submitManual()"
+            aria-label="Ticket code"
+          />
+          <button class="adm-btn adm-btn--primary" (click)="submitManual()" [disabled]="!manualCode().trim()">
+            Look up
+          </button>
+        </div>
       }
-
-      <div class="qr-manual">
-        <input
-          type="text"
-          placeholder="Or enter ticket code manually…"
-          [ngModel]="manualCode()"
-          (ngModelChange)="manualCode.set($event)"
-          (keydown.enter)="submitManual()"
-          aria-label="Ticket code"
-        />
-        <button class="adm-btn adm-btn--primary" (click)="submitManual()" [disabled]="!manualCode().trim()">
-          Check in
-        </button>
-      </div>
     </div>
   `,
   styles: [
@@ -189,6 +257,81 @@ import { AdminIconComponent } from './admin-icon.component';
         background: rgba(201, 76, 60, 0.12);
         color: #b4402f;
       }
+      .qr-video-wrap[hidden] {
+        display: none;
+      }
+      .qr-guest {
+        border: 1px solid var(--adm-line);
+        border-radius: 12px;
+        padding: 0.9rem 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .qr-guest--in {
+        border-color: rgba(63, 174, 99, 0.45);
+        background: rgba(63, 174, 99, 0.06);
+      }
+      .qr-guest__status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        align-self: flex-start;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+        background: #f3efe3;
+        color: #8a8270;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+      .qr-guest--in .qr-guest__status {
+        background: rgba(63, 174, 99, 0.16);
+        color: #2a7a46;
+      }
+      .qr-guest__name {
+        margin: 0;
+        font-family: var(--display);
+        font-size: 1.35rem;
+        line-height: 1.2;
+        color: #23201a;
+        overflow-wrap: anywhere;
+      }
+      .qr-guest__dl {
+        margin: 0;
+        display: grid;
+        gap: 0.35rem;
+      }
+      .qr-guest__dl > div {
+        display: grid;
+        grid-template-columns: 5.5rem 1fr;
+        gap: 0.5rem;
+        font-size: 0.88rem;
+      }
+      .qr-guest__dl dt {
+        color: #8a8270;
+      }
+      .qr-guest__dl dd {
+        margin: 0;
+        color: var(--adm-ink);
+        overflow-wrap: anywhere;
+      }
+      .qr-guest__code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        letter-spacing: 0.04em;
+      }
+      .qr-guest__party:not(:last-child)::after {
+        content: ', ';
+      }
+      .qr-guest__actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+      .qr-guest__actions .adm-btn {
+        flex: 1;
+        justify-content: center;
+        min-height: 48px;
+        font-size: 0.95rem;
+      }
       .qr-manual {
         display: flex;
         gap: 0.5rem;
@@ -218,11 +361,21 @@ export class QrScannerModalComponent {
   /** Emits the decoded QR text (or a manually-typed code) for the parent to resolve. */
   @Output() scanned = new EventEmitter<string>();
   @Output() close = new EventEmitter<void>();
+  /** The door staff confirmed the shown guest — the parent performs the check-in. */
+  @Output() checkIn = new EventEmitter<Attendee>();
 
   cameraReady = signal(false);
   cameraError = signal<string | null>(null);
   lastFeedback = signal<{ msg: string; ok: boolean } | null>(null);
   manualCode = signal('');
+  /** Guest resolved from the last scan; while set, the camera stops decoding. */
+  guest = signal<Attendee | null>(null);
+  checkingIn = signal(false);
+
+  readonly genderLabel = genderLabel;
+  readonly seatsFor = seatsFor;
+  readonly specificDrinksLabel = specificDrinksLabel;
+  readonly ticketTypeLabel = ticketTypeLabel;
 
   private stream: MediaStream | null = null;
   private rafId: number | null = null;
@@ -241,6 +394,23 @@ export class QrScannerModalComponent {
   /** Lets the parent show scan feedback without the parent owning camera state. */
   showFeedback(msg: string, ok: boolean): void {
     this.lastFeedback.set({ msg, ok });
+  }
+
+  /** Shows a resolved guest's details for confirmation (replaces the camera view). */
+  showGuest(a: Attendee): void {
+    this.guest.set(a);
+  }
+
+  /** Back to the camera for the next guest. */
+  scanNext(): void {
+    this.guest.set(null);
+    this.lastFeedback.set(null);
+    // The previous ticket may still be in frame — don't re-open it straight away.
+    this.lastCodeAt = Date.now();
+  }
+
+  time(iso: string): string {
+    return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   }
 
   submitManual(): void {
@@ -280,7 +450,7 @@ export class QrScannerModalComponent {
 
   private tick = (): void => {
     const video = this.videoRef?.nativeElement;
-    if (!video || !this.canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+    if (this.guest() || !video || !this.canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
       this.rafId = requestAnimationFrame(this.tick);
       return;
     }

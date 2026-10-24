@@ -14,7 +14,7 @@ import { RouterLink } from '@angular/router';
 import { AdminIconComponent } from '../../shared/admin-icon.component';
 import { AdminPaginatorComponent } from '../../shared/admin-paginator.component';
 import { QrScannerModalComponent } from '../../shared/qr-scanner-modal.component';
-import { AttendeeApiService } from '../../../features/ticketing/services/attendee-api.service';
+import { ApiError, AttendeeApiService } from '../../../features/ticketing/services/attendee-api.service';
 import { AuthService } from '../../services/auth.service';
 import { ticketShareUrl } from '../../../features/ticketing/share.util';
 import {
@@ -803,6 +803,7 @@ import {
       <adm-qr-scanner
         #scanner
         (scanned)="onScanned($event)"
+        (checkIn)="onScanCheckIn($event)"
         (close)="scannerOpen.set(false)"
       />
     }
@@ -1794,29 +1795,43 @@ export class AttendeesComponent implements OnDestroy {
     }
   }
 
-  /** Resolves a scanned/typed code against the current roster and checks the guest in. */
-  async onScanned(raw: string): Promise<void> {
+  /** Resolves a scanned/typed code against the current roster and shows the guest for confirmation. */
+  onScanned(raw: string): void {
     const code = this.extractTicketCode(raw);
     const a = this.all().find(
-      (x) => x.ticketCode.toLowerCase() === code.toLowerCase(),
+      (x) => !x.deletedAt && x.ticketCode.toLowerCase() === code.toLowerCase(),
     );
     if (!a) {
       this.scannerCmp?.showFeedback(`No ticket found for "${code}".`, false);
       return;
     }
+    this.scannerCmp?.showGuest(a);
     if (a.checkedIn) {
-      this.scannerCmp?.showFeedback(`${a.name} is already checked in.`, true);
-      return;
+      this.scannerCmp?.showFeedback('Already checked in — this ticket has been used.', false);
+    } else {
+      this.scannerCmp?.lastFeedback.set(null);
     }
+  }
+
+  /** Door staff confirmed the guest in the scanner — check them in. */
+  async onScanCheckIn(a: Attendee): Promise<void> {
+    const scanner = this.scannerCmp;
+    scanner?.checkingIn.set(true);
     try {
-      await this.api.checkIn(a.ticketCode);
+      const updated = await this.api.checkIn(a.ticketCode);
+      scanner?.showGuest(updated);
+      scanner?.showFeedback(`${updated.name} checked in ✓`, true);
       await this.api.refresh();
-      this.scannerCmp?.showFeedback(`${a.name} checked in ✓`, true);
     } catch (e) {
-      this.scannerCmp?.showFeedback(
-        e instanceof Error ? e.message : 'Could not check in',
-        false,
-      );
+      if (e instanceof ApiError && e.status === 409 && e.payload) {
+        // Someone at another door got there first.
+        scanner?.showGuest(e.payload as Attendee);
+        scanner?.showFeedback('Already checked in on another device — this ticket has been used.', false);
+      } else {
+        scanner?.showFeedback(e instanceof Error ? e.message : 'Could not check in', false);
+      }
+    } finally {
+      scanner?.checkingIn.set(false);
     }
   }
 
