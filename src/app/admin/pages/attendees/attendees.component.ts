@@ -401,7 +401,7 @@ import {
                         <adm-icon name="edit" [size]="15" />
                       </button>
                     }
-                    @if (canCheckIn()) {
+                    @if (a.checkedIn ? canManage() : canCheckIn()) {
                       <button
                         class="adm-btn adm-btn--sm"
                         (click)="toggle(a)"
@@ -1762,8 +1762,24 @@ export class AttendeesComponent implements OnDestroy {
     setTimeout(() => this.notice.set(null), 5000);
   }
 
+  /**
+   * Check-in goes through the check-in endpoint (any role with `checkin`);
+   * undoing one is an owner-only override via PATCH.
+   */
   async toggle(a: Attendee): Promise<void> {
-    await this.api.setCheckIn(a.ticketCode, !a.checkedIn);
+    this.busy.set(true);
+    try {
+      if (a.checkedIn) {
+        await this.api.setCheckIn(a.ticketCode, false);
+      } else {
+        await this.api.checkIn(a.ticketCode);
+        await this.api.refresh();
+      }
+    } catch (e) {
+      this.flash(e instanceof Error ? e.message : 'Could not update check-in', false);
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   /** Pulls the ticket code out of a scanned QR payload (a full check-in URL) or a raw code. */
@@ -1793,7 +1809,8 @@ export class AttendeesComponent implements OnDestroy {
       return;
     }
     try {
-      await this.api.setCheckIn(a.ticketCode, true);
+      await this.api.checkIn(a.ticketCode);
+      await this.api.refresh();
       this.scannerCmp?.showFeedback(`${a.name} checked in ✓`, true);
     } catch (e) {
       this.scannerCmp?.showFeedback(
