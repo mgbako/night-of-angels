@@ -9,7 +9,8 @@ import {
 } from '../shared/auth';
 import { EmailError, sendEmail, ticketEmailHtml } from '../shared/email';
 import { SmsError, sendBulkSms, sendSms, toInternational } from '../shared/sms';
-import { recordAudit } from '../shared/audit';
+import { RecordInput, recordAudit } from '../shared/audit';
+import { updateAttendees } from '../shared/attendees';
 
 const TICKET_LABELS: Record<TicketType, string> = {
   SINGLES: 'Singles',
@@ -147,8 +148,9 @@ async function readAll(): Promise<Attendee[]> {
   return Array.isArray(data) ? (data as Attendee[]) : [];
 }
 
-async function writeAll(list: Attendee[]): Promise<void> {
-  await store().setJSON(KEY, list);
+/** Concurrency-safe read-modify-write — see `updateAttendees`. `fn` may run more than once. */
+function updateAll<T>(fn: (list: Attendee[]) => { list?: Attendee[]; result: T }): Promise<T> {
+  return updateAttendees<T, Attendee>(fn);
 }
 
 const CORS = {
@@ -259,6 +261,9 @@ export default async (req: Request, context: Context): Promise<Response> => {
     return json({ error: 'Method not allowed' }, 405);
   } catch (err) {
     if (err instanceof AuthError) return json({ error: err.message }, err.status);
+    if (err instanceof Error && err.message === 'STORE_BUSY') {
+      return json({ error: 'Lots of check-ins at once — please try again' }, 503);
+    }
     console.error('attendees function error', err);
     return json({ error: 'Server error' }, 500);
   }
@@ -286,37 +291,40 @@ async function register(req: Request, actor: TokenPayload): Promise<Response> {
       ? body.partnerSpecificDrinks.filter((d) => SPECIFIC_DRINKS.includes(d))
       : [];
   const tableGuests = parseTableGuests(body.ticketType as TicketType, body.tableGuests);
-  const list = await readAll();
   // Email is optional. Only dedupe when one is supplied.
   const email = String(body.email ?? '').trim().toLowerCase();
-  if (email && list.some((a) => !a.deletedAt && a.email.toLowerCase() === email)) {
-    return json({ error: 'An attendee with this email already exists' }, 409);
-  }
   const tableNumber = String(body.tableNumber ?? '').trim();
-  if (tableNumber) {
-    const persons = tablePersons(list, tableNumber) + SEATS[body.ticketType as TicketType];
-    if (persons > TABLE_CAPACITY) {
-      return json({ error: `Table ${tableNumber} is full (seats ${TABLE_CAPACITY})` }, 409);
+  const outcome = await updateAll<Response | Attendee>((list) => {
+    if (email && list.some((a) => !a.deletedAt && a.email.toLowerCase() === email)) {
+      return { result: json({ error: 'An attendee with this email already exists' }, 409) };
     }
-  }
-  const attendee: Attendee = {
-    id: crypto.randomUUID(),
-    name: String(body.name).trim(),
-    email: String(body.email ?? '').trim(),
-    phone: String(body.phone).trim(),
-    ticketType: body.ticketType as TicketType,
-    ticketCode: genCode(new Set(list.map((a) => a.ticketCode))),
-    checkedIn: false,
-    checkedInAt: null,
-    createdAt: new Date().toISOString(),
-    ...(tableNumber ? { tableNumber } : {}),
-    gender: body.gender,
-    ...(specificDrinks.length ? { specificDrinks } : {}),
-    ...(partnerGender ? { partnerGender } : {}),
-    ...(partnerSpecificDrinks.length ? { partnerSpecificDrinks } : {}),
-    ...(tableGuests.length ? { tableGuests } : {}),
-  };
-  await writeAll([attendee, ...list]);
+    if (tableNumber) {
+      const persons = tablePersons(list, tableNumber) + SEATS[body.ticketType as TicketType];
+      if (persons > TABLE_CAPACITY) {
+        return { result: json({ error: `Table ${tableNumber} is full (seats ${TABLE_CAPACITY})` }, 409) };
+      }
+    }
+    const attendee: Attendee = {
+      id: crypto.randomUUID(),
+      name: String(body.name).trim(),
+      email: String(body.email ?? '').trim(),
+      phone: String(body.phone).trim(),
+      ticketType: body.ticketType as TicketType,
+      ticketCode: genCode(new Set(list.map((a) => a.ticketCode))),
+      checkedIn: false,
+      checkedInAt: null,
+      createdAt: new Date().toISOString(),
+      ...(tableNumber ? { tableNumber } : {}),
+      gender: body.gender,
+      ...(specificDrinks.length ? { specificDrinks } : {}),
+      ...(partnerGender ? { partnerGender } : {}),
+      ...(partnerSpecificDrinks.length ? { partnerSpecificDrinks } : {}),
+      ...(tableGuests.length ? { tableGuests } : {}),
+    };
+    return { list: [attendee, ...list], result: attendee };
+  });
+  if (outcome instanceof Response) return outcome;
+  const attendee = outcome;
   await recordAudit({
     req,
     actor,
@@ -336,24 +344,31 @@ async function getOne(code: string): Promise<Response> {
 }
 
 async function checkIn(code: string, req: Request, actor: TokenPayload): Promise<Response> {
-  const list = await readAll();
-  const idx = list.findIndex(
-    (a) => !a.deletedAt && a.ticketCode.toLowerCase() === code.toLowerCase(),
-  );
-  if (idx === -1) return json({ error: 'Ticket not found' }, 404);
-  if (list[idx].checkedIn) {
-    return json({ error: 'This ticket has already been checked in', attendee: list[idx] }, 409);
+  // The "already checked in" test runs against the list we actually write, so
+  // two doors scanning the same ticket at once admit it exactly once.
+  type Outcome = { status: 404 } | { status: 409 | 200; attendee: Attendee };
+  const outcome = await updateAll<Outcome>((list) => {
+    const idx = list.findIndex(
+      (a) => !a.deletedAt && a.ticketCode.toLowerCase() === code.toLowerCase(),
+    );
+    if (idx === -1) return { result: { status: 404 } };
+    if (list[idx].checkedIn) return { result: { status: 409, attendee: list[idx] } };
+    list[idx] = { ...list[idx], checkedIn: true, checkedInAt: new Date().toISOString() };
+    return { list, result: { status: 200, attendee: list[idx] } };
+  });
+  if (outcome.status === 404) return json({ error: 'Ticket not found' }, 404);
+  if (outcome.status === 409) {
+    return json({ error: 'This ticket has already been checked in', attendee: outcome.attendee }, 409);
   }
-  list[idx] = { ...list[idx], checkedIn: true, checkedInAt: new Date().toISOString() };
-  await writeAll(list);
+  const attendee = outcome.attendee;
   await recordAudit({
     req,
     actor,
     action: 'attendee.checked_in',
-    target: { type: 'attendee', id: list[idx].id, label: list[idx].name },
-    metadata: { ticketCode: list[idx].ticketCode },
+    target: { type: 'attendee', id: attendee.id, label: attendee.name },
+    metadata: { ticketCode: attendee.ticketCode },
   });
-  return json(list[idx]);
+  return json(attendee);
 }
 
 async function patchOne(code: string, req: Request): Promise<Response> {
@@ -371,163 +386,169 @@ async function patchOne(code: string, req: Request): Promise<Response> {
     partnerSpecificDrinks?: SpecificDrink[];
     tableGuests?: TableGuest[];
   } | null;
-  const list = await readAll();
-  const idx = list.findIndex((a) => a.ticketCode.toLowerCase() === code.toLowerCase());
-  if (idx === -1) return json({ error: 'Ticket not found' }, 404);
+  // Audits are queued and recorded only once the write has actually landed:
+  // the mutation below may be retried if another request writes first, and an
+  // error response (e.g. table full) saves nothing.
+  let audits: RecordInput[] = [];
+  const response = await updateAll((list) => {
+    audits = [];
+    const idx = list.findIndex((a) => a.ticketCode.toLowerCase() === code.toLowerCase());
+    if (idx === -1) return { result: json({ error: 'Ticket not found' }, 404) };
 
-  // Restore an archived attendee — super admin (owner) only.
-  if (body?.restore === true) {
-    const owner = requireOwner(req);
-    list[idx] = { ...list[idx], deletedAt: null };
-    await writeAll(list);
-    await recordAudit({
-      req,
-      actor: owner,
-      action: 'attendee.restored',
-      severity: 'warning',
-      target: { type: 'attendee', id: list[idx].id, label: list[idx].name },
-      metadata: { ticketCode: list[idx].ticketCode },
-    });
-    return json(list[idx]);
-  }
+    // Restore an archived attendee — super admin (owner) only.
+    if (body?.restore === true) {
+      const owner = requireOwner(req);
+      list[idx] = { ...list[idx], deletedAt: null };
+      audits.push({
+        req,
+        actor: owner,
+        action: 'attendee.restored',
+        severity: 'warning',
+        target: { type: 'attendee', id: list[idx].id, label: list[idx].name },
+        metadata: { ticketCode: list[idx].ticketCode },
+      });
+      return { list, result: json(list[idx]) };
+    }
 
-  // Everything else — needs manage rights (owner only), and only on active records.
-  const actor = requirePermission(req, 'attendees');
-  if (!canManageAttendees(actor.role)) {
-    throw new AuthError(403, 'You do not have access to this action');
-  }
-  if (list[idx].deletedAt) return json({ error: 'Ticket not found' }, 404);
-  const target = { type: 'attendee', id: list[idx].id, label: list[idx].name };
-  if (typeof body?.checkedIn === 'boolean') {
-    const from = list[idx].checkedIn;
-    list[idx] = {
-      ...list[idx],
-      checkedIn: body.checkedIn,
-      checkedInAt: body.checkedIn ? list[idx].checkedInAt ?? new Date().toISOString() : null,
-    };
-    await recordAudit({
-      req,
-      actor,
-      action: 'attendee.checkin_overridden',
-      severity: 'warning',
-      target,
-      changes: { checkedIn: { from, to: body.checkedIn } },
-      metadata: { ticketCode: list[idx].ticketCode },
-    });
-  }
-  if (typeof body?.tableNumber === 'string') {
-    const tableNumber = body.tableNumber.trim();
-    if (tableNumber) {
-      const persons = tablePersons(list, tableNumber, list[idx].id) + SEATS[list[idx].ticketType];
-      if (persons > TABLE_CAPACITY) {
-        return json({ error: `Table ${tableNumber} is full (seats ${TABLE_CAPACITY})` }, 409);
+    // Everything else — needs manage rights (owner only), and only on active records.
+    const actor = requirePermission(req, 'attendees');
+    if (!canManageAttendees(actor.role)) {
+      throw new AuthError(403, 'You do not have access to this action');
+    }
+    if (list[idx].deletedAt) return { result: json({ error: 'Ticket not found' }, 404) };
+    const target = { type: 'attendee', id: list[idx].id, label: list[idx].name };
+    if (typeof body?.checkedIn === 'boolean') {
+      const from = list[idx].checkedIn;
+      list[idx] = {
+        ...list[idx],
+        checkedIn: body.checkedIn,
+        checkedInAt: body.checkedIn ? list[idx].checkedInAt ?? new Date().toISOString() : null,
+      };
+      audits.push({
+        req,
+        actor,
+        action: 'attendee.checkin_overridden',
+        severity: 'warning',
+        target,
+        changes: { checkedIn: { from, to: body.checkedIn } },
+        metadata: { ticketCode: list[idx].ticketCode },
+      });
+    }
+    if (typeof body?.tableNumber === 'string') {
+      const tableNumber = body.tableNumber.trim();
+      if (tableNumber) {
+        const persons = tablePersons(list, tableNumber, list[idx].id) + SEATS[list[idx].ticketType];
+        if (persons > TABLE_CAPACITY) {
+          return { result: json({ error: `Table ${tableNumber} is full (seats ${TABLE_CAPACITY})` }, 409) };
+        }
       }
-    }
-    const from = list[idx].tableNumber ?? null;
-    list[idx] = { ...list[idx], tableNumber: tableNumber || undefined };
-    await recordAudit({
-      req,
-      actor,
-      action: 'attendee.table_assigned',
-      target,
-      changes: { tableNumber: { from, to: tableNumber || null } },
-      metadata: { ticketCode: list[idx].ticketCode },
-    });
-  }
-
-  // Edit the guest's own details (name, contact, ticket type, gender, drink).
-  const editingDetails =
-    typeof body?.name === 'string' ||
-    typeof body?.email === 'string' ||
-    typeof body?.phone === 'string' ||
-    typeof body?.ticketType === 'string' ||
-    typeof body?.gender === 'string' ||
-    Array.isArray(body?.specificDrinks);
-  if (editingDetails) {
-    const before = list[idx];
-    const name = typeof body?.name === 'string' ? body.name.trim() : before.name;
-    const phone = typeof body?.phone === 'string' ? body.phone.trim() : before.phone;
-    const email = typeof body?.email === 'string' ? body.email.trim() : before.email;
-    const ticketType = body?.ticketType ?? before.ticketType;
-    const gender = body?.gender ?? before.gender;
-    const specificDrinks = Array.isArray(body?.specificDrinks)
-      ? body.specificDrinks.filter((d) => SPECIFIC_DRINKS.includes(d))
-      : before.specificDrinks;
-
-    if (!name) return json({ error: 'Full name is required' }, 400);
-    if (!phone) return json({ error: 'Phone number is required' }, 400);
-    if (!TICKET_LABELS[ticketType]) return json({ error: 'A valid ticket type is required' }, 400);
-    if (!gender || !GENDERS.includes(gender)) {
-      return json({ error: 'A valid gender is required' }, 400);
+      const from = list[idx].tableNumber ?? null;
+      list[idx] = { ...list[idx], tableNumber: tableNumber || undefined };
+      audits.push({
+        req,
+        actor,
+        action: 'attendee.table_assigned',
+        target,
+        changes: { tableNumber: { from, to: tableNumber || null } },
+        metadata: { ticketCode: list[idx].ticketCode },
+      });
     }
 
-    const emailLower = email.toLowerCase();
-    if (
-      emailLower &&
-      list.some((a, i) => i !== idx && !a.deletedAt && a.email.toLowerCase() === emailLower)
-    ) {
-      return json({ error: 'An attendee with this email already exists' }, 409);
-    }
+    // Edit the guest's own details (name, contact, ticket type, gender, drink).
+    const editingDetails =
+      typeof body?.name === 'string' ||
+      typeof body?.email === 'string' ||
+      typeof body?.phone === 'string' ||
+      typeof body?.ticketType === 'string' ||
+      typeof body?.gender === 'string' ||
+      Array.isArray(body?.specificDrinks);
+    if (editingDetails) {
+      const before = list[idx];
+      const name = typeof body?.name === 'string' ? body.name.trim() : before.name;
+      const phone = typeof body?.phone === 'string' ? body.phone.trim() : before.phone;
+      const email = typeof body?.email === 'string' ? body.email.trim() : before.email;
+      const ticketType = body?.ticketType ?? before.ticketType;
+      const gender = body?.gender ?? before.gender;
+      const specificDrinks = Array.isArray(body?.specificDrinks)
+        ? body.specificDrinks.filter((d) => SPECIFIC_DRINKS.includes(d))
+        : before.specificDrinks;
 
-    const tableNumber = (list[idx].tableNumber ?? '').trim();
-    if (tableNumber && ticketType !== before.ticketType) {
-      const persons = tablePersons(list, tableNumber, before.id) + SEATS[ticketType];
-      if (persons > TABLE_CAPACITY) {
-        return json(
-          { error: `Table ${tableNumber} is full for a ${TICKET_LABELS[ticketType]} ticket (seats ${TABLE_CAPACITY})` },
-          409,
-        );
+      if (!name) return { result: json({ error: 'Full name is required' }, 400) };
+      if (!phone) return { result: json({ error: 'Phone number is required' }, 400) };
+      if (!TICKET_LABELS[ticketType]) return { result: json({ error: 'A valid ticket type is required' }, 400) };
+      if (!gender || !GENDERS.includes(gender)) {
+        return { result: json({ error: 'A valid gender is required' }, 400) };
       }
+
+      const emailLower = email.toLowerCase();
+      if (
+        emailLower &&
+        list.some((a, i) => i !== idx && !a.deletedAt && a.email.toLowerCase() === emailLower)
+      ) {
+        return { result: json({ error: 'An attendee with this email already exists' }, 409) };
+      }
+
+      const tableNumber = (list[idx].tableNumber ?? '').trim();
+      if (tableNumber && ticketType !== before.ticketType) {
+        const persons = tablePersons(list, tableNumber, before.id) + SEATS[ticketType];
+        if (persons > TABLE_CAPACITY) {
+          return { result: json(
+            { error: `Table ${tableNumber} is full for a ${TICKET_LABELS[ticketType]} ticket (seats ${TABLE_CAPACITY})` },
+            409,
+          ) };
+        }
+      }
+
+      // Second-guest preferences only make sense for Couples tickets.
+      const isCouples = ticketType === 'COUPLES';
+      const partnerGender = isCouples
+        ? (typeof body?.partnerGender === 'string' ? body.partnerGender || undefined : before.partnerGender)
+        : undefined;
+      const partnerSpecificDrinks = isCouples
+        ? (Array.isArray(body?.partnerSpecificDrinks)
+            ? body.partnerSpecificDrinks.filter((d) => SPECIFIC_DRINKS.includes(d))
+            : before.partnerSpecificDrinks)
+        : undefined;
+
+      // Named table guests only make sense for Table tickets.
+      const isTable = ticketType === 'TABLE';
+      const tableGuests = isTable
+        ? (Array.isArray(body?.tableGuests) ? parseTableGuests(ticketType, body.tableGuests) : before.tableGuests)
+        : undefined;
+
+      list[idx] = {
+        ...list[idx],
+        name,
+        email,
+        phone,
+        ticketType,
+        gender,
+        specificDrinks,
+        partnerGender,
+        partnerSpecificDrinks,
+        tableGuests,
+      };
+      audits.push({
+        req,
+        actor,
+        action: 'attendee.details_updated',
+        target,
+        changes: {
+          name: { from: before.name, to: name },
+          email: { from: before.email, to: email },
+          phone: { from: before.phone, to: phone },
+          ticketType: { from: before.ticketType, to: ticketType },
+          gender: { from: before.gender ?? null, to: gender ?? null },
+          specificDrinks: { from: before.specificDrinks ?? null, to: specificDrinks ?? null },
+        },
+        metadata: { ticketCode: list[idx].ticketCode },
+      });
     }
 
-    // Second-guest preferences only make sense for Couples tickets.
-    const isCouples = ticketType === 'COUPLES';
-    const partnerGender = isCouples
-      ? (typeof body?.partnerGender === 'string' ? body.partnerGender || undefined : before.partnerGender)
-      : undefined;
-    const partnerSpecificDrinks = isCouples
-      ? (Array.isArray(body?.partnerSpecificDrinks)
-          ? body.partnerSpecificDrinks.filter((d) => SPECIFIC_DRINKS.includes(d))
-          : before.partnerSpecificDrinks)
-      : undefined;
-
-    // Named table guests only make sense for Table tickets.
-    const isTable = ticketType === 'TABLE';
-    const tableGuests = isTable
-      ? (Array.isArray(body?.tableGuests) ? parseTableGuests(ticketType, body.tableGuests) : before.tableGuests)
-      : undefined;
-
-    list[idx] = {
-      ...list[idx],
-      name,
-      email,
-      phone,
-      ticketType,
-      gender,
-      specificDrinks,
-      partnerGender,
-      partnerSpecificDrinks,
-      tableGuests,
-    };
-    await recordAudit({
-      req,
-      actor,
-      action: 'attendee.details_updated',
-      target,
-      changes: {
-        name: { from: before.name, to: name },
-        email: { from: before.email, to: email },
-        phone: { from: before.phone, to: phone },
-        ticketType: { from: before.ticketType, to: ticketType },
-        gender: { from: before.gender ?? null, to: gender ?? null },
-        specificDrinks: { from: before.specificDrinks ?? null, to: specificDrinks ?? null },
-      },
-      metadata: { ticketCode: list[idx].ticketCode },
-    });
-  }
-
-  await writeAll(list);
-  return json(list[idx]);
+    return { list, result: json(list[idx]) };
+  });
+  if (response.ok) for (const entry of audits) await recordAudit(entry);
+  return response;
 }
 
 /**
@@ -554,27 +575,27 @@ async function bulkRemove(req: Request): Promise<Response> {
   }
 
   const set = new Set(codes);
-  const list = await readAll();
-  let removed = 0;
-
-  if (permanent) {
-    const next = list.filter((a) => {
-      const hit = set.has(a.ticketCode.toLowerCase());
-      if (hit) removed++;
-      return !hit;
-    });
-    if (removed) await writeAll(next);
-  } else {
-    const now = new Date().toISOString();
-    const next = list.map((a) => {
-      if (!a.deletedAt && set.has(a.ticketCode.toLowerCase())) {
-        removed++;
-        return { ...a, deletedAt: now };
-      }
-      return a;
-    });
-    if (removed) await writeAll(next);
-  }
+  const removed = await updateAll((list) => {
+    let count = 0;
+    let next: Attendee[];
+    if (permanent) {
+      next = list.filter((a) => {
+        const hit = set.has(a.ticketCode.toLowerCase());
+        if (hit) count++;
+        return !hit;
+      });
+    } else {
+      const now = new Date().toISOString();
+      next = list.map((a) => {
+        if (!a.deletedAt && set.has(a.ticketCode.toLowerCase())) {
+          count++;
+          return { ...a, deletedAt: now };
+        }
+        return a;
+      });
+    }
+    return { list: count ? next : undefined, result: count };
+  });
   await recordAudit({
     req,
     actor,
@@ -592,18 +613,16 @@ async function removeOne(
   req: Request,
   actor: TokenPayload,
 ): Promise<Response> {
-  const list = await readAll();
-  const idx = list.findIndex((a) => a.ticketCode.toLowerCase() === code.toLowerCase());
-  if (idx === -1) return json({ error: 'Ticket not found' }, 404);
-  const victim = list[idx];
-  if (permanent) {
-    await writeAll(list.filter((_, i) => i !== idx));
-  } else {
-    if (!list[idx].deletedAt) {
-      list[idx] = { ...list[idx], deletedAt: new Date().toISOString() };
-      await writeAll(list);
-    }
-  }
+  const victim = await updateAll((list) => {
+    const idx = list.findIndex((a) => a.ticketCode.toLowerCase() === code.toLowerCase());
+    if (idx === -1) return { result: null };
+    const found = list[idx];
+    if (permanent) return { list: list.filter((_, i) => i !== idx), result: found };
+    if (found.deletedAt) return { result: found };
+    list[idx] = { ...found, deletedAt: new Date().toISOString() };
+    return { list, result: found };
+  });
+  if (!victim) return json({ error: 'Ticket not found' }, 404);
   await recordAudit({
     req,
     actor,
